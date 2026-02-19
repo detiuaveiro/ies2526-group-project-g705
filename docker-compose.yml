@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  toname:
+    build:
+      context: ./projX
+      dockerfile: Dockerfile
+    container_name: toname-app
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    restart: unless-stopped
+    networks:
+      - toname-network
+
+networks:
+  toname-network:
+    driver: bridge
