@@ -3,15 +3,10 @@ services:
     build:
       context: ./projX
       dockerfile: Dockerfile
-    container_name: G705
-    ports:
-      - "8081:8080"
+    container_name: G705-app
+    network_mode: host
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     restart: unless-stopped
-    networks:
-      - toname-network
-
-networks:
-  toname-network:
-    driver: bridge
+    init: true
+    stop_grace_period: 30s
