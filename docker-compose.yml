@@ -1,3 +1,5 @@
+name: g705-project
+
 services:
   toname:
     build:

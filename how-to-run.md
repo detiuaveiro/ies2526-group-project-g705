@@ -10,4 +10,4 @@ docker compose down
 # or
 # http://localhost:8080/hello
 
-# Note: Container name is G705
+# Note: Container name is G705-app
