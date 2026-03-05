@@ -1,6 +1,5 @@
 # User Stories
 
-
 ## User Story 1:
 **As a** Maintenance Technician,  
 **I want** to know if there is a machine with a breakdown,  
@@ -20,7 +19,6 @@ No details added (to be added as the project develops).
 **As a** Maintenance Director,  
 **I want** to know if there is a machine that has been having several breakdowns,  
 **so that** I can investigate a more serious fault.
-
 
 ### Description:
 No details added (to be added as the project develops).
@@ -119,7 +117,6 @@ No details added (to be added as the project develops).
 4. The timestamp of the request
 
 
-
 ## User Story 8:
 **As a** Manager/Administrator,  
 **I want** to register new equipment/machines in the app,  
@@ -143,10 +140,13 @@ No details added (to be added as the project develops).
 No details added (to be added as the project develops).
 
 ### Acceptance Criteria:
-**Given** the user is logged into the system  
-**And** the user has the role of "Manager" or "Administrator"  
-**When** the user navigates to the main interface  
-**Then** a tab labeled "Managing" should be visible  
+**Given** the user is logged in as a Manager or Administrator  
+**And** the equipment exists in the system  
+**When** the user clicks the “Delete” button for that equipment  
+**And** confirms the deletion  
+**Then** the equipment is removed from all user views immediately  
+**And** a success message “Equipment deleted successfully” is displayed  
+**And** the deletion is logged in the system audit trail  
 
 ## User Story 10:
 **As a** Manager/Administrator,  
