@@ -1,7 +1,8 @@
 # G705
 
-
 ## Project Abstract: 
+**SmartSense** is an industrial monitoring system that analyzes vibration, pressure, and temperature sensor data to 
+enable predictive maintenance of machinery.
 
 
 ## Project Team:
@@ -15,7 +16,5 @@
 ![My Image](architecture.png)
 
 ## Project Bookmarks:
-1. **b1**
-2. **b2**
-3. **b3**
-4. **b4**
+1. **[Repository link](https://github.com/detiuaveiro/ies2526-group-project-g705)**
+2. **[Github Project link](https://github.com/orgs/detiuaveiro/projects/222/views/1)**

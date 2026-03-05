@@ -10,8 +10,10 @@
 No details added (to be added as the project develops).
 
 ### Acceptance Criteria:
-1. The Maintenance Technician should have a 'Machines' tab
-2. Every Machine must have some kind of easy status (with problems / without problems / etc...) visualizer, so that the Maintenance Technician can do a quick observation of the status of every machine.
+**Given** the user is logged in the system  
+**And** the user has the role of Maintenance Technician  
+**When** they navigate to the 'Machines' tab  
+**Then** a tab labeled 'Machines' should be visible.  
 
 
 ## User Story 2:
@@ -24,9 +26,10 @@ No details added (to be added as the project develops).
 No details added (to be added as the project develops).
 
 ### Acceptance Criteria:
-1. The Maintenance Director should have a 'Machines' tab
-2. Every Machine must have an Individual Dashboard
-3. In this Individual Dashboard every machine must have a 'history' section. There, the Maintenance Director can see every breakdown the machine had, with the date, title and description.
+**Given** the user is logged in the system  
+**And** the user has the role of Maintenance Director  
+**When** they navigate to the 'Machines' tab
+**Then** a section labled 'History' should be visible, where information regarding the machine should be visible, such as title, description and previous breakdowns ordered by their date.
 
 
 ## User Story 3:
@@ -38,11 +41,14 @@ No details added (to be added as the project develops).
 No details added (to be added as the project develops).
 
 ### Acceptance Criteria:
-1. The Manager should have a 'Machines' tab
-2. Every Machine must have an Individual Dashboard
-3. In this Individual Dashboard every machine must have a 'history' section. There, the Manager can see every breakdown the machine had, with the time it took to fix it and the total cost of the repair.
-4. In the Individual Dashboard, every machine must have the 'cost of operation by hour' and 'estimated production/function by hour'.
-
+**Given** the Manager is viewing a machine’s Individual Dashboard  
+**When** the dashboard loads  
+**Then** a section labeled "History" should be visible  
+**And** the History section should list all recorded breakdowns of the machine  
+**And** each breakdown entry should display:  
+- The date/time of the breakdown  
+- The time taken to fix the issue  
+- The total cost of the repair  
 
 ## User Story 4:
 **As an** Administrator,  
@@ -53,10 +59,10 @@ No details added (to be added as the project develops).
 No details added (to be added as the project develops).
 
 ### Acceptance Criteria:
-1. The Administrator should have a 'Team' tab
-2. In this 'Team' tab, there must be a list of every worker. This list should have filters, such as 'active', 'completed tasks high/low', etc...
-3. Every Technician should have the number of completed tasks, pending available tasks and the average repair time.
-
+**Given** the user is logged into the system  
+**And** the user has the role of "Administrator"  
+**When** the user navigates to the main interface  
+**Then** a tab labeled "Team" should be visible  
 
 ## User Story 5:
 **As a** Maintenance Technician,  
@@ -67,10 +73,15 @@ No details added (to be added as the project develops).
 No details added (to be added as the project develops).
 
 ### Acceptance Criteria:
-1. Every Machine must have an Individual Dashboard
-2. In this Individual Dashboard there must be a 'Health Status' section where the data of the sensors of vibration, pressure, and temperature inside of the machine is displayed in a trend graph (time vs value).
-3. The system must send an alert in case one of the sensors shows an unusual value.
-4. There should be an easy sign (like colours green/yellow/red) to represent the status of the machine.
+**Given** the user is logged into the system   
+**And** the user has the role of "Maintenance Technician"  
+**When** the user is viewing a machine’s Individual Dashboard  
+**Then** a section labeled "Health Status" should be visible  
+**And** the section should display:  
+1. A vibration trend graph (time vs value)  
+2. A pressure trend graph (time vs value)  
+3. A temperature trend graph (time vs value)  
+And each graph should clearly label the time axis and the value axis  
 
 
 ## User Story 6:
@@ -82,9 +93,10 @@ No details added (to be added as the project develops).
 No details added (to be added as the project develops).
 
 ### Acceptance Criteria:
-1. The app should have a ranking system.
-2. Every machine should have a predetermined "importance" level, a downtime counter (in days/hours/minutes) and fault severity (to be determined if it'll be a number in a scale or a short description).
-3. Either the ranking system is an algorithm or the Maintenance Technician should do the ranking himself.
+**Given** the user is logged into the system
+**When** the user navigates to the machine overview or ranking section
+**Then** the system should display a ranking of machines
+**And** the ranking should determine the priority order of the machines
 
 
 ## User Story 7:
@@ -96,12 +108,16 @@ No details added (to be added as the project develops).
 No details added (to be added as the project develops).
 
 ### Acceptance Criteria:
-1. Every machine individual dashboard should have a "Request Assistance" button.
-2. When selected, the app should open a quick form with "reason of assistance" and "location" (if it isn't part of the machine's data).
-3. The system must send, in real time, a notification to the Maintenance Team (can be also sent to the Administrator).
-4. The machine, in the 'Machines' tab, must have a visual icon (like a flag) and should be available to all the Maintenance Team.
-5. The Status of the machine must change to "Assistance Requested" and inside the machine dashboard, there should be a "give assistance" button.
-6. Before a Technician gives assistance, he must press the "give assistance" button. When clicked, the Status changes to the one before the request of assistance.
+**Given** the Maintenance Technician has completed the assistance request form  
+**When** the Technician submits the request  
+**Then** the system should send a real-time notification to all users with the role "Maintenance Technician"  
+**And** the system may also notify users with the role "Administrator"  
+**And** the notification should include:  
+1. The machine identifier
+2. The location
+3. The reason for assistance
+4. The timestamp of the request
+
 
 
 ## User Story 8:
@@ -113,8 +129,10 @@ No details added (to be added as the project develops).
 No details added (to be added as the project develops).
 
 ### Acceptance Criteria:
-1. The app must have a "Managing" tab
-2. There must be a "Add new equipment" button, that when pressed should show a registration form.
+**Given** the user is logged into the system  
+**And** the user has the role of "Manager" or "Administrator"  
+**When** the user navigates to the main interface  
+**Then** a tab labeled "Managing" should be visible  
 
 ## User Story 9:
 **As a** Manager/Administrator,  
@@ -125,9 +143,10 @@ No details added (to be added as the project develops).
 No details added (to be added as the project develops).
 
 ### Acceptance Criteria:
-1. The app must have a "Managing" tab
-2. There must be a "Remove this equipment" button that ,when pressed, should show a confirmation message and a forms (with the reason of the removal, etc).
-3. The removed equipment won’t be eliminated from the database, just moved to a different table (?, or another ).
+**Given** the user is logged into the system  
+**And** the user has the role of "Manager" or "Administrator"  
+**When** the user navigates to the main interface  
+**Then** a tab labeled "Managing" should be visible  
 
 ## User Story 10:
 **As a** Manager/Administrator,  
@@ -138,8 +157,9 @@ No details added (to be added as the project develops).
 No details added (to be added as the project develops)
 
 ### Acceptance Criteria:
-1. There should be an “Archived” section.
-2. The ‘history’ of a removed machine must be read only and can’t be edited.
-
-
+**Given** the user is logged into the system  
+**And** the user has the role of "Manager" or "Administrator"  
+**When** the user navigates to the main interface  
+**Then** a section labeled "Archived" should be visible  
+**And** this section should provide access to removed or deactivated machines  
 
