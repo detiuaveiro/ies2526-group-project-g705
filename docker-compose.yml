@@ -1,14 +1,34 @@
-name: g705-project
+version: "3.9"
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: G705-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: g705
+      POSTGRES_USER: g705user
+      POSTGRES_PASSWORD: g705password   
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   toname:
     build:
       context: ./projX
       dockerfile: Dockerfile
     container_name: G705-app
-    network_mode: host
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
     restart: unless-stopped
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/g705
+      SPRING_DATASOURCE_USERNAME: g705user
+      SPRING_DATASOURCE_PASSWORD: g705password
     init: true
     stop_grace_period: 30s
+
+volumes:
+  postgres_data:
