@@ -10,7 +10,7 @@ All roles inherit from this base class.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| IdentificationPhotoUrl | string | Path to the user's picture|
+| IdentificationPhotoUrl | string | Path to the user's picture| - not added
 | UserID | UUID / int | Unique identifier |
 | Name | string | Full name |
 | Age | int | Optional |
@@ -60,7 +60,7 @@ All roles inherit from this base class.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| IdentificationPhotoUrl | string | Path to the machine's picture|
+| IdentificationPhotoUrl | string | Path to the machine's picture| - not added
 | MachineID | UUID / int | Unique identifier |
 | Name | string | Machine name or identifier |
 | Location | string | Physical location |

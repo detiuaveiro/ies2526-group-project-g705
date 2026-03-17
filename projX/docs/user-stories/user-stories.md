@@ -31,22 +31,23 @@ No details added (to be added as the project develops).
 
 
 ## User Story 3:
-**As a** Manager,  
-**I want** to monitor machine profitability and failure history,  
-**so that** I can make informed decisions regarding its replacement.
+**As a** Maintenance Director,  
+**I want** to choose the technicians that can help when there is a request sent by another technician,
+**so that** The machine can be fixed quicker.
 
 ### Description:
 No details added (to be added as the project develops).
 
 ### Acceptance Criteria:
-**Given** the Manager is viewing a machine’s Individual Dashboard  
-**When** the dashboard loads  
-**Then** a section labeled "History" should be visible  
-**And** the History section should list all recorded breakdowns of the machine  
-**And** each breakdown entry should display:  
-- The date/time of the breakdown  
-- The time taken to fix the issue  
-- The total cost of the repair  
+**Given** the user is logged in the system  
+**And** the user has the role of Maintenance Director  
+**When** they navigate to the 'Requests' tab
+**Then** a section labled 'Requests' should be visible, where information regarding the request, such as
+1. description
+2. name of the techician who asked for help
+3. machineId
+4. machine's name
+**And** a button/dropdwon for the director assign people, for each request
 
 ## User Story 4:
 **As an** Administrator,  
@@ -118,7 +119,7 @@ No details added (to be added as the project develops).
 
 
 ## User Story 8:
-**As a** Manager/Administrator,  
+**As a** Administrator,  
 **I want** to register new equipment/machines in the app,  
 **so that** the maintenance team can start tracking its performance and history.
 
@@ -127,12 +128,12 @@ No details added (to be added as the project develops).
 
 ### Acceptance Criteria:
 **Given** the user is logged into the system  
-**And** the user has the role of "Manager" or "Administrator"  
+**And** the user has the role of "Administrator"  
 **When** the user navigates to the main interface  
 **Then** a tab labeled "Managing" should be visible  
 
 ## User Story 9:
-**As a** Manager/Administrator,  
+**As a** Administrator,  
 **I want** to remove equipment/machines from the app,  
 **so that** the views of every user remain updated.
 
@@ -140,7 +141,7 @@ No details added (to be added as the project develops).
 No details added (to be added as the project develops).
 
 ### Acceptance Criteria:
-**Given** the user is logged in as a Manager or Administrator  
+**Given** the user is logged in as a Administrator  
 **And** the equipment exists in the system  
 **When** the user clicks the “Delete” button for that equipment  
 **And** confirms the deletion  
@@ -149,7 +150,7 @@ No details added (to be added as the project develops).
 **And** the deletion is logged in the system audit trail  
 
 ## User Story 10:
-**As a** Manager/Administrator,  
+**As a** Administrator,  
 **I want** to access the history of removed machines,  
 **so that** I can review past performance, costs, and maintenance records for several purposes.
 
@@ -158,7 +159,7 @@ No details added (to be added as the project develops)
 
 ### Acceptance Criteria:
 **Given** the user is logged into the system  
-**And** the user has the role of "Manager" or "Administrator"  
+**And** the user has the role of "Administrator"  
 **When** the user navigates to the main interface  
 **Then** a section labeled "Archived" should be visible  
 **And** this section should provide access to removed or deactivated machines  
