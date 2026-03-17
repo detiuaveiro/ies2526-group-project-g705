@@ -68,8 +68,8 @@ const MainApp: React.FC = () => {
     }
   };
 
-  const handleAssignTechnician = (machineId: string, technicianId: string) => {
-    setAppMachines(prev => prev.map(m => m.id === machineId ? { ...m, assignedTechnician: technicianId } : m));
+  const handleAssignTechnician = (machineId: string, technicianIds: string[]) => {
+    setAppMachines(prev => prev.map(m => m.id === machineId ? { ...m, assignedTechnicians: technicianIds } : m));
   };
 
   const renderContent = () => {
@@ -91,7 +91,7 @@ const MainApp: React.FC = () => {
         }
         return (
           <MachinesList
-            machines={appMachines.filter(m => m.assignedTechnician === user.id)}
+            machines={appMachines.filter(m => m.assignedTechnicians && m.assignedTechnicians.includes(user.id))}
             onMachineClick={handleMachineClick}
           />
         );
@@ -142,7 +142,10 @@ const MainApp: React.FC = () => {
         <TaskManagement 
           machines={appMachines} 
           onAssignTechnician={handleAssignTechnician} 
-          onMachineClick={handleMachineClick}
+          onMachineClick={(machine) => {
+            handleMachineClick(machine);
+            setActiveTab('machines');
+          }}
         />
       );
     }
@@ -151,7 +154,7 @@ const MainApp: React.FC = () => {
       return <AssistanceRequestsView />;
     }
 
-    // Navegação para Admin/Analista
+    // Navegação para Admin
     if (activeTab === 'profitability') {
       return <ProfitabilityView />;
     }
@@ -183,7 +186,7 @@ const MainApp: React.FC = () => {
       return <TeamView />;
     }
 
-    if (activeTab === 'managing' || activeTab === 'archived') {
+    if (activeTab === 'managing') {
       return <ManagingView />;
     }
 

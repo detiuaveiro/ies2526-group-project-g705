@@ -4,12 +4,19 @@ import { Badge } from './ui/badge';
 import { mockAssistanceRequests } from '../data/mockData';
 import { AlertCircle, Clock, MapPin } from 'lucide-react';
 import { Button } from './ui/button';
+import { useAuth } from '../contexts/AuthContext';
 
 interface TechnicianRequestsViewProps {
   onGoToMachine: (machineId: string) => void;
 }
 
 export const TechnicianRequestsView: React.FC<TechnicianRequestsViewProps> = ({ onGoToMachine }) => {
+  const { user } = useAuth();
+  
+  const filteredRequests = mockAssistanceRequests.filter(
+    req => req.status === 'pending' && req.assignedTechnicians?.includes(user?.id || '')
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -18,12 +25,12 @@ export const TechnicianRequestsView: React.FC<TechnicianRequestsViewProps> = ({ 
       </div>
 
       <div className="grid gap-4">
-        {mockAssistanceRequests.length === 0 ? (
+        {filteredRequests.length === 0 ? (
           <div className="text-center py-12 text-gray-600 bg-white rounded-lg border">
-            No assistance requests found
+            No assistance requests available.
           </div>
         ) : (
-          mockAssistanceRequests.map((request) => (
+          filteredRequests.map((request) => (
             <Card key={request.id}>
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">

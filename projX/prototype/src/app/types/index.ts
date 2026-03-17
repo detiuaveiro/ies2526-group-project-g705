@@ -1,4 +1,4 @@
-export type UserRole = 'Maintenance Technician' | 'Maintenance Director' | 'Analyst' | 'Administrator';
+export type UserRole = 'Maintenance Technician' | 'Maintenance Director' | 'Administrator';
 
 export interface User {
   id: string;
@@ -20,7 +20,7 @@ export interface Machine {
   pressure: number;
   temperature: number;
   lastMaintenance: Date;
-  assignedTechnician?: string;
+  assignedTechnicians?: string[];
 }
 
 export interface SensorReading {
@@ -53,7 +53,8 @@ export interface AssistanceRequest {
   reason: string;
   requestedBy: string;
   timestamp: Date;
-  status: 'pending' | 'resolved';
+  status: 'pending' | 'in-progress' | 'resolved';
+  assignedTechnicians?: string[]; // Array of Technician IDs
 }
 
 export interface TechnicianPerformance {

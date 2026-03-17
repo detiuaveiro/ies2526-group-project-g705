@@ -12,11 +12,6 @@
 - **Password:** password
 - **Navegação:** Dashboard, Histórico de Falhas, Gestão de Tarefas
 
-### Analista (Carlos Silva)
-- **Username:** analyst1
-- **Password:** password
-- **Navegação:** Dashboard, Máquinas, Rentabilidade
-
 ### Administrador (Sara Lopes)
 - **Username:** sara.lopes
 - **Password:** password
@@ -63,7 +58,7 @@
    - Custo total do reparo
 4. Filtrar por máquina para ver histórico completo
 
-### Fluxo 4: Painel de Rentabilidade (Admin/Analista)
+### Fluxo 4: Painel de Rentabilidade (Admin)
 1. **Login** como Sara Lopes (sara.lopes / password)
 2. Clicar em **Rentabilidade** na sidebar
 3. Ver estatísticas gerais:

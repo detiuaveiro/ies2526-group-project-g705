@@ -18,10 +18,10 @@ export const mockUsers: User[] = [
   },
   {
     id: '3',
-    username: 'analyst1',
+    username: 'ana.costa',
     password: 'password',
-    role: 'Analyst',
-    name: 'Carlos Silva'
+    role: 'Maintenance Technician',
+    name: 'Ana Costa'
   },
   {
     id: '4',
@@ -55,7 +55,7 @@ export const mockMachines: Machine[] = [
     pressure: 120,
     temperature: 95,
     lastMaintenance: new Date('2026-02-28'),
-    assignedTechnician: '1'
+    assignedTechnicians: ['1']
   },
   {
     id: 'M002',
@@ -67,7 +67,7 @@ export const mockMachines: Machine[] = [
     pressure: 95,
     temperature: 75,
     lastMaintenance: new Date('2026-03-01'),
-    assignedTechnician: '1'
+    assignedTechnicians: ['1']
   },
   {
     id: 'M003',
@@ -90,7 +90,7 @@ export const mockMachines: Machine[] = [
     pressure: 140,
     temperature: 105,
     lastMaintenance: new Date('2026-02-15'),
-    assignedTechnician: '1'
+    assignedTechnicians: ['1']
   },
   {
     id: 'M005',
@@ -242,6 +242,208 @@ export const mockAssistanceRequests: AssistanceRequest[] = [
     requestedBy: 'John Smith',
     timestamp: new Date('2026-03-05T10:30:00'),
     status: 'pending'
+  },
+  {
+    id: 'AR002',
+    machineId: 'M001',
+    machineName: 'Compressor Unit A1',
+    location: 'Building A - Floor 1',
+    reason: 'Unusual vibration patterns detected on the main shaft.',
+    requestedBy: 'Ana Costa',
+    timestamp: new Date('2026-03-16T08:15:00'),
+    status: 'pending'
+  },
+  {
+    id: 'AR003',
+    machineId: 'M002',
+    machineName: 'Hydraulic Press B2',
+    location: 'Building B - Floor 2',
+    reason: 'Hydraulic fluid pressure is fluctuating wildly during operation.',
+    requestedBy: 'Robert Wilson',
+    timestamp: new Date('2026-03-16T09:45:00'),
+    status: 'pending',
+    assignedTechnicians: ['3']
+  },
+  {
+    id: 'AR004',
+    machineId: 'M003',
+    machineName: 'CNC Machine C3',
+    location: 'Building C - Floor 3',
+    reason: 'Tooling axis alignment error code 402 shown on screen.',
+    requestedBy: 'Lisa Anderson',
+    timestamp: new Date('2026-03-15T14:20:00'),
+    status: 'pending',
+    assignedTechnicians: ['1']
+  },
+  {
+    id: 'AR005',
+    machineId: 'M005',
+    machineName: 'Cooling Tower E2',
+    location: 'Building E - Floor 2',
+    reason: 'Water flow rate has dropped by 15%. Possible pump issue.',
+    requestedBy: 'John Smith',
+    timestamp: new Date('2026-03-15T16:10:00'),
+    status: 'resolved',
+    assignedTechnicians: ['1']
+  },
+  {
+    id: 'AR006',
+    machineId: 'M006',
+    machineName: 'Turbine F1',
+    location: 'Building F - Floor 1',
+    reason: 'Audible grinding noise during start-up sequence.',
+    requestedBy: 'Michael Brown',
+    timestamp: new Date('2026-03-14T11:05:00'),
+    status: 'pending'
+  },
+  {
+    id: 'AR007',
+    machineId: 'M001',
+    machineName: 'Compressor Unit A1',
+    location: 'Building A - Floor 1',
+    reason: 'Safety valve triggering prematurely at 110 psi.',
+    requestedBy: 'David Lee',
+    timestamp: new Date('2026-03-14T13:30:00'),
+    status: 'pending',
+    assignedTechnicians: ['5']
+  },
+  {
+    id: 'AR008',
+    machineId: 'M004',
+    machineName: 'Conveyor System D1',
+    location: 'Building D - Floor 1',
+    reason: 'Belt tension system fails to hold setting over 24h period.',
+    requestedBy: 'Sarah Connor',
+    timestamp: new Date('2026-03-13T09:20:00'),
+    status: 'resolved',
+    assignedTechnicians: ['6']
+  },
+  {
+    id: 'AR009',
+    machineId: 'M002',
+    machineName: 'Hydraulic Press B2',
+    location: 'Building B - Floor 2',
+    reason: 'Oil temperature exceeds 80C under normal load.',
+    requestedBy: 'James Hold',
+    timestamp: new Date('2026-03-12T15:45:00'),
+    status: 'pending'
+  },
+  {
+    id: 'AR010',
+    machineId: 'M005',
+    machineName: 'Cooling Tower E2',
+    location: 'Building E - Floor 2',
+    reason: 'Fan motor drawing excessive current during low-speed operation.',
+    requestedBy: 'Elena Cruz',
+    timestamp: new Date('2026-03-11T10:15:00'),
+    status: 'pending',
+    assignedTechnicians: ['3']
+  },
+  {
+    id: 'AR011',
+    machineId: 'M003',
+    machineName: 'CNC Machine C3',
+    location: 'Building C - Floor 3',
+    reason: 'Coolant circulation pump failed.',
+    requestedBy: 'Thomas Muller',
+    timestamp: new Date('2026-03-10T14:30:00'),
+    status: 'resolved',
+    assignedTechnicians: ['1']
+  },
+  {
+    id: 'AR012',
+    machineId: 'M006',
+    machineName: 'Turbine F1',
+    location: 'Building F - Floor 1',
+    reason: 'Sensor reading discrepancy on inlet temperature sensor.',
+    requestedBy: 'Sophie Martin',
+    timestamp: new Date('2026-03-10T08:00:00'),
+    status: 'pending'
+  },
+  {
+    id: 'AR013',
+    machineId: 'M001',
+    machineName: 'Compressor Unit A1',
+    location: 'Building A - Floor 1',
+    reason: 'Air leak detected near the primary manifold seal.',
+    requestedBy: 'John Smith',
+    timestamp: new Date('2026-03-09T11:20:00'),
+    status: 'pending',
+    assignedTechnicians: ['3']
+  },
+  {
+    id: 'AR014',
+    machineId: 'M004',
+    machineName: 'Conveyor System D1',
+    location: 'Building D - Floor 1',
+    reason: 'Rollers on section 3 are seizing up intermittently.',
+    requestedBy: 'Ana Costa',
+    timestamp: new Date('2026-03-08T16:40:00'),
+    status: 'pending'
+  },
+  {
+    id: 'AR015',
+    machineId: 'M002',
+    machineName: 'Hydraulic Press B2',
+    location: 'Building B - Floor 2',
+    reason: 'Control interface unresponsive for brief periods (lag).',
+    requestedBy: 'Lisa Anderson',
+    timestamp: new Date('2026-03-08T09:10:00'),
+    status: 'resolved',
+    assignedTechnicians: ['5']
+  },
+  {
+    id: 'AR016',
+    machineId: 'M005',
+    machineName: 'Cooling Tower E2',
+    location: 'Building E - Floor 2',
+    reason: 'Filter blockage alarm triggered despite recent cleaning.',
+    requestedBy: 'Robert Wilson',
+    timestamp: new Date('2026-03-07T13:25:00'),
+    status: 'pending',
+    assignedTechnicians: ['1']
+  },
+  {
+    id: 'AR017',
+    machineId: 'M003',
+    machineName: 'CNC Machine C3',
+    location: 'Building C - Floor 3',
+    reason: 'Spindle motor producing high-frequency vibration during cuts.',
+    requestedBy: 'John Smith',
+    timestamp: new Date('2026-03-06T10:00:00'),
+    status: 'pending'
+  },
+  {
+    id: 'AR018',
+    machineId: 'M006',
+    machineName: 'Turbine F1',
+    location: 'Building F - Floor 1',
+    reason: 'Oil pressure warning light blinking intermittently.',
+    requestedBy: 'Ana Costa',
+    timestamp: new Date('2026-03-05T15:50:00'),
+    status: 'resolved',
+    assignedTechnicians: ['3']
+  },
+  {
+    id: 'AR019',
+    machineId: 'M001',
+    machineName: 'Compressor Unit A1',
+    location: 'Building A - Floor 1',
+    reason: 'Condensate drain valve stuck closed.',
+    requestedBy: 'Lisa Anderson',
+    timestamp: new Date('2026-03-04T08:30:00'),
+    status: 'pending'
+  },
+  {
+    id: 'AR020',
+    machineId: 'M004',
+    machineName: 'Conveyor System D1',
+    location: 'Building D - Floor 1',
+    reason: 'Proximity sensor at loading station failing to detect smaller parts.',
+    requestedBy: 'Robert Wilson',
+    timestamp: new Date('2026-03-03T14:15:00'),
+    status: 'pending',
+    assignedTechnicians: ['3']
   }
 ];
 
@@ -253,6 +455,14 @@ export const mockTechnicianPerformance: TechnicianPerformance[] = [
     completedRepairs: 12,
     avgRepairTime: 3.2,
     totalCost: 15400
+  },
+  {
+    technicianId: '3',
+    name: 'Ana Costa',
+    assignedMachines: 4,
+    completedRepairs: 6,
+    avgRepairTime: 1.5,
+    totalCost: 5200
   },
   {
     technicianId: '5',

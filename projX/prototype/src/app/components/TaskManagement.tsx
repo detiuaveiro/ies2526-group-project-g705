@@ -6,39 +6,38 @@ import { mockUsers, mockBreakdowns } from '../data/mockData';
 import { AlertTriangle, BarChart2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select';
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 import { Machine } from '../types';
 
 interface TaskManagementProps {
   machines: Machine[];
-  onAssignTechnician: (machineId: string, techId: string) => void;
+  onAssignTechnician: (machineId: string, techIds: string[]) => void;
   onMachineClick: (machine: Machine) => void;
 }
 
 export const TaskManagement: React.FC<TaskManagementProps> = ({ machines, onAssignTechnician, onMachineClick }) => {
-  const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [assignments, setAssignments] = useState<Record<string, string[]>>({});
 
   // Obter técnicos disponíveis
   const technicians = mockUsers.filter(u => u.role === 'Maintenance Technician');
 
   const handleAssignTechnician = (machine: Machine) => {
-    const technicianId = assignments[machine.id] || machine.assignedTechnician;
-    if (!technicianId) {
-      toast.error('Please, select a technician');
+    const technicianIds = assignments[machine.id] || machine.assignedTechnicians || [];
+    if (technicianIds.length === 0) {
+      toast.error('Please select at least one technician');
       return;
     }
-    const technician = technicians.find(t => t.id === technicianId);
     
     // Call the parent state updater
-    onAssignTechnician(machine.id, technicianId);
+    onAssignTechnician(machine.id, technicianIds);
 
+    const names = technicians.filter(t => technicianIds.includes(t.id)).map(t => t.name).join(', ');
     toast.success('Machine assigned successfully', {
-      description: `${machine.name} has been assigned to ${technician?.name}`
+      description: `${machine.name} has been assigned to ${names}`
     });
   };
 
@@ -94,20 +93,20 @@ export const TaskManagement: React.FC<TaskManagementProps> = ({ machines, onAssi
           <CardContent>
             <div className="space-y-4">
               {sortedMachines.map((machine) => {
-                let statusColor = 'bg-green-500';
+                let statusColor = 'bg-green-50 border border-green-200';
                 
                 if (machine.status === 'breakdown') {
-                  statusColor = 'bg-red-500';
+                  statusColor = 'bg-red-50 border border-red-200';
                 } else if (machine.status === 'critical') {
-                  statusColor = 'bg-orange-500';
+                  statusColor = 'bg-orange-50 border border-orange-200';
                 } else if (machine.status === 'warning') {
-                  statusColor = 'bg-yellow-500';
+                  statusColor = 'bg-yellow-50 border border-yellow-200';
                 }
                 
                 const unresolvedBreakdown = mockBreakdowns.find(b => b.machineId === machine.id && !b.resolved);
 
                 return (
-                  <Card key={machine.id} className={`border-l-4 ${statusColor}`}>
+                  <Card key={machine.id} className={`border-l-4 ${statusColor} shadow-sm`}>
                     <CardContent className="pt-6">
                       <div className="flex flex-col md:flex-row items-start justify-between gap-4">
                         <div className="flex-1">
@@ -161,34 +160,59 @@ export const TaskManagement: React.FC<TaskManagementProps> = ({ machines, onAssi
                           </div>
                         </div>
                         <div className="flex flex-col gap-3 min-w-[250px]">
-                          <Select
-                            value={assignments[machine.id] || machine.assignedTechnician || ''}
-                            onValueChange={(value) => 
-                              setAssignments({ ...assignments, [machine.id]: value })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select technician" />
-                            </SelectTrigger>
-                            <SelectContent>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" className="w-full text-left font-normal bg-white justify-between">
+                                {(() => {
+                                  const current = assignments[machine.id] || machine.assignedTechnicians || [];
+                                  if (current.length === 0) return <span className="text-gray-500">Select technicians</span>;
+                                  if (current.length === technicians.length) return "All Technicians";
+                                  if (current.length === 1) return technicians.find(t => t.id === current[0])?.name || "1 selected";
+                                  return `${current.length} selected`;
+                                })()}
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56">
+                              <DropdownMenuCheckboxItem
+                                checked={technicians.every(t => (assignments[machine.id] || machine.assignedTechnicians || []).includes(t.id))}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setAssignments({ ...assignments, [machine.id]: technicians.map(t => t.id) });
+                                  } else {
+                                    setAssignments({ ...assignments, [machine.id]: [] });
+                                  }
+                                }}
+                              >
+                                All
+                              </DropdownMenuCheckboxItem>
+                              <div className="h-px bg-border my-1" />
                               {technicians.map((tech) => (
-                                <SelectItem key={tech.id} value={tech.id}>
+                                <DropdownMenuCheckboxItem
+                                  key={tech.id}
+                                  checked={(assignments[machine.id] || machine.assignedTechnicians || []).includes(tech.id)}
+                                  onCheckedChange={(checked) => {
+                                    const current = assignments[machine.id] || machine.assignedTechnicians || [];
+                                    const next = checked 
+                                      ? [...current, tech.id] 
+                                      : current.filter(id => id !== tech.id);
+                                    setAssignments({ ...assignments, [machine.id]: next });
+                                  }}
+                                >
                                   {tech.name}
-                                </SelectItem>
+                                </DropdownMenuCheckboxItem>
                               ))}
-                            </SelectContent>
-                          </Select>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           <Button
                             onClick={() => handleAssignTechnician(machine)}
                             className="w-full"
-                            disabled={!(assignments[machine.id] || machine.assignedTechnician)}
                           >
-                            Assign Machine
+                            {machine.assignedTechnicians && machine.assignedTechnicians.length > 0 ? 'Change Assignee(s)' : 'Assign Machine'}
                           </Button>
                           <Button 
                             variant="outline"
                             onClick={() => onMachineClick(machine)}
-                            className="w-full flex items-center gap-2"
+                            className="w-full flex items-center justify-center gap-2"
                           >
                             <BarChart2 className="w-4 h-4" />
                             View Details

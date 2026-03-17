@@ -42,7 +42,7 @@ export const AssistanceRequestDialog: React.FC<AssistanceRequestDialogProps> = (
     mockAssistanceRequests.push(request);
     
     toast.success('Assistance request sent', {
-      description: 'All maintenance technicians have been notified'
+      description: 'The director will assign technicians shortly'
     });
     
     setReason('');

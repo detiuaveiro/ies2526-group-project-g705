@@ -71,7 +71,6 @@ export const Login: React.FC = () => {
             <ul className="space-y-1 text-xs">
               <li>• <strong>joao.neves</strong> / password (Technician)</li>
               <li>• <strong>manuel.gomes</strong> / password (Director)</li>
-              <li>• <strong>analyst1</strong> / password (Analyst)</li>
               <li>• <strong>sara.lopes</strong> / password (Administrator)</li>
             </ul>
           </div>

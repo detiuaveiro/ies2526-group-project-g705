@@ -8,20 +8,31 @@ import { AssistanceRequestDialog } from './AssistanceRequestDialog';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select';
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 
 export const AssistanceRequestsView: React.FC = () => {
   const { user } = useAuth();
   const [selectedMachine, setSelectedMachine] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [assignments, setAssignments] = useState<Record<string, string[]>>({});
+
+  const [requests, setRequests] = useState<any[]>(mockAssistanceRequests);
 
   const technicians = mockUsers.filter(u => u.role === 'Maintenance Technician');
+
+  const filteredRequests = requests.filter(req => {
+    if (user?.role === 'Maintenance Director' || user?.role === 'Administrator') {
+      return true; // Directors and Admins see all requests (or at least all active ones)
+    }
+    if (user?.role === 'Maintenance Technician') {
+      return req.assignedTechnicians && req.assignedTechnicians.includes(user.id);
+    }
+    return false; // Admins don't see requests anymore
+  });
 
   const handleCreateRequest = () => {
     // Encontrar uma máquina com problemas
@@ -44,6 +55,8 @@ export const AssistanceRequestsView: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'pending_admin':
+        return 'bg-purple-100 text-purple-800 border-purple-300';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'in-progress':
@@ -69,13 +82,30 @@ export const AssistanceRequestsView: React.FC = () => {
   };
 
   const handleAssignRequest = (requestId: string) => {
-    const technicianId = assignments[requestId];
-    if (!technicianId) {
-      toast.error('Please, select a technician');
+    const request = requests.find(r => r.id === requestId);
+    const technicianIds = assignments[requestId] || request?.assignedTechnicians || [];
+    if (technicianIds.length === 0) {
+      toast.error('Please select at least one technician');
       return;
     }
-    const technician = technicians.find(t => t.id === technicianId);
-    toast.success(`Request accepted and assigned to ${technician?.name}`);
+
+    const assignedNames = technicians
+      .filter(t => technicianIds.includes(t.id))
+      .map(t => t.name)
+      .join(', ');
+
+    toast.success(`Request accepted and assigned to ${assignedNames}`);
+    
+    // Update local state to show it was handled (mock)
+    const updatedRequests = requests.map(r => 
+      r.id === requestId ? { ...r, status: 'in-progress', assignedTechnicians: technicianIds } : r
+    );
+    setRequests(updatedRequests);
+    const mockReq = mockAssistanceRequests.find(r => r.id === requestId);
+    if (mockReq) {
+      mockReq.status = 'in-progress';
+      mockReq.assignedTechnicians = technicianIds;
+    }
   };
 
   return (
@@ -84,10 +114,10 @@ export const AssistanceRequestsView: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold mb-2">Assistance Requests</h1>
           <p className="text-gray-600">
-            Manage and resolve assistance requests for problematic machines
+            {user?.role === 'Maintenance Director' ? 'Review requests and assign them to the appropriate technicians' : 'Manage and resolve assistance requests for problematic machines'}
           </p>
         </div>
-        {user?.role !== 'Maintenance Director' && (
+        {user?.role !== 'Maintenance Director' && user?.role !== 'Administrator' && (
           <Button onClick={handleCreateRequest} size="lg">
             <HelpCircle className="w-5 h-5 mr-2" />
             New Request
@@ -96,26 +126,25 @@ export const AssistanceRequestsView: React.FC = () => {
       </div>
 
       <div className="grid gap-4">
-        {mockAssistanceRequests.length === 0 ? (
+        {filteredRequests.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <HelpCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-600">No assistance requests found</p>
-              {user?.role !== 'Maintenance Director' && (
-                <Button onClick={handleCreateRequest} className="mt-4">
-                  Create First Request
-                </Button>
-              )}
             </CardContent>
           </Card>
         ) : (
-          mockAssistanceRequests.map((request) => (
-            <Card key={request.id} className="border-l-4 border-l-yellow-500">
+          filteredRequests.map((request) => {
+            const validTechnicians = technicians.filter(t => t.name !== request.requestedBy);
+            const requestAssignments = assignments[request.id] || request.assignedTechnicians || [];
+            
+            return (
+              <Card key={request.id} className={`border-l-4 ${request.status === 'pending' ? 'border-l-yellow-500' : 'border-l-blue-500'}`}>
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <AlertCircle className="w-5 h-5 text-yellow-600" />
+                      <AlertCircle className={`w-5 h-5 ${request.status === 'pending' ? 'text-yellow-600' : 'text-blue-600'}`} />
                       <h3 className="font-semibold text-lg">{request.machineName}</h3>
                       <Badge className={getStatusColor(request.status)}>
                         {getStatusLabel(request.status)}
@@ -133,11 +162,11 @@ export const AssistanceRequestsView: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-3">
-                      <p className="text-sm font-medium text-yellow-900 mb-1">
+                    <div className="bg-orange-50 border border-orange-200 rounded p-3 mb-3">
+                      <p className="text-sm font-medium text-orange-900 mb-1">
                         Reason:
                       </p>
-                      <p className="text-sm text-yellow-800">
+                      <p className="text-sm text-orange-800">
                         {request.reason}
                       </p>
                     </div>
@@ -145,59 +174,83 @@ export const AssistanceRequestsView: React.FC = () => {
                     <div className="text-sm text-gray-600">
                       Requested by: <span className="font-medium">{request.requestedBy}</span>
                     </div>
+                    {request.assignedTechnicians && request.assignedTechnicians.length > 0 && (
+                      <div className="text-sm text-gray-600 mt-1">
+                        Assigned to: <span className="font-medium">
+                          {mockUsers.filter(u => request.assignedTechnicians?.includes(u.id)).map(u => u.name).join(', ')}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-2 min-w-[200px]">
-                    {request.status === 'pending' && (
+                    {user?.role === 'Maintenance Director' && (
                       <>
-                        {user?.role === 'Maintenance Director' ? (
-                          <>
-                            <Select
-                              value={assignments[request.id] || ''}
-                              onValueChange={(value) => 
-                                setAssignments({ ...assignments, [request.id]: value })
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select technician" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {technicians.map((tech) => (
-                                  <SelectItem key={tech.id} value={tech.id}>
-                                    {tech.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <Button 
-                              variant="default" 
-                              onClick={() => handleAssignRequest(request.id)}
-                              disabled={!assignments[request.id]}
-                            >
-                              <UserPlus className="w-4 h-4 mr-2" />
-                              Assign & Accept
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="w-full text-left font-normal bg-white justify-between">
+                              {(() => {
+                                if (requestAssignments.length === 0) return <span className="text-gray-500">Select technicians</span>;
+                                if (requestAssignments.length === validTechnicians.length) return "All Eligible Technicians";
+                                if (requestAssignments.length === 1) return validTechnicians.find(t => t.id === requestAssignments[0])?.name || "1 selected";
+                                return `${requestAssignments.length} selected`;
+                              })()}
                             </Button>
-                          </>
-                        ) : (
-                          <Button variant="default" size="sm">
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Accept
-                          </Button>
-                        )}
-                        <Button variant="outline" size="sm">
-                          View Details
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-56">
+                            <DropdownMenuCheckboxItem
+                              checked={validTechnicians.length > 0 && validTechnicians.every(t => requestAssignments.includes(t.id))}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setAssignments({ ...assignments, [request.id]: validTechnicians.map(t => t.id) });
+                                } else {
+                                  setAssignments({ ...assignments, [request.id]: [] });
+                                }
+                              }}
+                            >
+                              All Eligible
+                            </DropdownMenuCheckboxItem>
+                            <div className="h-px bg-border my-1" />
+                            {validTechnicians.map((tech) => (
+                              <DropdownMenuCheckboxItem
+                                key={tech.id}
+                                checked={requestAssignments.includes(tech.id)}
+                                onCheckedChange={(checked) => {
+                                  const next = checked 
+                                    ? [...requestAssignments, tech.id] 
+                                    : requestAssignments.filter(id => id !== tech.id);
+                                  setAssignments({ ...assignments, [request.id]: next });
+                                }}
+                              >
+                                {tech.name}
+                              </DropdownMenuCheckboxItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Button 
+                          variant="default" 
+                          onClick={() => handleAssignRequest(request.id)}
+                          className="w-full"
+                        >
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          {request.assignedTechnicians && request.assignedTechnicians.length > 0 ? 'Update Assignee(s)' : 'Assign Technician(s)'}
                         </Button>
                       </>
+                    )}
+                    {(user?.role === 'Maintenance Director' || user?.role === 'Administrator') && (
+                        <div className="w-full text-right text-sm text-gray-500 italic mt-2">
+                          Managed by Director
+                        </div>
                     )}
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))
-        )}
+          );
+        }))}
       </div>
 
-      {user?.role !== 'Maintenance Director' && (
+      {user?.role !== 'Maintenance Director' && user?.role !== 'Administrator' && (
         <Card>
           <CardHeader>
             <CardTitle>Machines with Alerts</CardTitle>

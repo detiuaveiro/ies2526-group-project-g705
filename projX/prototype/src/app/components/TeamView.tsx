@@ -68,51 +68,57 @@ export const TeamView: React.FC = () => {
           <div className="space-y-4">
             {mockTechnicianPerformance.map((tech) => (
               <div key={tech.technicianId} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                      {tech.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div>
-                      <div className="font-medium text-lg">{tech.name}</div>
-                      <div className="text-sm text-gray-600">Maintenance Technician</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <div className="text-sm text-gray-600">Assigned Machines</div>
-                    <div className="text-xl font-bold mt-1">{tech.assignedMachines}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-600">Completed Repairs</div>
-                    <div className="text-xl font-bold mt-1">{tech.completedRepairs}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-600">Avg Repair Time</div>
-                    <div className="text-xl font-bold mt-1">{tech.avgRepairTime}h</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-600">Total Cost</div>
-                    <div className="text-xl font-bold mt-1">${tech.totalCost.toLocaleString()}</div>
-                  </div>
-                </div>
+                {(() => {
+                  const efficiencyScoreRaw = (tech.completedRepairs / tech.avgRepairTime) * 1.5;
+                  const efficiencyScore = Math.min(10, Math.max(0, efficiencyScoreRaw));
+                  
+                  return (
+                    <>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                            {tech.name.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div>
+                            <div className="font-medium text-lg">{tech.name}</div>
+                            <div className="text-sm text-gray-600">Maintenance Technician</div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <div className="text-sm text-gray-600">Assigned Machines</div>
+                          <div className="text-xl font-bold mt-1">{tech.assignedMachines}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-600">Completed Repairs</div>
+                          <div className="text-xl font-bold mt-1">{tech.completedRepairs}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-600">Avg Repair Time</div>
+                          <div className="text-xl font-bold mt-1">{tech.avgRepairTime}h</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-600">Total Cost</div>
+                          <div className="text-xl font-bold mt-1">${tech.totalCost.toLocaleString()}</div>
+                        </div>
+                      </div>
 
-                <div className="mt-4 pt-4 border-t">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Efficiency Score</span>
-                    <span className="font-medium text-green-600">
-                      {((tech.completedRepairs / tech.avgRepairTime) * 10).toFixed(1)}/10
-                    </span>
-                  </div>
-                  <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-green-600 h-2 rounded-full"
-                      style={{ width: `${((tech.completedRepairs / tech.avgRepairTime) * 10) * 10}%` }}
-                    />
-                  </div>
-                </div>
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Efficiency Score</span>
+                          <span className="font-medium text-green-600">
+                            {efficiencyScore.toFixed(1)}/10
+                          </span>
+                        </div>
+                        <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-green-600 h-2 rounded-full"
+                            style={{ width: `${efficiencyScore * 10}%` }}
+                          />
+                        </div>
+                      </div>
 
                 <div className="mt-6">
                   <h4 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wider">Recent Activity</h4>
@@ -121,14 +127,16 @@ export const TeamView: React.FC = () => {
                       .filter(b => b.technicianId === tech.technicianId)
                       .sort((a, b) => b.date.getTime() - a.date.getTime())
                       .map(breakdown => (
-                        <div key={breakdown.id} className="flex justify-between items-start text-sm bg-gray-50 p-3 rounded-md">
-                          <div>
-                            <p className="font-medium text-gray-900">{breakdown.description}</p>
+                        <div key={breakdown.id} className="flex justify-between items-start gap-4 text-sm bg-gray-50 p-3 rounded-md">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-gray-900 truncate" title={breakdown.description}>
+                              {breakdown.description}
+                            </p>
                             <p className="text-gray-500 text-xs mt-1">
                               {breakdown.date.toLocaleDateString()}
                             </p>
                           </div>
-                          <div>
+                          <div className="flex-shrink-0 whitespace-nowrap">
                             <span className={`px-2 py-1 rounded text-xs font-medium ${breakdown.resolved ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
                               {breakdown.resolved ? 'Resolved' : 'Ongoing'}
                             </span>
@@ -140,8 +148,11 @@ export const TeamView: React.FC = () => {
                     )}
                   </div>
                 </div>
-              </div>
-            ))}
+                </>
+              );
+            })()}
+          </div>
+        ))}
           </div>
         </CardContent>
       </Card>

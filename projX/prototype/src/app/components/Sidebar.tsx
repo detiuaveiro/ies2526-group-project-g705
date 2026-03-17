@@ -47,23 +47,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
           { id: 'team', label: 'Team Activity', icon: Users }
         ];
       
-      case 'Analyst':
-        // Analyst: Dashboard, Machines, Profitability
-        return [
-          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { id: 'machines', label: 'Machines', icon: Wrench },
-          { id: 'profitability', label: 'Profitability', icon: TrendingUp }
-        ];
-      
       case 'Administrator':
         // Administrator: Dashboard, Management, Team, Profitability, Archive
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { id: 'machines', label: 'Machines', icon: Wrench },
+          { id: 'requests', label: 'Requests', icon: ClipboardList },
           { id: 'managing', label: 'Management', icon: Settings },
           { id: 'team', label: 'Team', icon: Users },
-          { id: 'profitability', label: 'Profitability', icon: TrendingUp },
-          { id: 'archived', label: 'Archive', icon: Archive }
+          { id: 'profitability', label: 'Profitability', icon: TrendingUp }
         ];
       
       default:
