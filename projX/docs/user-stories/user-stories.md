@@ -62,11 +62,6 @@ No details added (to be added as the project develops).
 **Given** the Maintenance Technician has completed the assistance request form  
 **When** the Technician submits the request  
 **Then** the system should notify the "Maintenance Director"
-**And** the notification should include:  
-1. The machine identifier
-2. The location
-3. The reason for assistance
-4. The timestamp of the request
 
 ## User Story 5:
  **As a** Maintenance Director,  
@@ -120,7 +115,7 @@ No details added (to be added as the project develops).
 
 ## User Story 8:
 **As a** Administrator,  
-**I want** to register new equipment/machines in the app,  
+**I want** to register new equipment/machines in the app,
 **so that** the maintenance team can start tracking its performance and history.
 
 ### Description:
