@@ -16,6 +16,7 @@ import { TechnicianWorkList } from './components/TechnicianWorkList';
 import { TechnicianRequestsView } from './components/TechnicianRequestsView';
 import { TechnicianProfileView } from './components/TechnicianProfileView';
 import { DirectorProfileView } from './components/DirectorProfileView';
+import { DirectorTeamView } from './components/DirectorTeamView';
 import { mockMachines } from './data/mockData';
 import { Machine } from './types';
 import { Toaster, toast } from 'sonner';
@@ -154,6 +155,13 @@ const MainApp: React.FC = () => {
     // Navegação para Admin
     if (activeTab === 'profitability') {
       return <ProfitabilityView />;
+    }
+
+    // Navegação específica para Diretor
+    if (user.role === 'Maintenance Director') {
+      if (activeTab === 'team') {
+        return <DirectorTeamView />;
+      }
     }
 
     // Navegação comum
