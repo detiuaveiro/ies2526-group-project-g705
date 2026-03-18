@@ -22,7 +22,10 @@ export const MachinesList: React.FC<MachinesListProps> = ({ machines, onMachineC
       const matchesStatus = statusFilter === 'all' || machine.status === statusFilter;
       return matchesSearch && matchesStatus;
     })
-    .sort((a, b) => a.priority - b.priority);
+    .sort((a, b) => {
+      const priorityValues: Record<string, number> = { 'breakdown': 1, 'critical': 2, 'warning': 3, 'operational': 4 };
+      return priorityValues[a.status] - priorityValues[b.status];
+    });
 
   return (
     <div className="space-y-6">

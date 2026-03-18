@@ -33,28 +33,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
         return [
           { id: 'machines', label: 'Machines', icon: Wrench },
           { id: 'requests', label: 'Requests', icon: ClipboardList },
-          { id: 'current-maintenance', label: 'Current Maintenance', icon: Activity },
-          { id: 'user', label: 'User', icon: Users }
+          { id: 'current-maintenance', label: 'Current Maintenance', icon: Activity }
         ];
       
       case 'Maintenance Director':
         // Director: Dashboard, Breakdown History, Machine Assignment, Requests
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { id: 'breakdown-history', label: 'Breakdown History', icon: History },
+          { id: 'machines', label: 'Machines', icon: Wrench },
           { id: 'task-management', label: 'Machine Assignment', icon: Wrench },
           { id: 'requests', label: 'Requests', icon: ClipboardList },
           { id: 'team', label: 'Team Activity', icon: Users }
         ];
       
       case 'Administrator':
-        // Administrator: Dashboard, Management, Team, Profitability, Archive
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { id: 'requests', label: 'Requests', icon: ClipboardList },
-          { id: 'managing', label: 'Management', icon: Settings },
-          { id: 'team', label: 'Team', icon: Users },
-          { id: 'profitability', label: 'Profitability', icon: TrendingUp }
+          { id: 'managing', label: 'Machines', icon: Settings },
+          { id: 'team', label: 'Team', icon: Users }
         ];
       
       default:
@@ -80,9 +76,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
       
       <Separator className="bg-gray-700" />
       
-      <div className="p-4">
-        <div className="text-xs text-gray-400 mb-2">User</div>
-        <div className="text-sm">{user?.name}</div>
+      <div 
+        className={cn(
+          "p-4 mx-2 mt-2 mb-2 rounded-lg cursor-pointer transition-colors border border-transparent hover:bg-gray-800",
+          activeTab === 'user' && "bg-gray-800 border-gray-700"
+        )}
+        onClick={() => onTabChange('user')}
+      >
+        <div className="text-xs text-gray-400 mb-1">Signed in as</div>
+        <div className="text-sm font-medium">{user?.name}</div>
         <div className="text-xs text-gray-500">{user?.role}</div>
       </div>
 

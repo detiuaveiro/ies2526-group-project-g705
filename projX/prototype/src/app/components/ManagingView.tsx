@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { mockMachines } from '../data/mockData';
-import { Plus, Trash2, Archive, RefreshCw, Settings } from 'lucide-react';
+import { Plus, Trash2, Archive, RefreshCw, Settings, ArrowLeft } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from './ui/dialog';
 import { toast } from 'sonner';
 import {
@@ -18,6 +18,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from './ui/alert-dialog';
+import { Machine } from '../types';
+import { MachineDetail } from './MachineDetail';
 
 export const ManagingView: React.FC = () => {
   const [machines, setMachines] = useState(mockMachines);
@@ -25,11 +27,15 @@ export const ManagingView: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [machineToDelete, setMachineToDelete] = useState<string | null>(null);
+  const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   
   const [newMachine, setNewMachine] = useState({
     name: '',
     location: '',
-    sensors: ''
+    importanceLevel: 3,
+    vibrationSensor: false,
+    temperatureSensor: false,
+    pressureSensor: false,
   });
 
   const handleAddMachine = () => {
@@ -38,20 +44,21 @@ export const ManagingView: React.FC = () => {
       return;
     }
 
-    const machine = {
+    const machine: Machine = {
       id: `M${String(machines.length + archivedMachines.length + 1).padStart(3, '0')}`,
       name: newMachine.name,
       location: newMachine.location,
       status: 'operational' as const,
-      priority: 5,
-      vibration: 30,
-      pressure: 70,
-      temperature: 55,
+      operationalStatus: 'functional' as const,
+      priority: newMachine.importanceLevel,
+      vibration: newMachine.vibrationSensor ? 30 : 0,
+      pressure: newMachine.pressureSensor ? 70 : 0,
+      temperature: newMachine.temperatureSensor ? 55 : 0,
       lastMaintenance: new Date()
     };
 
     setMachines([...machines, machine]);
-    setNewMachine({ name: '', location: '', sensors: '' });
+    setNewMachine({ name: '', location: '', importanceLevel: 3, vibrationSensor: false, temperatureSensor: false, pressureSensor: false });
     setIsAddDialogOpen(false);
     toast.success('Machine added successfully', {
       description: `${machine.name} was added to the system`
@@ -99,6 +106,17 @@ export const ManagingView: React.FC = () => {
     setDeleteDialogOpen(true);
   };
 
+  // If a machine is selected, show its detail view (read-only for admin)
+  if (selectedMachine) {
+    return (
+      <MachineDetail
+        machine={selectedMachine}
+        onBack={() => setSelectedMachine(null)}
+        onRequestAssistance={() => {}}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -140,14 +158,36 @@ export const ManagingView: React.FC = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="sensors">Associated Sensors</Label>
-                <Textarea
-                  id="sensors"
-                  value={newMachine.sensors}
-                  onChange={(e) => setNewMachine({ ...newMachine, sensors: e.target.value })}
-                  placeholder="ex: Vibration, Pressure, Temperature"
-                  rows={3}
+                <Label htmlFor="importanceLevel">Importance Level (1 = High, 5 = Low)</Label>
+                <Input
+                  id="importanceLevel"
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={newMachine.importanceLevel}
+                  onChange={(e) => setNewMachine({ ...newMachine, importanceLevel: parseInt(e.target.value) || 3 })}
+                  className="mt-2"
                 />
+              </div>
+              <div>
+                <Label className="mb-2 block">Sensors</Label>
+                <div className="space-y-2">
+                  {[
+                    { key: 'vibrationSensor', label: 'Vibration Sensor' },
+                    { key: 'temperatureSensor', label: 'Temperature Sensor' },
+                    { key: 'pressureSensor', label: 'Pressure Sensor' },
+                  ].map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={newMachine[key as keyof typeof newMachine] as boolean}
+                        onChange={(e) => setNewMachine({ ...newMachine, [key]: e.target.checked })}
+                        className="w-4 h-4 rounded"
+                      />
+                      <span className="text-sm">{label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
             <DialogFooter className="mt-6">
@@ -192,7 +232,11 @@ export const ManagingView: React.FC = () => {
               };
 
               return (
-                <div key={machine.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                <div
+                  key={machine.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => setSelectedMachine(machine)}
+                >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <div className="font-semibold text-lg">{machine.name}</div>
@@ -206,7 +250,10 @@ export const ManagingView: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleArchiveMachine(machine.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleArchiveMachine(machine.id);
+                    }}
                   >
                     <Archive className="w-4 h-4 mr-2" />
                     Archive
@@ -239,13 +286,20 @@ export const ManagingView: React.FC = () => {
           ) : (
             <div className="space-y-3">
               {archivedMachines.map((machine) => (
-                <div key={machine.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+                <div
+                  key={machine.id}
+                  className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => setSelectedMachine(machine)}
+                >
                   <div className="flex-1">
-                    <div className="font-semibold">{machine.name}</div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="font-semibold">{machine.name}</div>
+                      <span className="px-2 py-0.5 bg-gray-400 text-white rounded-full text-xs font-medium">Archived</span>
+                    </div>
                     <div className="text-sm text-gray-600">{machine.location}</div>
                     <div className="text-xs text-gray-500 mt-1">ID: {machine.id}</div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="outline"
                       size="sm"

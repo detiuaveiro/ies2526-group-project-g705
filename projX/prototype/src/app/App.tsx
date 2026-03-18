@@ -15,6 +15,7 @@ import { AssistanceRequestsView } from './components/AssistanceRequestsView';
 import { TechnicianWorkList } from './components/TechnicianWorkList';
 import { TechnicianRequestsView } from './components/TechnicianRequestsView';
 import { TechnicianProfileView } from './components/TechnicianProfileView';
+import { DirectorProfileView } from './components/DirectorProfileView';
 import { mockMachines } from './data/mockData';
 import { Machine } from './types';
 import { Toaster, toast } from 'sonner';
@@ -47,10 +48,10 @@ const MainApp: React.FC = () => {
     setActiveMaintenanceId(machineId);
   };
 
-  const handleEndMaintenance = (description?: string) => {
-    if (description) {
+  const handleEndMaintenance = (title?: string, description?: string) => {
+    if (title && description) {
       toast.success('Maintenance completed', {
-        description: 'Work log has been saved.'
+        description: `Logged: ${title}`
       });
     }
     setActiveMaintenanceId(null);
@@ -133,10 +134,6 @@ const MainApp: React.FC = () => {
     }
 
     // Navegação para Diretor
-    if (activeTab === 'breakdown-history') {
-      return <BreakdownHistory />;
-    }
-
     if (activeTab === 'task-management') {
       return (
         <TaskManagement 
@@ -188,6 +185,10 @@ const MainApp: React.FC = () => {
 
     if (activeTab === 'managing') {
       return <ManagingView />;
+    }
+
+    if (activeTab === 'user') {
+      return <DirectorProfileView />;
     }
 
     return <Dashboard />;

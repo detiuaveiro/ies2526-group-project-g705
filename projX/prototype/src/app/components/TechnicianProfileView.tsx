@@ -37,7 +37,7 @@ export const TechnicianProfileView: React.FC = () => {
       </Card>
 
       <h3 className="text-xl font-bold mt-8 mb-4">Your Maintenance Statistics</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex justify-between items-start">
@@ -83,19 +83,6 @@ export const TechnicianProfileView: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Repair Costs</p>
-                <h3 className="text-3xl font-bold mt-2">${stats.totalCost.toLocaleString()}</h3>
-              </div>
-              <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
-                <DollarSign className="w-5 h-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
