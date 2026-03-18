@@ -65,7 +65,7 @@ It stores nuclear information regarding these entities such as their fields/attr
 - The `Service Layer` houses most of the application's business logic.
 
 - The `Controller Layer` will be responsible for containing the `Rest API` endpoints which interact with an external `Presentation Layer` through `HTTP Requests`.
-  - After establishing the `Domain` structure, we've decided that the endpoint distribution should consist in 6 different controllers:
+  - After establishing the `Domain` structure, we've decided that the endpoint distribution should consist in 7 different controllers:
 
   |Controller| Role|
   |---|---|
@@ -75,6 +75,7 @@ It stores nuclear information regarding these entities such as their fields/attr
   |`ProblemController`|Manages machine faults and technician assignments.|
   |`MaintenanceController`|Manages maintenance tasks and their progress.|
   |`RequestController`|Manages technician assistance requests and collaboration.|
+  |`SensorController`|Manages sensor-points related data, holding values such as count(),min(),max(),median(),variance() etc. Holds values for the different types of sensors: temperature,pressure and vibration.
   
 
 - The `Presentation Layer` will provide a `GUI`, resulting in a `Web Application`, which is then provided to the client for them to use.
