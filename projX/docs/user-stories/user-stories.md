@@ -16,54 +16,6 @@ No details added (to be added as the project develops).
 
 
 ## User Story 2:
-**As a** Maintenance Director,  
-**I want** to know if there is a machine that has been having several breakdowns,  
-**so that** I can investigate a more serious fault.
-
-### Description:
-No details added (to be added as the project develops).
-
-### Acceptance Criteria:
-**Given** the user is logged in the system  
-**And** the user has the role of Maintenance Director  
-**When** they navigate to the 'Machines' tab
-**Then** a section labled 'History' should be visible, where information regarding the machine should be visible, such as title, description and previous breakdowns ordered by their date.
-
-
-## User Story 3:
-**As a** Maintenance Director,  
-**I want** to choose the technicians that can help when there is a request sent by another technician,
-**so that** The machine can be fixed quicker.
-
-### Description:
-No details added (to be added as the project develops).
-
-### Acceptance Criteria:
-**Given** the user is logged in the system  
-**And** the user has the role of Maintenance Director  
-**When** they navigate to the 'Requests' tab
-**Then** a section labled 'Requests' should be visible, where information regarding the request, such as
-1. description
-2. name of the techician who asked for help
-3. machineId
-4. machine's name
-**And** a button/dropdwon for the director assign people, for each request
-
-## User Story 4:
-**As an** Administrator,  
-**I want** to monitor the technicians' performance,  
-**so that** I can ensure the maintenance team is meeting productivity expectations.
-
-### Description:
-No details added (to be added as the project develops).
-
-### Acceptance Criteria:
-**Given** the user is logged into the system  
-**And** the user has the role of "Administrator"  
-**When** the user navigates to the main interface  
-**Then** a tab labeled "Team" should be visible  
-
-## User Story 5:
 **As a** Maintenance Technician,  
 **I want** to monitor early warning signs from the machines,  
 **so that** I can perform preventive repairs before a total breakdown occurs.
@@ -80,10 +32,10 @@ No details added (to be added as the project develops).
 1. A vibration trend graph (time vs value)  
 2. A pressure trend graph (time vs value)  
 3. A temperature trend graph (time vs value)  
-And each graph should clearly label the time axis and the value axis  
+And each graph should clearly label the time axis and the value axis 
 
 
-## User Story 6:
+## User Story 3:
 **As a** Maintenance Technician,  
 **I want** to view each machine's priority level based on its importance, downtime, and fault severity,  
 **so that** I can optimize my workflow and fix the most critical issues first.
@@ -98,10 +50,10 @@ No details added (to be added as the project develops).
 **And** the ranking should determine the priority order of the machines
 
 
-## User Story 7:
+## User Story 4:
 **As a** Maintenance Technician,  
 **I want** to request assistance for a machine in the app when a repair requires additional help,  
-**so that** my colleagues are immediately notified and can assist me.
+**so that** my colleagues are notified and can assist me.
 
 ### Description:
 No details added (to be added as the project develops).
@@ -109,13 +61,61 @@ No details added (to be added as the project develops).
 ### Acceptance Criteria:
 **Given** the Maintenance Technician has completed the assistance request form  
 **When** the Technician submits the request  
-**Then** the system should send a real-time notification to all users with the role "Maintenance Technician"  
-**And** the system may also notify users with the role "Administrator"  
+**Then** the system should notify the "Maintenance Director"
 **And** the notification should include:  
 1. The machine identifier
 2. The location
 3. The reason for assistance
 4. The timestamp of the request
+
+## User Story 5:
+ **As a** Maintenance Director,  
+**I want** to know if there is a machine that has been having several breakdowns,  
+**so that** I can investigate a more serious fault.
+
+### Description:
+No details added (to be added as the project develops).
+
+### Acceptance Criteria:
+**Given** the user is logged in the system  
+**And** the user has the role of Maintenance Director  
+**When** they navigate to the 'Machines' tab
+**Then** a section labled 'History' should be visible, where information regarding the machine should be visible, such as title, description and previous breakdowns ordered by their date.
+
+
+## User Story 6:
+**As a** Maintenance Director,  
+**I want** to choose the technicians that can help when there is a request sent by another technician,
+**so that** the machine can be fixed quicker.
+
+### Description:
+No details added (to be added as the project develops).
+
+### Acceptance Criteria:
+**Given** the user is logged in the system  
+**And** the user has the role of Maintenance Director  
+**When** they navigate to the 'Requests' tab
+**Then** a section labled 'Requests' should be visible, where information regarding the request, such as
+1. description
+2. name of the techician who asked for help
+3. location
+4. machine's name
+**And** a button/dropdown for the director assign people, for each request
+
+
+## User Story 7:
+**As an** Administrator,  
+**I want** to monitor the technicians' performance,  
+**so that** I can ensure the maintenance team is meeting productivity expectations.
+
+### Description:
+No details added (to be added as the project develops).
+
+### Acceptance Criteria:
+**Given** the user is logged into the system  
+**And** the user has the role of "Administrator"  
+**When** the user navigates to the main interface  
+**Then** a tab labeled "Team" should be visible  
 
 
 ## User Story 8:
@@ -131,6 +131,7 @@ No details added (to be added as the project develops).
 **And** the user has the role of "Administrator"  
 **When** the user navigates to the main interface  
 **Then** a tab labeled "Managing" should be visible  
+
 
 ## User Story 9:
 **As a** Administrator,  
@@ -148,6 +149,7 @@ No details added (to be added as the project develops).
 **Then** the equipment is removed from all user views immediately  
 **And** a success message “Equipment deleted successfully” is displayed  
 **And** the deletion is logged in the system audit trail  
+
 
 ## User Story 10:
 **As a** Administrator,  
