@@ -3,7 +3,7 @@ import { Machine, Breakdown } from '../types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Button } from './ui/button';
-import { ArrowLeft, AlertCircle, Clock, DollarSign } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Clock, DollarSign, ChevronDown, ChevronRight } from 'lucide-react';
 import { mockSensorData, mockBreakdowns } from '../data/mockData';
 import { useAuth } from '../contexts/AuthContext';
 import { Badge } from './ui/badge';
@@ -18,7 +18,7 @@ interface MachineDetailProps {
   isMaintenanceActive?: boolean;
   canStartAnotherMaintenance?: boolean;
   onStartMaintenance?: () => void;
-  onEndMaintenance?: (description?: string) => void;
+  onEndMaintenance?: (title?: string, description?: string) => void;
 }
 
 export const MachineDetail: React.FC<MachineDetailProps> = ({ 
@@ -34,6 +34,11 @@ export const MachineDetail: React.FC<MachineDetailProps> = ({
   const [endMaintenanceDialogOpen, setEndMaintenanceDialogOpen] = useState(false);
   const sensorData = mockSensorData[machine.id] || { vibration: [], pressure: [], temperature: [] };
   const breakdowns = mockBreakdowns.filter(b => b.machineId === machine.id);
+  const [expandedBreakdowns, setExpandedBreakdowns] = useState<Record<string, boolean>>({});
+
+  const toggleBreakdown = (id: string) => {
+    setExpandedBreakdowns(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const canRequestAssistance = user?.role === 'Maintenance Technician';
   const canViewHistory = user?.role !== 'Maintenance Technician' || user.role === 'Maintenance Technician';
@@ -115,9 +120,13 @@ export const MachineDetail: React.FC<MachineDetailProps> = ({
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-sm text-gray-600">Last Maintenance</div>
-            <div className="text-2xl font-bold mt-1">
-              {new Date(machine.lastMaintenance).toLocaleDateString()}
+            <div className="text-sm text-gray-600">Operational Status</div>
+            <div className={`text-2xl font-bold mt-1 capitalize ${
+              machine.operationalStatus === 'functional' ? 'text-green-600' :
+              machine.operationalStatus === 'in-repair' ? 'text-blue-600' : 'text-gray-600'
+            }`}>
+              {machine.operationalStatus === 'functional' ? 'Functional' :
+               machine.operationalStatus === 'in-repair' ? 'In Repair' : 'Stopped'}
             </div>
           </CardContent>
         </Card>
@@ -186,11 +195,22 @@ export const MachineDetail: React.FC<MachineDetailProps> = ({
             ) : (
               <div className="space-y-4">
                 {breakdowns.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((breakdown) => (
-                  <div key={breakdown.id} className="border rounded-lg p-4 space-y-3">
+                  <div 
+                    key={breakdown.id} 
+                    className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => toggleBreakdown(breakdown.id)}
+                  >
                     <div className="flex items-start justify-between">
                       <div>
-                        <div className="font-medium">{breakdown.description}</div>
-                        <div className="text-sm text-gray-600 mt-1">
+                        <div className="font-medium flex items-center gap-2">
+                          {expandedBreakdowns[breakdown.id] ? (
+                            <ChevronDown className="w-4 h-4 text-gray-500" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-gray-500" />
+                          )}
+                          {breakdown.title}
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1 pl-6">
                           {new Date(breakdown.date).toLocaleDateString('en-US', { 
                             year: 'numeric', 
                             month: 'long', 
@@ -204,16 +224,22 @@ export const MachineDetail: React.FC<MachineDetailProps> = ({
                         {breakdown.resolved ? 'Resolved' : 'Pending'}
                       </Badge>
                     </div>
-                    {breakdown.resolved && (
-                      <div className="flex gap-6 text-sm">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Clock className="w-4 h-4" />
-                          <span>{breakdown.repairTime} hours</span>
+
+                    {expandedBreakdowns[breakdown.id] && (
+                      <div className="mt-4 pt-4 border-t space-y-3">
+                        <div className="text-sm border-l-2 border-blue-500 pl-3">
+                          <span className="font-semibold text-gray-800 block mb-1">Description</span>
+                          {breakdown.description}
                         </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <DollarSign className="w-4 h-4" />
-                          <span>${breakdown.cost.toLocaleString()}</span>
-                        </div>
+                        {breakdown.resolved && (
+                          <div className="flex gap-6 text-sm bg-white p-3 rounded-md border mt-2">
+                            <div className="flex items-center gap-2 text-gray-600">
+                              <Clock className="w-4 h-4 text-blue-500" />
+                              <span className="font-medium">Repair Time:</span>
+                              <span>{breakdown.repairTime} hours</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -228,9 +254,9 @@ export const MachineDetail: React.FC<MachineDetailProps> = ({
         <EndMaintenanceDialog
           open={endMaintenanceDialogOpen}
           onOpenChange={setEndMaintenanceDialogOpen}
-          onConfirm={(description) => {
+          onConfirm={(title, description) => {
             if (onEndMaintenance) {
-              onEndMaintenance(description);
+              onEndMaintenance(title, description);
             }
           }}
           machineName={machine.name}

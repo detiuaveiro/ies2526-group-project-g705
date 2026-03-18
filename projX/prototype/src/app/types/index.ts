@@ -10,11 +10,14 @@ export interface User {
 
 export type MachineStatus = 'operational' | 'warning' | 'critical' | 'breakdown';
 
+export type OperationalStatus = 'functional' | 'in-repair' | 'stopped';
+
 export interface Machine {
   id: string;
   name: string;
   location: string;
   status: MachineStatus;
+  operationalStatus: OperationalStatus;
   priority: number;
   vibration: number;
   pressure: number;
@@ -38,6 +41,7 @@ export interface Breakdown {
   id: string;
   machineId: string;
   date: Date;
+  title: string;
   description: string;
   repairTime: number; // in hours
   cost: number;
