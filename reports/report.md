@@ -578,7 +578,7 @@ We chose this pattern for its simplicity and flexibility, as it is widely used a
 
 ---
 ## Technology Decisions
-The backend will be developed using `Spring Boot`, the database is a relational `PostgreSQL` instance, and the frontend will be built with `HTML`, `JavaScript`, and `CSS`.
+The backend will be developed using `Spring Boot`, the database is a relational `PostgreSQL` instance, and the frontend will be built with `React` - using `HTML`, `JavaScript`, and `CSS`.
 
 Following the project guidelines provided by the professors, we chose to containerize both our application and the database into two separate `Docker` containers. These containers communicate with each other through a dedicated `Docker` network.
 
@@ -597,7 +597,6 @@ The `Controller Layer` will communicate with the `Presentation Layer` through `H
 The deployment diagram allows us to visualize the organization of the servers and deployed containers.
 
 ### 1. Spring Boot Application Container (`G705-app`)
-- **Artifact:** Built from `./projX/Dockerfile` → `myapp.jar`
 - **Port:** 8080 (HTTP)
 - **Layers inside container:**
   - **Controller:** Handles HTTP requests
