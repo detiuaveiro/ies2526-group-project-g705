@@ -15,11 +15,11 @@
 
 #### Data Publishing
 >1. Each sensor has a *site gateway* acting as a local aggregator.
->2. The telemetry data is sent to the cloud using a bandwidth-savvy >protocol.
+>2. The telemetry data is sent to the cloud using a bandwidth-savvy protocol.
 
 #### Processing & Business Logic
->1. Hazard conditions are detected when telemetry reveals operating >thresholds are compromised.
->2. Alarms are forwarded to the mobile devices of the people in charge.
+>1. Hazard conditions are detected when telemetry reveals operating thresholds are compromised.
+>2. People in charge get that information on their UI.
 
 #### Integration API
 >Exposes endpoints to programmatically list industrial assets:  
@@ -49,7 +49,7 @@
 **Location:** Lisbon, Portugal
 
 #### **Background**
-João is a Maintenance Technician at SmartSence and is relatively new at the company. He is responsible for checking  systems and equipment, making sure everything runs smoothly. João enjoys understanding how each machine works and values an organized and safe work environment.
+João is a Maintenance Technician at SmartSense and is relatively new at the company. He is responsible for checking  systems and equipment, making sure everything runs smoothly. João enjoys understanding how each machine works and values an organized and safe work environment.
 
 #### **Daily Life**
 In his daily life, João performs regular inspections and tests on equipment, logs any problems, and tries to solve them independently before involving the Maintenance Director. He uses manuals, digital tools, and monitoring software to diagnose failures. Even when faced with unexpected problems, João always tries to stay calm and ensure the company’s systems run smoothly.
@@ -71,16 +71,16 @@ What drives João is the desire to be recognized for his effort and work, as wel
 **Location:** Lisbon, Portugal
 
 #### **Background**
-Manuel has been working at SmartSence for many years and knows all the company’s systems and equipment inside out. He leads the maintenance team and is responsible for ensuring that all sensors, machines, and systems run smoothly. Manuel values organized processes, operational safety, and team efficiency.
+Manuel has been working at SmartSense for many years and knows all the company’s systems and equipment inside out. He leads the maintenance team and is responsible for ensuring that all sensors, machines, and systems run smoothly. Manuel values organized processes, operational safety, and team efficiency.
 
 #### **Daily Life**
-In his daily life, Manuel reviews the full history of failures, identifies failure patterns, and assesses the need for more critical actions to prevent bigger issues. He guides technicians like João, provides constant feedback, and decides when to update or replace equipment. His work requires attention to detail and the ability to anticipate problems before they affect company operations.
+In his daily life, Manuel reviews the full history of failures, identifies failure patterns, and assesses the need for more critical actions to prevent bigger issues. He guides technicians like João and provides constant feedback. His work requires attention to detail and the ability to anticipate problems before they affect company operations.
 
 #### **Goals & Needs**
 Manuel wants to keep the company’s operations efficient and safe, ensuring the team works in a coordinated way. He seeks ways to reduce failures and maintenance costs, while also investing in the technical development of his team.
 
 #### **Motivation**
-What motivates Manuel is the trust the company places in him and try turn the company better. He values professional recognition a good team, and efficient.
+What motivates Manuel is the trust the company places in him and try turn the company better. He values professional recognition, a good team and efficience.
 
 
 ---
@@ -93,10 +93,10 @@ What motivates Manuel is the trust the company places in him and try turn the co
 **Location:** Lisbon, Portugal
 
 #### **Background**
-Sara works at SmartSence as an Admnistrator responsible for overseeing operational efficiency, team organization, and equipment management. She has extensive experience in operations and team coordination, ensuring that both technical teams and company resources are used effectively.
+Sara works at SmartSense as an Admnistrator responsible for overseeing operational efficiency, team organization, and equipment management. She has extensive experience in operations and team coordination, ensuring that both technical teams and company resources are used effectively.
 
 #### **Daily Life**
-In her daily work, Sara reviews machine performance reports and operational data provided by the maintenance team. She monitors indicators such as operating time, failures, maintenance interventions, and equipment costs.
+In her daily work, Sara reviews machine performance reports and operational data. She monitors indicators such as operating time, failures and maintenance interventions.
 She also checks whether technicians are completing their assigned tasks on time and ensures that all machines and equipment are properly registered in the system. Sara frequently communicates with the Maintenance Director and technical teams to make sure operations run smoothly and everyone is aligned.
 
 #### **Goals & Needs**
@@ -166,12 +166,7 @@ Description: No details added (to be added as the project develops).
 #### Acceptance Criteria:
 **Given** the Maintenance Technician has completed the assistance request form  
 **When** the Technician submits the request  
-**Then** the system should notify the "Maintenance Director"
-**And** the notification should include:  
-1. The machine identifier
-2. The location
-3. The reason for assistance
-4. The timestamp of the request
+**Then** the system should notify the "Maintenance Director".
 
 ---
 
@@ -205,6 +200,7 @@ Description: No details added (to be added as the project develops).
 2. name of the techician who asked for help
 3. location
 4. machine's name
+
 **And** a button/dropdown for the director assign people, for each request
 
 ---
@@ -451,7 +447,6 @@ All roles inherit from this base class.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| IdentificationPhotoUrl | string | Path to the user's picture|
 | UserID | UUID / int | Unique identifier |
 | Name | string | Full name |
 | Age | int | Optional |
@@ -460,11 +455,7 @@ All roles inherit from this base class.
 | PasswordHash | string | For authentication |
 | PhoneNumber | string | Optional |
 | CreatedAt | datetime | Account creation timestamp |
-| UpdatedAt | datetime | Last update timestamp |
-| IsActive | boolean | Active/inactive account |
-| IsOnline | boolean | Is/Isn't using the app in that moment |
-| IsPrivelaged | boolean | Is/in't an admin |
-| lastLogin | Datetime | Last time the user logged in |
+| IsPrivileged | boolean | Is/in't an admin |
 
 
 
@@ -474,12 +465,10 @@ All roles inherit from this base class.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| NumberOfFaultsFixed | int | Total faults fixed |
 | AssistedCounter | int | Times helped other technicians |
 | WasAssistedCounter | int | Times required help from another techinician |
 | AverageRepairTime | float | Average repair time (hours/minutes) |
 | TasksCompleted | int | Number of completed tasks |
-| TasksPending | int | Number of pending tasks |
 | IsAvailable | boolean | Currently available for assignments |
 | CurrentAssignment | MachineID / nullable | Machine currently assigned |
 | SkillSet | array of strings | Types of machines they specialize in |
@@ -501,17 +490,13 @@ All roles inherit from this base class.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| IdentificationPhotoUrl | string | Path to the machine's picture|
 | MachineID | UUID / int | Unique identifier |
 | Name | string | Machine name or identifier |
 | Location | string | Physical location |
 | ImportanceLevel | int | |
-| LastDownDate | datetime | Time offline |
 | Status | enum | Active / Assistance Requested / Maintenance / Archived |
 | Sensors | object | Sensor readings: vibration, pressure, temperature |
 | CreatedAt | datetime | Registration date |
-| UpdatedAt | datetime | Last update |
-| ArchivedAt | datetime / nullable | When machine was removed |
 | DowntimeSum | float | Sum of all downtimes are are calculated |
 | SuspicionFlag | boolean | Sensors suspect the machine might be broken |
 
@@ -588,24 +573,27 @@ The `Layered Architecture Pattern` enables us to divide our application’s logi
 
 We chose this pattern for its simplicity and flexibility, as it is widely used and allows for the separation of business logic from presentation logic, while abstracting database operations. It also aligns well with our project’s needs and requirements and our development team's size.
 
+<img src="../architecture.png" alt="Architecture Diagram" width="700">
+
+
 ---
 ## Technology Decisions
 The backend will be developed using `Spring Boot`, the database is a relational `PostgreSQL` instance, and the frontend will be built with `HTML`, `JavaScript`, and `CSS`.
 
 Following the project guidelines provided by the professors, we chose to containerize both our application and the database into two separate `Docker` containers. These containers communicate with each other through a dedicated `Docker` network.
 
-By containerizing the database in `Docker`, you can spin up a temporary (“disposable”) database for backend development. This allows you to:
+By containerizing the database in `Docker`, we can spin up a temporary (“disposable”) database for backend development. This allows us to:
 
-- Test your backend without touching the real production database.
-- Reset or recreate the database easily whenever you want.
-- Share the development environment with your team in a consistent state.
+- Test our backend without touching the real production database.
+- Reset or recreate the database easily whenever we want.
+- Share the development environment with our team in a consistent state.
 
 The database and the application will include `JPA / Hibernate / JDBC` as the communication method.
 
 The `Controller Layer` will communicate with the `Presentation Layer` through `HTTP Protocol Requests`, passed through the `Rest API`.
 
 ---
-## Deployment Diagram
+## Deployment
 The deployment diagram allows us to visualize the organization of the servers and deployed containers.
 
 ### 1. Spring Boot Application Container (`G705-app`)
@@ -634,7 +622,7 @@ The deployment diagram allows us to visualize the organization of the servers an
 - `G705-app` → `G705-db`: JDBC connection (port 5432)
 - Users / Clients → `G705-app`: HTTP requests (port 8080)
 ---
-## Component Diagram
+## Component
 
 The `SpringBoot Application` is split up into a series of layers.
 
