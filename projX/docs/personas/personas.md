@@ -40,11 +40,11 @@ What motivates Manuel is the trust the company places in him and try turn the co
 
 ---
 
-##  Persona 3 — Manager  
+##  Persona 3 — Admnistrator  
 ### **Sara Lopes**
 ![Persona 3](../images/personas/persona3.jpg)
 **Age:** 32  
-**Occupation:** Manager 
+**Occupation:** Admnistrator 
 **Location:** Lisbon, Portugal
 
 ### **Background**
