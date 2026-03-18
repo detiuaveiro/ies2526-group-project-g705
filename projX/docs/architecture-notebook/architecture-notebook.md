@@ -77,6 +77,7 @@ It stores nuclear information regarding these entities such as their fields/attr
   |`RequestController`|Manages technician assistance requests and collaboration.|
   |`SensorController`|Manages sensor-points related data, holding values such as count(),min(),max(),median(),variance() etc. Holds values for the different types of sensors: temperature,pressure and vibration.
   
+  
 
 - The `Presentation Layer` will provide a `GUI`, resulting in a `Web Application`, which is then provided to the client for them to use.
 

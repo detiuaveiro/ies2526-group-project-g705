@@ -13,7 +13,7 @@ enable predictive maintenance of machinery.
 
 
 ## Architecture Diagram:
-<img src="architecture.png" alt="Description" width="600" height="1000">
+<img src="architecture.png" alt="Description" width="800" height="1000">
 
 ## Project Bookmarks:
 1. **[Repository link](https://github.com/detiuaveiro/ies2526-group-project-g705)**
