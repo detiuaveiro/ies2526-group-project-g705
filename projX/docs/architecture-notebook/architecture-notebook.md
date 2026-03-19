@@ -9,7 +9,7 @@ We chose this pattern for its simplicity and flexibility, as it is widely used a
 
 
 ## Technology Decisions
-The backend will be developed using `Spring Boot`, the database is a relational `PostgreSQL` instance, and the frontend will be built with `HTML`, `JavaScript`, and `CSS`.
+The backend will be developed using `Spring Boot`, the database is a relational `PostgreSQL` instance, and the frontend will be built with `HTML`, `JavaScript`,`CSS` and `React`
 
 Following the project guidelines provided by the professors, we chose to containerize both our application and the database into two separate `Docker` containers. These containers communicate with each other through a dedicated `Docker` network.
 
