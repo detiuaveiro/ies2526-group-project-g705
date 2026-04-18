@@ -10,6 +10,16 @@
 docker compose up -d --build
 ```
 
+## View database tables
+```bash
+docker exec -it G705-db psql -U g705user -d g705
+``` 
+
+From here you can do stuff like:
+```bash
+\dt
+``` 
+
 ## Stop the container
 ```bash
 docker compose down
