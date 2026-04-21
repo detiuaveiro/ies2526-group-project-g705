@@ -1,46 +1,63 @@
 package com.example.domain;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
+import com.example.domain.enums.Gender;
+import com.example.domain.enums.UserRole;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-@Getter
-@NoArgsConstructor
+import java.time.LocalDateTime;
+
 @Entity
-@Inheritance(strategy = InheritanceType.JOINED)
 @Table(name = "users")
-public abstract class User {
+@Inheritance(strategy = InheritanceType.JOINED)
+@DiscriminatorColumn(name = "dtype", discriminatorType = DiscriminatorType.STRING)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class User {
 
     @Id
-    @GeneratedValue
-    private UUID userID;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name="name", nullable=false)
+    @Column(nullable = false)
     private String name;
 
-    @Column(name="age", nullable=false)
-    private int age;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name="gender", nullable=false)
-    private Gender gender;
-
-    @Column(name="email", nullable=false)
+    @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(name="passwordHash", nullable=false)
+    @Column(nullable = false)
     private String passwordHash;
 
-    @Column(name="phoneNumber", nullable=false)
     private String phoneNumber;
 
-    @Column(name = "createdAt")
+    private Integer age;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role;
+
+    @Column(nullable = false)
+    private boolean isActive = true;
+
+    @Column(nullable = false)
+    private boolean isOnline = false;
+
+    @Column(nullable = false)
+    private boolean isPrivileged = false;
+
+    @CreationTimestamp
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name="isPrivileged", nullable=false)
-    private boolean isPrivileged;
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
+    private LocalDateTime lastLogin;
 }

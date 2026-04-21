@@ -1,49 +1,52 @@
 package com.example.domain;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
+import com.example.domain.enums.MachineStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-@Getter
-@NoArgsConstructor
+import java.time.LocalDateTime;
+
 @Entity
-@AllArgsConstructor
 @Table(name = "machines")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Machine {
 
     @Id
-    @GeneratedValue
-    private UUID machineId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name="name", nullable=false)
+    @Column(nullable = false)
     private String name;
 
-    @Column(name="location", nullable=false)
     private String location;
 
-    @Column(name="importanceLevel", nullable=false)
-    private int importanceLevel;
+    private Integer importanceLevel;
 
     @Enumerated(EnumType.STRING)
-    @Column(name="status",nullable = false)
-    private MachineStatus status;
+    @Column(nullable = false)
+    @Builder.Default
+    private MachineStatus status = MachineStatus.ACTIVE;
 
-    @Column(name = "createdAt")
+    private LocalDateTime lastDownDate;
+
+    @Builder.Default
+    private Double downtimeSum = 0.0;
+
+    @Builder.Default
+    private boolean suspicionFlag = false;
+
+    @CreationTimestamp
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name="suspicionFlag", nullable=false)
-    private boolean suspicionFlag;
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 
-    private void updateStatus(MachineStatus status){
-        this.status = status;
-    }
-
-    private float calculateDowntime(){
-        return 20;
-    }
+    private LocalDateTime archivedAt;
 }

@@ -1,50 +1,41 @@
 package com.example.domain;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
+import com.example.domain.enums.MaintenanceStatus;
+import com.example.domain.enums.MaintenanceType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Getter
-@NoArgsConstructor
 @Entity
+@Table(name = "maintenance_records")
+@Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "maintenances")
+@Builder
 public class Maintenance {
 
     @Id
-    @GeneratedValue
-    private UUID maintenanceID;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "machine_id", nullable = false)
     private Machine machine;
 
-    @ManyToOne
-    @JoinColumn(name = "technician_id", nullable = false)
-    private MaintenanceTechnician technician;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "technician_id")
+    private Technician technician;
 
     @Enumerated(EnumType.STRING)
-    @Column(name="type", nullable = false)
-    private MaintenanceType type;
+    @Column(nullable = false)
+    @Builder.Default
+    private MaintenanceType type = MaintenanceType.NORMAL;
 
     @Enumerated(EnumType.STRING)
-    @Column(name="status", nullable = false)
-    private MaintenanceStatus status;
+    @Column(nullable = false)
+    @Builder.Default
+    private MaintenanceStatus status = MaintenanceStatus.PENDING;
 
-    @Column(name="notes", nullable=false)
+    @Column(columnDefinition = "TEXT")
     private String notes;
-
-
-    public void start(){
-
-    }
-
-    public void complete(){
-
-    }
 }
