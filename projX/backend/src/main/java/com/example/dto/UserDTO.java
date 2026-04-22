@@ -2,6 +2,7 @@ package com.example.dto;
 
 import com.example.domain.enums.Gender;
 import com.example.domain.enums.UserRole;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -35,7 +36,12 @@ public class UserDTO {
     @NotNull
     private UserRole role;
 
+    @JsonProperty("isActive")
     private boolean isActive;
+    
+    @JsonProperty("isOnline")
     private boolean isOnline;
+    
+    @JsonProperty("isPrivileged")
     private boolean isPrivileged;
 }
