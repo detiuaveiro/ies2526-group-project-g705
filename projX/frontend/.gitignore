@@ -1,0 +1,9 @@
+# --- Node.js / Frontend ---
+# Ignorar dependências (são instaladas via npm install no Docker ou local)
+node_modules/
+dist/
+build/
+.eslintcache
+.env
+.env.local
+npm-debug.log*
