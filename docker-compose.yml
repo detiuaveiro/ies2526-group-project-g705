@@ -11,12 +11,14 @@ services:
       POSTGRES_PASSWORD: g705password   
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
-  toname:
+  backend:
     build:
       context: ./projX
       dockerfile: Dockerfile
-    container_name: G705-app
+    container_name: G705-backend
     restart: unless-stopped
     depends_on:
       - postgres
@@ -29,6 +31,17 @@ services:
       SPRING_DATASOURCE_PASSWORD: g705password
     init: true
     stop_grace_period: 30s
+
+  frontend:
+    build:
+      context: ./projX/frontend
+      dockerfile: Dockerfile
+    container_name: G705-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    stdin_open: true
+    tty: true
 
 volumes:
   postgres_data:
