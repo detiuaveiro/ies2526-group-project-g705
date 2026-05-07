@@ -1,6 +1,7 @@
 package com.example.domain;
 
 import com.example.domain.enums.SensorType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,6 +21,7 @@ public class SensorReading {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
     @JoinColumn(name = "machine_id", nullable = false)
     private Machine machine;
 

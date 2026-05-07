@@ -30,8 +30,7 @@ public class Request {
     @Column(name="reason", nullable=false)
     private String reason;
 
-    @ManyToOne
-    @JoinColumn(name = "assigned_technician")
+    @Column(name = "assigned_technician")
     private UUID assignedTechnician;
 
     @Enumerated(EnumType.STRING)

@@ -22,7 +22,7 @@ public class SensorService {
 
     @Transactional(readOnly = true)
     public List<SensorReading> getReadingsByMachine(Long machineId) {
-        return sensorReadingRepository.findByMachineId(machineId);
+        return sensorReadingRepository.findByMachineIdOrderByRecordedAtDesc(machineId);
     }
 
     @Transactional(readOnly = true)

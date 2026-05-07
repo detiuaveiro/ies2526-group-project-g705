@@ -1,6 +1,5 @@
-version: "3.9"
-
 services:
+
   postgres:
     image: postgres:16-alpine
     container_name: G705-db
@@ -8,9 +7,27 @@ services:
     environment:
       POSTGRES_DB: g705
       POSTGRES_USER: g705user
-      POSTGRES_PASSWORD: g705password   
+      POSTGRES_PASSWORD: g705password
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U g705user -d g705"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   toname:
     build:
@@ -19,7 +36,10 @@ services:
     container_name: G705-app
     restart: unless-stopped
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
@@ -27,8 +47,34 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/g705
       SPRING_DATASOURCE_USERNAME: g705user
       SPRING_DATASOURCE_PASSWORD: g705password
-    init: true
-    stop_grace_period: 30s
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  sensor-generator:
+    build:
+      context: ./tools/sensor_publisher
+    container_name: sensor-generator
+    restart: "no"
+    depends_on:
+      toname:
+        condition: service_healthy
+    environment:
+      API_URL: http://toname:8080/api/v1/machines
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      SENSOR_COUNT: 1000
+      SENSOR_QUEUE: my.queue
+      CSV_PATH: /app/sensor_readings.csv
 
 volumes:
   postgres_data:
