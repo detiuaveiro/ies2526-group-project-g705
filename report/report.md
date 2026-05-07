@@ -452,7 +452,7 @@ And each graph should clearly label the time axis and the value axis
 
 # 4. Architecture
 
-<img src="../projX/docs/backend-structure/architectureNew.png" alt="UML Class Diagram" width="">
+<img src="../projX/docs/images/architecture/architectureNew.png" alt="UML Class Diagram" width="">
 
 Spring Boot REST API with:
 
@@ -770,7 +770,7 @@ Controllers include:
 
 # 9. UML Class Diagram
 
-<img src="../projX/docs/backend-structure/UMLDiagramNew.png" alt="UML Class Diagram" width="">
+<img src="../projX/docs/images/uml/UML.png" alt="UML Class Diagram" width="">
 
 
 ---
