@@ -4,14 +4,13 @@
 # 1. Project Theme
 
 #### Concept
->An industrial monitoring system that analyzes vibration, pressure, and temperature sensor data to enable predictive maintenance of machinery.
+>An industrial monitoring system that stores and exposes data related to machines, maintenance operations, problems, assistance requests, users, and sensor readings.
 
 #### Data Acquisition Layer
 >Virtual or physical sensors that continuously collect:
 >1. Vibration (Hz)
 >2. Pressure (bar)
 >3. Temperature (°C)  
->from machines.
 
 #### Data Publishing
 >1. Each sensor has a *site gateway* acting as a local aggregator.
@@ -22,14 +21,14 @@
 >2. People in charge get that information on their UI.
 
 #### Integration API
->Exposes endpoints to programmatically list industrial assets:  
->1- Location
->2- Model
->3- Specifications
->Provides access to telemetry readings:  
->4- Current status
->5- Historical data intervals
->Enables external integration with other systems.  
+>The system exposes REST endpoints to:
+
+>1. Manage machines
+>2. Manage users and technicians
+>3. Manage maintenance records
+>4. Manage problems
+>5. Manage assistance requests
+>6. Access sensor readings
 
 #### Web Portal
 >Web-based dashboard for real-time tracking of:  
@@ -471,6 +470,20 @@ Description: No details added (to be added as the project develops).
 
 ---
 
+# 4. Architecture
+
+<img src="../projX/docs/backend-structure/architectureNew.png" alt="UML Class Diagram" width="">
+
+Spring Boot REST API with:
+
+* Controllers (API layer)
+* Services (business logic)
+* Repositories (data access)
+* Entities (database model)
+
+
+---
+
 # 5. System Requirements
 
 
@@ -507,209 +520,288 @@ Description: No details added (to be added as the project develops).
 
 All roles inherit from this base class.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| UserID | UUID / int | Unique identifier |
-| Name | string | Full name |
-| Age | int | Optional |
-| Gender | enum | Male / Female / Other / Prefer not to say |
-| Email | string | Login and notifications |
-| PasswordHash | string | For authentication |
-| PhoneNumber | string | Optional |
-| CreatedAt | datetime | Account creation timestamp |
-| IsPrivileged | boolean | Is/in't an admin |
+| Field        | Type     |Description                    |
+| ------------ | -------- |-------------------------------|
+| id           | Long     | Unique identifier             |
+| name         | String   | Full name                     |
+| email        | String   | Login and notifications       |
+| passwordHash | String   | Hashed password               |
+| phoneNumber  | String   | Contact                       |
+| age          | Int      | User Age                      |
+| gender       | enum     | User Gender                   |
+| role         | enum     | User Rule                     |
+| isActive     | boolean  | User using system (afk)       |
+| isOnline     | boolean  | User using system             |
+| isPrivileged | boolean  | Admin-like privileges         |
+| createdAt    | datetime | Account creation              |
+| updatedAt    | datetime | Account updated               |
+| lastLogin    | datetime | last login time               |
 
 
+Subclasses:
+
+* Technician
+* Director
+* Admin
+
+---
+
+## 6.2. Technician
+
+Represents a maintenance technician with performance metrics.
+
+| Field               | Type        | Description |
+|---------------------|-------------|-------------|
+| numberOfFaultsFixed | int         | Number of faults the technician has fixed |
+| assistedCounter     | int         | Number of times the technician assisted another |
+| wasAssistedCounter  | int         | Number of times the technician required help |
+| averageRepairTime   | double      | Average repair time for tasks |
+| tasksCompleted      | int         | Total completed tasks |
+| tasksPending        | int         | Tasks still pending |
+| isAvailable         | boolean     | Whether the technician is available |
+| currentAssignment   | Machine     | Machine currently assigned |
+| skillSet            | List<String>| Skills and specializations |
+
+---
 
 
+## 6.3. Maintenance Director
 
-## 6.2. Maintenance Technician (inherits User)
+| Field         | Type        | Description |
+|--------------|-------------|-------------|
+| technicianIds| List<UUID>  | IDs of technicians managed |
+| machineIds   | List<UUID>  | IDs of machines managed |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| AssistedCounter | int | Times helped other technicians |
-| WasAssistedCounter | int | Times required help from another techinician |
-| AverageRepairTime | float | Average repair time (hours/minutes) |
-| TasksCompleted | int | Number of completed tasks |
-| IsAvailable | boolean | Currently available for assignments |
-| CurrentAssignment | MachineID / nullable | Machine currently assigned |
-| SkillSet | array of strings | Types of machines they specialize in |
+Inherits from `User`.
 
-
-
-## 6.3. Maintenance Director(inherits User)
-
-| Field | Type | Description |
-|-------|------|-------------|
-| TechniciansIds | array of UserID | Ids of the Techinicias managed by the Director |
-| MachinesIds | array of MachineID | Ids of the Machines managed by the Director |
-
-> Admin inherits User and has all permissions by default.
-
-
+---
 
 ## 6.4. Machine
 
-| Field | Type | Description |
-|-------|------|-------------|
-| MachineID | UUID / int | Unique identifier |
-| Name | string | Machine name or identifier |
-| Location | string | Physical location |
-| ImportanceLevel | int | |
-| Status | enum | Active / Assistance Requested / Maintenance / Archived |
-| Sensors | object | Sensor readings: vibration, pressure, temperature |
-| CreatedAt | datetime | Registration date |
-| DowntimeSum | float | Sum of all downtimes are are calculated |
-| SuspicionFlag | boolean | Sensors suspect the machine might be broken |
+| Field           | Type        | Description |
+|-----------------|-------------|-------------|
+| id              | long        | Unique identifier |
+| name            | String      | Machine name |
+| location        | String      | Physical location |
+| importanceLevel | int         | Importance for prioritization |
+| status          | enum        | ACTIVE / INACTIVE / MAINTENANCE / BROKEN |
+| downtimeSum     | Double      | Total downtime|
+| suspicionFlag   | boolean     | Working Bad |
+| createdAt       | datetime    | Registration timestamp |
+| suspicionFlag   | boolean     | Indicates suspected malfunction |
+| sensors         | List<Sensor>| Sensors associated with the machine |
 
 
+Status values:
+
+* ACTIVE
+* ASSISTANCE_REQUESTED
+* MAINTENANCE
+* ARCHIVED
+
+---
+
+## 6.5. Maintenance
+
+| Field           | Type                 | Description |
+|-----------------|----------------------|-------------|
+| id              | Long                 | Unique identifier |
+| machine         | Machine              | Machine under maintenance |
+| technician      | Technician           | Technician assigned |
+| type            | enum                 | NORMAL / URGENT |
+| status          | enum                 | PENDING / IN_PROGRESS / COMPLETED |
+| notes           | String               | Optional notes |
 
 
-## 6.5. Problem (Fault / Defect)
+Type:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ProblemID | UUID | Unique ID |
-| MachineID | UUID | Machine related to problem |
-| Description | string | Short description of the issue |
-| DetectedAt | datetime | Time the fault was detected |
-| Priority | float | Fault priority |
-| Resolved | boolean | Whether it’s fixed |
-| SolvedProblemDate | datetime | Date when the problem was resolved |
-| StartProblemDate | datetime | Date when the problem was issued |
-| ResolutionTime |  | Time it was resolved |
-| AssignedTechnician | UserID / nullable | Technician handling the problem |
-| FaultSeverity | int / string | Numeric or short description |
-| Maintenance | object | Maintenance associated with the problem |
+* NORMAL
+* SPECIAL
 
+Status:
 
+* PENDING
+* IN_PROGRESS
+* COMPLETED
 
-## 6.6. Maintenance (Normal / Special)
+---
 
-| Field | Type | Description |
-|-------|------|-------------|
-| MaintenanceID | UUID | Unique ID |
-| MachineID | UUID | Target machine |
-| TechnicianID | UUID | Assigned technician |
-| Type | enum | Normal / Special |
-| Status | enum | Pending / In Progress / Completed |
-| Notes | text | Optional notes |
+## 6.6. Problem
+
+| Field             | Type                 | Description |
+|-------------------|----------------------|-------------|
+| ID                | long                 | Unique identifier |
+| machine           | Machine              | Machine where the problem occurred |
+| description       | String               | Description of the issue |
+| detectedAt        | datetime             | Time of detection problem |
+| priority          | Double               | Calculated priority |
+| resolved          | boolean              | Whether the problem is resolved |
+| startProblemDate  | datetime             | When work on the problem started |
+| solvedProblemDate | datetime             | When the problem was resolved |
+| assignedTechnician| MaintenanceTechnician| Technician assigned |
+| faultSeverity     | String               | Severity of the fault |
 
 
+---
 
-## 6.7. Request (Assistance)
+## 6.7. Assistance Request
 
-| Field | Type | Description |
-|-------|------|-------------|
-| RequestID | UUID | Unique ID |
-| ProblemID | UUID | Problem associated |
-| RequestedBy | UserID | Technician requesting help |
-| Reason | string | Reason for assistance |
-| Status | enum | Pending / Accepted / Completed |
-| AssignedTechnician | UserID / nullable | Technician giving assistance |
-| CreatedAt | datetime | Request time |
+Used for **technician-to-technician assistance**.
 
+| Field               | Type        | Description |
+|---------------------|-------------|-------------|
+| id                  | Long        | Unique identifier |
+| problem             | Problem     | Problem requiring assistance |
+| requestedBy         | Technician  | Technician who requested help |
+| reason              | String      | Reason for the request |
+| status              | enum        | PENDING / ACCEPTED / COMPLETED |
+| assignedTechnician  | Technician  | Technician assigned to assist |
+| createdAt           | datetime    | Timestamp of request creation |
 
+Status:
 
-
-## 6.8. Relationships Overview
-
-- **User → Technician / Director** (inheritance)  
-- **Machine → Problem** (1-to-many)  
-- **Problem → Maintenance** (1-to-many)  
-- **Request → Problem** (many-to-1)  
-
-##  UML Class Diagram
-
-<img src="../projX/docs/backend-structure/UMLDiagram.png" alt="UML Class Diagram" width="">
+* PENDING
+* ACCEPTED
+* COMPLETED
 
 ---
 
 
-# 4. Software Architecture Notebook
+## 6.8. Sensor & Readings
 
-## Architectural Pattern 
-For the development of our application, we opted to follow one of the most common software architecture patterns: the `Layered Architecture Pattern`.
+### Sensor (abstract)
 
-The `Layered Architecture Pattern` enables us to divide our application’s logic into three layers that address the main aspects of the system: database, backend, and frontend.
+| Field   | Type   | Description |
+|---------|--------|-------------|
+| id      | UUID   | Unique identifier |
+| machine | Machine| Machine where the sensor is installed |
+| readings| List<Reading> | Historical readings |
 
-We chose this pattern for its simplicity and flexibility, as it is widely used and allows for the separation of business logic from presentation logic, while abstracting database operations. It also aligns well with our project’s needs and requirements and our development team's size.
+### Reading (abstract)
 
-<img src="../architecture.png" alt="Architecture Diagram" width="700">
+| Field     | Type        | Description |
+|-----------|-------------|-------------|
+| id        | UUID        | Unique identifier |
+| timestamp | datetime    | When the reading was taken |
+| sensor    | Sensor      | Sensor that produced the reading |
+
+### Specialized Readings
+
+| Type                | Extra Field | Description |
+|---------------------|-------------|-------------|
+| TemperatureReading  | temperature | Temperature in °C |
+| PressureReading     | pressure    | Pressure in bar |
+| VibrationReading    | pressure    | vibration |
+
+### SensorReading
+
+| Field       | Type        | Description |
+|-------------|-------------|-------------|
+| id          | Long        | Unique identifier |
+| machine     | Machine     | Machine associated |
+| sensorType  | enum        | TEMPERATURE / PRESSURE / VIBRATION |
+| value       | Double      | Reading value |
+| recordedAt  | datetime    | Timestamp |
+
+---
+
+## 6.9. Relationships
+
+* User -> Technician / Director / Admin (inheritance)
+* Machine -> Problem (1-to-many)
+* Machine -> Maintenance (1-to-many)
+* Problem -> AssistanceRequest (1-to-many)
+* Machine -> SensorReading (1-to-many)
+* Technician -> AssistanceRequest (relations via requestedBy and assignedTechnician)
+---
+
+# 7. Controllers & API Endpoints
+
+## AuthController
+- POST `/auth/login`  
+- POST `/auth/register`  
+
+## UserController
+- GET `/users`  
+- GET `/users/performance`  
+
+## MachineController
+- GET `/machines`  
+- GET `/machines/{id}`  
+- POST `/machines`  
+
+## ProblemController
+- GET `/problems`  
+- POST `/problems`  
+- POST `/problems/{id}/start`  
+- POST `/problems/{id}/complete`  
+
+## MaintenanceController
+- POST `/maintenance/assign`  
+- POST `/maintenance/start`  
+- POST `/maintenance/complete`  
+
+## AssistanceRequestController
+- GET `/api/v1/requests`  
+- GET `/api/v1/requests/{id}`  
+- GET `/api/v1/requests/technician/{technicianId}`  
+- POST `/api/v1/requests`  
+- PUT `/api/v1/requests/{id}`  
+- PATCH `/api/v1/requests/{id}/accept`  
+- DELETE `/api/v1/requests/{id}`  
+
+## RequestController
+- POST `/requests`  
+- POST `/requests/{id}/assign`  
+- POST `/requests/{id}/complete`  
+- GET `/requests`  
+- PUT `/requests/{id}/status`  
+
+## SensorController
+- GET `/api/v1/sensors/{machineId}`  
+- GET `/api/v1/sensors/{machineId}/{type}`  
+- GET `/api/v1/sensors/{machineId}/{type}/latest`  
+- POST `/api/v1/sensors`  
+- DELETE `/api/v1/sensors/{id}`  
+
+---
+
+# 8. Component Layer
+
+The backend is structured into:
+
+- **Domain Layer**  
+- **Repository Layer**  
+- **Service Layer**  
+- **Controller Layer**  
+
+Controllers include:
+
+- AuthController  
+- UserController  
+- MachineController  
+- ProblemController  
+- MaintenanceController  
+- AssistanceRequestController  
+- RequestController  
+- SensorController  
+
+---
+
+# 9. UML Class Diagram
+
+<img src="../projX/docs/backend-structure/UMLDiagramNew.png" alt="UML Class Diagram" width="">
 
 
 ---
-## Technology Decisions
-The backend will be developed using `Spring Boot`, the database is a relational `PostgreSQL` instance, and the frontend will be built with `React` - using `HTML`, `JavaScript`, and `CSS`.
 
-Following the project guidelines provided by the professors, we chose to containerize both our application and the database into two separate `Docker` containers. These containers communicate with each other through a dedicated `Docker` network.
+# 10. Conclusion
 
-By containerizing the database in `Docker`, we can spin up a temporary (“disposable”) database for backend development. This allows us to:
+This report reflects the **current backend implementation**, aligned with:
 
-- Test our backend without touching the real production database.
-- Reset or recreate the database easily whenever we want.
-- Share the development environment with our team in a consistent state.
-
-The database and the application will include `JPA / Hibernate / JDBC` as the communication method.
-
-The `Controller Layer` will communicate with the `Presentation Layer` through `HTTP Protocol Requests`, passed through the `Rest API`.
-
----
-## Deployment
-The deployment diagram allows us to visualize the organization of the servers and deployed containers.
-
-### 1. Spring Boot Application Container (`G705-app`)
-- **Port:** 8080 (HTTP)
-- **Layers inside container:**
-  - **Controller:** Handles HTTP requests
-  - **Service:** Business logic
-  - **Repository:** Data access
-  - **Domain:** Entities / models
-- **Environment Variables:**
-  - `SPRING_PROFILES_ACTIVE=prod`
-  - `SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/g705`
-  - `SPRING_DATASOURCE_USERNAME=g705user`
-  - `SPRING_DATASOURCE_PASSWORD=g705password`
-- **Dependency:** Starts after `G705-db` container
-
-### 2. PostgreSQL Container (`G705-db`)
-- **Image:** `postgres:16-alpine`
-- **Database:** `g705`
-- **User / Password:** `g705user / g705password`
-- **Port:** 5432 (internal)
-- **Persistence:** Volume `postgres_data`
-
-### 3. Connections
-- `G705-app` → `G705-db`: JDBC connection (port 5432)
-- Users / Clients → `G705-app`: HTTP requests (port 8080)
----
-## Component
-
-The `SpringBoot Application` is split up into a series of layers.
-
-- The `Domain Layer` contains information about the different entities that populate the system.
-It stores nuclear information regarding these entities such as their fields/attributes, behaviours and relationships with eachother, such as inheritance or composition.
-
-- The `Repository Layer` is responsible for providing an interface capable of communicating with the database, directly from a `JAVA` environment.
-
-- The `Service Layer` houses most of the application's business logic.
-
-- The `Controller Layer` will be responsible for containing the `Rest API` endpoints which interact with an external `Presentation Layer` through `HTTP Requests`.
-  - After establishing the `Domain` structure, we've decided that the endpoint distribution should consist in 6 different controllers:
-
-  |Controller| Role|
-  |---|---|
-  |`AuthController`| Handles authentication and security|
-  |`UserController`| Manages user accounts and role-based user operations.|
-  |`Machine Controller`|Manages machines and their operational status.|
-  |`ProblemController`|Manages machine faults and technician assignments.|
-  |`MaintenanceController`|Manages maintenance tasks and their progress.|
-  |`RequestController`|Manages technician assistance requests and collaboration.|
-  
-
-- The `Presentation Layer` will provide a `GUI`, resulting in a `Web Application`, which is then provided to the client for them to use.
-
-
-The database built in `PostgrSQL` maps each class inside of the `domain` folder into it's own data table, under a common schema.
-
-
+- Entities  
+- Controllers  
+- Services  
+- API endpoints  
+- Architecture  
+- Requirements  
