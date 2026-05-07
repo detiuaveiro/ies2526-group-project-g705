@@ -4,7 +4,7 @@
 # 1. Project Theme
 
 #### Concept
->An industrial monitoring system that analyzes vibration, pressure, and temperature sensor data to enable predictive maintenance of machinery.
+>An industrial monitoring system that stores and exposes data related to machines, maintenance operations, problems, assistance requests, users, and sensor readings.
 
 #### Data Acquisition Layer
 >Virtual or physical sensors that continuously collect:
@@ -21,15 +21,14 @@
 >2. People in charge get that information on their UI.
 
 #### Integration API
->Exposes endpoints to programmatically list industrial assets:  
->1. Location
->2. Model
->3. Specifications 
+>The system exposes REST endpoints to:
 
-Provides access to telemetry readings:  
->4. Current status
->5. Historical data intervals
->Enables external integration with other systems.  
+>1. Manage machines
+>2. Manage users and technicians
+>3. Manage maintenance records
+>4. Manage problems
+>5. Manage assistance requests
+>6. Access sensor readings
 
 #### Web Portal
 >Web-based dashboard for real-time tracking of:  
@@ -475,6 +474,13 @@ Description: No details added (to be added as the project develops).
 
 <img src="../projX/docs/backend-structure/architectureNew.png" alt="UML Class Diagram" width="">
 
+Spring Boot REST API with:
+
+* Controllers (API layer)
+* Services (business logic)
+* Repositories (data access)
+* Entities (database model)
+
 
 ---
 
@@ -514,22 +520,29 @@ Description: No details added (to be added as the project develops).
 
 All roles inherit from this base class.
 
-| Field        | Type        | Description                    |
-|-------------|-------------|--------------------------------|
-| id          | UUID        | Unique identifier              |
-| name        | String      | Full name                      |
-| email       | String      | Login and notifications        |
-| passwordHash| String      | Hashed password                |
-| gender      | enum        | MALE/FEMALE/OTHER/PREFERNOTTOSAY |
-| phoneNumber | String      | Optional                       |
-| createdAt   | datetime    | Account creation timestamp     |
-| isPrivileged| boolean     | Admin-like privileges          |
+| Field        | Type     |Description                    |
+| ------------ | -------- |-------------------------------|
+| id           | Long     | Unique identifier             |
+| name         | String   | Full name                     |
+| email        | String   | Login and notifications       |
+| passwordHash | String   | Hashed password               |
+| phoneNumber  | String   | Contact                       |
+| age          | Int      | User Age                      |
+| gender       | enum     | User Gender                   |
+| role         | enum     | User Rule                     |
+| isActive     | boolean  | User using system (afk)       |
+| isOnline     | boolean  | User using system             |
+| isPrivileged | boolean  | Admin-like privileges         |
+| createdAt    | datetime | Account creation              |
+| updatedAt    | datetime | Account updated               |
+| lastLogin    | datetime | last login time               |
+
 
 Subclasses:
-- `Technician`
-- `MaintenanceTechnician`
-- `MaintenanceDirector`
-- `Admin`
+
+* Technician
+* Director
+* Admin
 
 ---
 
@@ -551,19 +564,8 @@ Represents a maintenance technician with performance metrics.
 
 ---
 
-## 6.3. Maintenance Technician
 
-A specialized technician for maintenance tasks.  
-Inherits from `User` and is used specifically for maintenance operations.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| (inherits all fields from User) | — | — |
-| — | — | No additional fields beyond User |
-
----
-
-## 6.4. Maintenance Director
+## 6.3. Maintenance Director
 
 | Field         | Type        | Description |
 |--------------|-------------|-------------|
@@ -574,56 +576,75 @@ Inherits from `User`.
 
 ---
 
-## 6.5. Machine
+## 6.4. Machine
 
 | Field           | Type        | Description |
 |-----------------|-------------|-------------|
-| machineId       | UUID        | Unique identifier |
+| id              | long        | Unique identifier |
 | name            | String      | Machine name |
 | location        | String      | Physical location |
 | importanceLevel | int         | Importance for prioritization |
 | status          | enum        | ACTIVE / INACTIVE / MAINTENANCE / BROKEN |
+| downtimeSum     | Double      | Total downtime|
+| suspicionFlag   | boolean     | Working Bad |
 | createdAt       | datetime    | Registration timestamp |
 | suspicionFlag   | boolean     | Indicates suspected malfunction |
 | sensors         | List<Sensor>| Sensors associated with the machine |
 
+
+Status values:
+
+* ACTIVE
+* ASSISTANCE_REQUESTED
+* MAINTENANCE
+* ARCHIVED
+
 ---
 
-## 6.6. Maintenance
+## 6.5. Maintenance
 
 | Field           | Type                 | Description |
 |-----------------|----------------------|-------------|
-| maintenanceId   | UUID                 | Unique identifier |
+| id              | Long                 | Unique identifier |
 | machine         | Machine              | Machine under maintenance |
-| technician      | MaintenanceTechnician| Technician assigned |
+| technician      | Technician           | Technician assigned |
 | type            | enum                 | NORMAL / URGENT |
 | status          | enum                 | PENDING / IN_PROGRESS / COMPLETED |
 | notes           | String               | Optional notes |
-| startTime       | datetime             | When maintenance started |
-| endTime         | datetime             | When maintenance ended |
+
+
+Type:
+
+* NORMAL
+* SPECIAL
+
+Status:
+
+* PENDING
+* IN_PROGRESS
+* COMPLETED
 
 ---
 
-## 6.7. Problem
+## 6.6. Problem
 
 | Field             | Type                 | Description |
 |-------------------|----------------------|-------------|
-| problemID         | UUID                 | Unique identifier |
+| ID                | long                 | Unique identifier |
 | machine           | Machine              | Machine where the problem occurred |
 | description       | String               | Description of the issue |
-| importanceLevel   | int                  | Importance of the problem |
-| priority          | float                | Calculated priority |
-| status            | enum                 | PENDING / IN_PROGRESS / RESOLVED |
-| detectedAt        | datetime             | When the problem was detected |
+| detectedAt        | datetime             | Time of detection problem |
+| priority          | Double               | Calculated priority |
+| resolved          | boolean              | Whether the problem is resolved |
 | startProblemDate  | datetime             | When work on the problem started |
 | solvedProblemDate | datetime             | When the problem was resolved |
-| resolved          | boolean              | Whether the problem is resolved |
 | assignedTechnician| MaintenanceTechnician| Technician assigned |
 | faultSeverity     | String               | Severity of the fault |
 
+
 ---
 
-## 6.8. Assistance Request
+## 6.7. Assistance Request
 
 Used for **technician-to-technician assistance**.
 
@@ -637,25 +658,16 @@ Used for **technician-to-technician assistance**.
 | assignedTechnician  | Technician  | Technician assigned to assist |
 | createdAt           | datetime    | Timestamp of request creation |
 
----
+Status:
 
-## 6.9. Request (Problem Assistance)
-
-Used for **requests associated with problems**, not technician-to-technician.
-
-| Field               | Type                 | Description |
-|---------------------|----------------------|-------------|
-| requestID           | UUID                 | Unique identifier |
-| problem             | Problem              | Problem associated |
-| requestedBy         | User                 | User who created the request |
-| reason              | String               | Reason for the request |
-| assignedTechnician  | MaintenanceTechnician| Technician assigned |
-| status              | enum                 | PENDING / ACCEPTED / COMPLETED |
-| createdAt           | datetime             | Timestamp of creation |
+* PENDING
+* ACCEPTED
+* COMPLETED
 
 ---
 
-## 6.10. Sensor & Readings
+
+## 6.8. Sensor & Readings
 
 ### Sensor (abstract)
 
@@ -679,8 +691,9 @@ Used for **requests associated with problems**, not technician-to-technician.
 |---------------------|-------------|-------------|
 | TemperatureReading  | temperature | Temperature in °C |
 | PressureReading     | pressure    | Pressure in bar |
+| VibrationReading    | pressure    | vibration |
 
-### SensorReading (simplified model used by API)
+### SensorReading
 
 | Field       | Type        | Description |
 |-------------|-------------|-------------|
@@ -692,21 +705,14 @@ Used for **requests associated with problems**, not technician-to-technician.
 
 ---
 
-## 6.11. Relationships
+## 6.9. Relationships
 
-User -> Technician / MaintenanceTechnician / MaintenanceDirector / Admin (inheritance)
-
-Machine -> Problem (1‑to‑many)
-
-Machine -> Maintenance (1‑to‑many)
-
-Problem -> Request (1‑to‑many)
-
-Problem -> AssistanceRequest (1‑to‑many)
-
-MaintenanceTechnician -> Maintenance (1‑to‑many)
-
-Technician -> AssistanceRequest (1‑to‑many, as requester or assigned helper)
+* User -> Technician / Director / Admin (inheritance)
+* Machine -> Problem (1-to-many)
+* Machine -> Maintenance (1-to-many)
+* Problem -> AssistanceRequest (1-to-many)
+* Machine -> SensorReading (1-to-many)
+* Technician -> AssistanceRequest (relations via requestedBy and assignedTechnician)
 ---
 
 # 7. Controllers & API Endpoints

@@ -1,0 +1,170 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+' ============================
+' ENUMS
+' ============================
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFERNOTTOSAY
+}
+
+enum MachineStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  BROKEN
+}
+
+enum MaintenanceStatus {
+  PENDING
+  ACCEPTED
+  COMPLETED
+}
+
+enum MaintenanceType {
+  NORMAL
+  SPECIAL
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  COMPLETED
+}
+
+enum SensorType {
+  TEMPERATURE
+  PRESSURE
+  VIBRATION
+}
+
+' ============================
+' USER HIERARCHY
+' ============================
+class User {
+  - Long id
+  - String name
+  - String email
+  - String passwordHash
+  - String phoneNumber
+  - Integer age
+  - Gender gender
+  - String role
+  - boolean isActive
+  - boolean isOnline
+  - boolean isPrivileged
+  - LocalDateTime createdAt
+  - LocalDateTime updatedAt
+  - LocalDateTime lastLogin
+}
+
+class Admin
+class MaintenanceDirector {
+  - List<UUID> technicianIds
+  - List<UUID> machineIds
+}
+
+class Technician {
+  - int numberOfFaultsFixed
+  - int assistedCounter
+  - int wasAssistedCounter
+  - double averageRepairTime
+  - int tasksCompleted
+  - int tasksPending
+  - boolean isAvailable
+  - Machine currentAssignment
+  - List<String> skillSet
+}
+
+User <|-- Admin
+User <|-- Technician
+User <|-- MaintenanceDirector
+
+' ============================
+' MACHINE
+' ============================
+class Machine {
+  - Long id
+  - String name
+  - String location
+  - Integer importanceLevel
+  - MachineStatus status
+  - LocalDateTime lastDownDate
+  - Double downtimeSum
+  - boolean suspicionFlag
+  - LocalDateTime createdAt
+  - LocalDateTime updatedAt
+  - LocalDateTime archivedAt
+}
+
+Machine "1" o-- "*" Problem
+Machine "1" o-- "*" Maintenance
+Machine "1" o-- "*" SensorReading
+
+' ============================
+' PROBLEM
+' ============================
+class Problem {
+  - Long id
+  - Machine machine
+  - String description
+  - LocalDateTime detectedAt
+  - Double priority
+  - boolean resolved
+  - LocalDateTime startProblemDate
+  - LocalDateTime solvedProblemDate
+  - String faultSeverity
+  - Technician assignedTechnician
+}
+
+Problem "1" --> "0..1" Technician : assignedTechnician
+
+' ============================
+' ASSISTANCE REQUEST (REAL)
+' ============================
+class AssistanceRequest {
+  - Long id
+  - Problem problem
+  - Technician requestedBy
+  - String reason
+  - RequestStatus status
+  - Technician assignedTechnician
+  - LocalDateTime createdAt
+}
+
+AssistanceRequest --> Problem
+AssistanceRequest --> Technician : requestedBy
+AssistanceRequest --> Technician : assignedTechnician
+
+' ============================
+' MAINTENANCE
+' ============================
+class Maintenance {
+  - Long id
+  - Machine machine
+  - Technician technician
+  - MaintenanceType type
+  - MaintenanceStatus status
+  - String notes
+}
+
+Maintenance --> Machine
+Maintenance --> Technician
+
+' ============================
+' SENSOR READING (API MODEL)
+' ============================
+class SensorReading {
+  - Long id
+  - Machine machine
+  - SensorType sensorType
+  - Double value
+  - LocalDateTime recordedAt
+}
+
+SensorReading --> Machine
+
+@enduml
