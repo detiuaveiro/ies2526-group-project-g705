@@ -1,6 +1,7 @@
 package com.example.domain;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
 import java.util.ArrayList;
@@ -8,6 +9,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "technicians")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @DiscriminatorValue("TECHNICIAN")
 @Getter
 @Setter
