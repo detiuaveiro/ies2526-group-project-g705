@@ -5,13 +5,37 @@
 
 ---
 
-## Run in detached mode (background)
+## Run all services (Backend, Frontend, and Database)
 ```bash
 docker compose up -d --build
 ```
 
-## Verify Data Generation
-After running the command above, wait a few seconds for the system to boot and the sensor data to be generated. You can verify the data is in the system using these methods:
+## Run only the Backend (and Database)
+```bash
+docker compose up -d --build backend
+```
+
+## Run only the Frontend
+```bash
+docker compose up -d --build frontend
+```
+
+---
+
+## Access the Application
+
+### Frontend Link
+- **Main Website**: http://localhost:3000
+
+### Backend Links
+- **Base API**: http://localhost:8080
+- **Swagger Documentation**: http://localhost:8080/swagger-ui/index.html
+
+---
+
+## Useful Database Commands
+
+If you need to verify the data in the system, you can use these methods:
 
 ### 1. Check API Data (via Curl)
 ```bash
@@ -19,35 +43,13 @@ After running the command above, wait a few seconds for the system to boot and t
 curl -X GET http://localhost:8080/api/v1/sensors/1/TEMPERATURE/latest
 ```
 
-### 2. Check Redis Cache
+### 2. Check Database directly
 ```bash
-# Connect to Redis and check if current values are being updated
-docker exec -it G705-redis redis-cli get current_value:1:TEMPERATURE
+docker exec -it G705-db psql -U g705user -d g705 -c "SELECT * FROM users;"
 ```
+---
 
-### 3. Check Database
-```bash
-docker exec -it G705-db psql -U g705user -d g705 -c "SELECT * FROM sensor_readings ORDER BY recorded_at DESC LIMIT 10;"
-```
-
-## View database tables
-```bash
-docker exec -it G705-db psql -U g705user -d g705
-``` 
-
-From here you can do stuff like:
-```bash
-\dt
-``` 
-
-## Stop the container
+## Stop the containers
 ```bash
 docker compose down
 ```
-
-### After starting, open your browser and go to:
-### http://localhost:8080
-### or
-### http://localhost:8080/hello
-
-### Note: Container name is G705-app
