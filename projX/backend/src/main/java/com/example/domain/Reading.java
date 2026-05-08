@@ -1,28 +1,26 @@
 package com.example.domain;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.NoArgsConstructor; // ADICIONE ESTA LINHA
+import java.time.LocalDateTime;
 
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "reading_type")
 @Getter
+@Setter
 @NoArgsConstructor
-public abstract class Reading {
-
+public class Reading { // Ensure 'abstract' is removed if you want to 'new Reading()'
     @Id
-    @GeneratedValue
-    private UUID id;
-
-    private LocalDateTime timestamp;
-
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
     @ManyToOne
-    @JoinColumn(name = "sensor_id", nullable = false)
-    private Sensor<? extends Reading> sensor;
+    @JoinColumn(name = "sensor_id")
+    private Sensor sensor;
+    
+    private Double value;
+    private LocalDateTime timestamp;
 }

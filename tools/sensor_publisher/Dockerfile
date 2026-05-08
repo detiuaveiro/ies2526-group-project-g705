@@ -1,10 +1,12 @@
-FROM python:3.12-alpine
+FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Instala dependências necessárias
+RUN pip install --no-cache-dir requests pika
 
-COPY sensor_publisher.py ./
+# Copia o script
+COPY populate_all_machines.py .
 
-CMD ["python", "sensor_publisher.py"]
+# Executa o script
+CMD ["python", "populate_all_machines.py"]

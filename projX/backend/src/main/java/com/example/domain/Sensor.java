@@ -1,31 +1,31 @@
 package com.example.domain;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
+import com.example.domain.enums.SensorType;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "sensor_type")
+@DiscriminatorColumn(name = "sensor_class") // Distinguishes between Pressure/Temp sensors
 @Getter
+@Setter
 @NoArgsConstructor
-public abstract class Sensor<T extends Reading> {
+public abstract class Sensor<T extends Reading> { // Add the <T extends Reading>
 
     @Id
-    @GeneratedValue
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "machine_id", nullable = false)
-    private Machine machine;
+    private Long machineId;
 
+    @Enumerated(EnumType.STRING)
+    private SensorType sensorType;
+
+    // This allows the subclasses to have a list of their specific reading types
     @OneToMany(mappedBy = "sensor")
-    private List<T> readings;
+    private List<T> readings; 
 
     public abstract T getMeasurement();
 }
-
