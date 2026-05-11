@@ -113,8 +113,6 @@ Sara is motivated by improving operational efficiency and helping the company gr
 **I want** to know if there is a machine with a breakdown,  
 **so that** I can fix it.  
 	
-Description: No details added (to be added as the project develops).
-
 #### Acceptance Criteria:
 **Given** the user is logged in the system  
 **And** the user has the role of Maintenance Technician  
@@ -126,8 +124,6 @@ Description: No details added (to be added as the project develops).
 **As a** Maintenance Technician,  
 **I want** to monitor early warning signs from the machines,  
 **so that** I can perform preventive repairs before a total breakdown occurs.
-
-Description: No details added (to be added as the project develops).
 
 #### Acceptance Criteria:
 **Given** the user is logged into the system   
@@ -146,8 +142,6 @@ And each graph should clearly label the time axis and the value axis
 **I want** to view each machine's priority level based on its importance, downtime, and fault severity,  
 **so that** I can optimize my workflow and fix the most critical issues first.
 
-Description: No details added (to be added as the project develops).
-
 #### Acceptance Criteria:
 **Given** the user is logged into the system
 **When** the user navigates to the machine overview or ranking section
@@ -160,8 +154,6 @@ Description: No details added (to be added as the project develops).
 **I want** to request assistance for a machine in the app when a repair requires additional help,  
 **so that** my colleagues are notified and can assist me.
 
-Description: No details added (to be added as the project develops).
-
 #### Acceptance Criteria:
 **Given** the Maintenance Technician has completed the assistance request form  
 **When** the Technician submits the request  
@@ -170,11 +162,9 @@ Description: No details added (to be added as the project develops).
 ---
 
 ### User Story 5:
- **As a** Maintenance Director,  
+**As a** Maintenance Director,  
 **I want** to know if there is a machine that has been having several breakdowns,  
 **so that** I can investigate a more serious fault.
-
-Description: No details added (to be added as the project develops).
 
 #### Acceptance Criteria:
 **Given** the user is logged in the system  
@@ -187,8 +177,6 @@ Description: No details added (to be added as the project develops).
 **As a** Maintenance Director,  
 **I want** to choose the technicians that can help when there is a request sent by another technician,
 **so that** the machine can be fixed quicker.
-
-Description: No details added (to be added as the project develops).
 
 #### Acceptance Criteria:
 **Given** the user is logged in the system  
@@ -208,8 +196,6 @@ Description: No details added (to be added as the project develops).
 **I want** to monitor the technicians' performance,  
 **so that** I can ensure the maintenance team is meeting productivity expectations.
 
-Description: No details added (to be added as the project develops).
-
 #### Acceptance Criteria:
 **Given** the user is logged into the system  
 **And** the user has the role of "Administrator"  
@@ -222,8 +208,6 @@ Description: No details added (to be added as the project develops).
 **I want** to register new equipment/machines in the app,  
 **so that** the maintenance team can start tracking its performance and history.
 
-Description: No details added (to be added as the project develops).
-
 #### Acceptance Criteria:
 **Given** the user is logged into the system  
 **And** the user has the role of "Administrator"  
@@ -235,8 +219,6 @@ Description: No details added (to be added as the project develops).
 **As a** Administrator,  
 **I want** to remove equipment/machines from the app,  
 **so that** the views of every user remain updated.
-
-Description: No details added (to be added as the project develops).
 
 #### Acceptance Criteria:
 **Given** the user is logged in as a Administrator  
@@ -252,8 +234,6 @@ Description: No details added (to be added as the project develops).
 **As a** Administrator,  
 **I want** to access the history of removed machines,  
 **so that** I can review past performance, costs, and maintenance records for several purposes.
-
-Description: No details added (to be added as the project develops).
 
 #### Acceptance Criteria:
 **Given** the user is logged into the system  
@@ -472,7 +452,7 @@ Description: No details added (to be added as the project develops).
 
 # 4. Architecture
 
-<img src="../projX/docs/backend-structure/architectureNew.png" alt="UML Class Diagram" width="">
+<img src="../projX/docs/images/architecture/architectureNew.png" alt="UML Class Diagram" width="">
 
 Spring Boot REST API with:
 
@@ -790,7 +770,7 @@ Controllers include:
 
 # 9. UML Class Diagram
 
-<img src="../projX/docs/backend-structure/UMLDiagramNew.png" alt="UML Class Diagram" width="">
+<img src="../projX/docs/images/uml/UML.png" alt="UML Class Diagram" width="">
 
 
 ---
