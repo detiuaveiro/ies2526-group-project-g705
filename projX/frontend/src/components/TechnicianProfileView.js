@@ -1,21 +1,48 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "./ui/card";
 import { useAuth } from "../contexts/AuthContext";
-import { mockTechnicianPerformance } from "../data/mockData";
 import { Wrench, CheckCircle, Clock, User as UserIcon } from "lucide-react";
-const TechnicianProfileView = () => {
+import { toast } from "sonner";
+
+const API_URL = "http://localhost:8080/api/v1";
+
+export const TechnicianProfileView = () => {
   const { user } = useAuth();
-  const stats = mockTechnicianPerformance.find((p) => p.technicianId === user?.id) || {
-    assignedMachines: 0,
-    completedRepairs: 0,
-    avgRepairTime: 0,
-    totalCost: 0
-  };
-  return <div className="space-y-6 max-w-4xl mx-auto">
+
+  const [logs, setLogs] = useState([]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/maintenance/logs/all`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => setLogs(data))
+      .catch(() => toast.error("Failed to load technician logs"));
+  }, [user]);
+
+  const myLogs = logs.filter((log) => log.technicianName === user.name);
+
+  const completedRepairs = myLogs.length;
+
+  const totalHours = myLogs.reduce((sum, log) => sum + (log.hoursSpent || 0), 0);
+  const avgRepairTime = completedRepairs ? totalHours / completedRepairs : 0;
+
+  const totalCost = myLogs.reduce((sum, log) => sum + (log.cost || 0), 0);
+
+  const machinesWorked = new Set(
+    myLogs.map((log) => log.maintenanceId)
+  ).size;
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-3xl font-bold mb-2">User Profile</h1>
-        <p className="text-gray-600">View your account details and performance metrics</p>
+        <h1 className="text-3xl font-bold mb-2">Technician Profile</h1>
+        <p className="text-gray-600">
+          Your account details and real maintenance performance
+        </p>
       </div>
 
+      {/* PROFILE CARD */}
       <Card className="border-t-4 border-t-blue-600">
         <CardContent className="pt-6">
           <div className="flex items-center gap-6">
@@ -25,20 +52,28 @@ const TechnicianProfileView = () => {
             <div>
               <h2 className="text-2xl font-bold">{user?.name}</h2>
               <div className="text-blue-600 font-medium">{user?.role}</div>
-              <div className="text-gray-500 text-sm mt-1">Username: {user?.username}</div>
+              <div className="text-gray-500 text-sm mt-1">
+                Username: {user?.username}
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* STATS */}
       <h3 className="text-xl font-bold mt-8 mb-4">Your Maintenance Statistics</h3>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        {/* MACHINES WORKED */}
         <Card>
           <CardContent className="pt-6">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-medium text-gray-600">Assigned Machines</p>
-                <h3 className="text-3xl font-bold mt-2">{stats.assignedMachines}</h3>
+                <p className="text-sm font-medium text-gray-600">
+                  Machines Worked On
+                </p>
+                <h3 className="text-3xl font-bold mt-2">{machinesWorked}</h3>
               </div>
               <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
                 <Wrench className="w-5 h-5" />
@@ -47,12 +82,15 @@ const TechnicianProfileView = () => {
           </CardContent>
         </Card>
 
+        {/* COMPLETED REPAIRS */}
         <Card>
           <CardContent className="pt-6">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-medium text-gray-600">Completed Repairs</p>
-                <h3 className="text-3xl font-bold mt-2">{stats.completedRepairs}</h3>
+                <p className="text-sm font-medium text-gray-600">
+                  Completed Repairs
+                </p>
+                <h3 className="text-3xl font-bold mt-2">{completedRepairs}</h3>
               </div>
               <div className="p-2 bg-green-100 text-green-600 rounded-lg">
                 <CheckCircle className="w-5 h-5" />
@@ -61,13 +99,18 @@ const TechnicianProfileView = () => {
           </CardContent>
         </Card>
 
+        {/* AVG REPAIR TIME */}
         <Card>
           <CardContent className="pt-6">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-medium text-gray-600">Avg. Repair Time</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Avg. Repair Time
+                </p>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <h3 className="text-3xl font-bold">{stats.avgRepairTime}</h3>
+                  <h3 className="text-3xl font-bold">
+                    {avgRepairTime.toFixed(1)}
+                  </h3>
                   <span className="text-sm text-gray-500">hours</span>
                 </div>
               </div>
@@ -78,9 +121,24 @@ const TechnicianProfileView = () => {
           </CardContent>
         </Card>
 
+        {/* TOTAL COST */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Repair Cost
+                </p>
+                <h3 className="text-3xl font-bold mt-2">€{totalCost.toFixed(0)}</h3>
+              </div>
+              <div className="p-2 bg-red-100 text-red-600 rounded-lg">
+                <Wrench className="w-5 h-5" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
       </div>
-    </div>;
-};
-export {
-  TechnicianProfileView
+    </div>
+  );
 };

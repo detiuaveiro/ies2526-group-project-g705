@@ -8,11 +8,11 @@ import jakarta.persistence.Entity;
 
 @Entity
 @DiscriminatorValue("VIB_SENSOR")
-public class VibrationSensor extends Sensor<VibrationReading> {
+public class VibrationSensor extends Sensor {
 
     @Override
-    public VibrationReading getMeasurement() {
-        List<VibrationReading> readings = getReadings();
+    public Reading getMeasurement() {
+        List<Reading> readings = getReadings();
         if (readings == null || readings.isEmpty()) {
             return null;
         }

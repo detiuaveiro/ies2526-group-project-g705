@@ -1,66 +1,86 @@
-import { Card, CardContent } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { mockAssistanceRequests } from "../data/mockData";
-import { AlertCircle, Clock, MapPin } from "lucide-react";
-import { Button } from "./ui/button";
+import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-const TechnicianRequestsView = ({ onGoToMachine }) => {
-  const { user } = useAuth();
-  const filteredRequests = mockAssistanceRequests.filter(
-    (req) => req.status === "pending" && req.assignedTechnicians?.includes(user?.id || "")
-  );
-  return <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Assistance Requests</h1>
-        <p className="text-gray-600">Review requests from other technicians needing your expertise</p>
-      </div>
 
-      <div className="grid gap-4">
-        {filteredRequests.length === 0 ? <div className="text-center py-12 text-gray-600 bg-white rounded-lg border">
-            No assistance requests available.
-          </div> : filteredRequests.map((request) => <Card key={request.id}>
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
-                  <div className="space-y-3 flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-xl font-bold">{request.machineName}</h3>
-                      <Badge variant={request.status === "pending" ? "default" : "secondary"}>
-                        {request.status.toUpperCase()}
-                      </Badge>
-                    </div>
-                    
-                    <p className="text-gray-700">{request.reason}</p>
-                    
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        {request.location}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" />
-                        Requested by {request.requestedBy}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {request.timestamp.toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-3 w-full md:w-auto mt-4 md:mt-0">
-                    <Button
-    className="flex-1 md:flex-none"
-    onClick={() => onGoToMachine(request.machineId)}
-  >
-                      Go to Machine
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>)}
-      </div>
-    </div>;
-};
-export {
-  TechnicianRequestsView
+const API = "http://localhost:8080/api/v1/assistance-requests";
+
+export const TechnicianRequestsView = ({ onGoToMachine }) => {
+  const { user } = useAuth();
+  const [requests, setRequests] = useState([]);
+
+  const loadRequests = () => {
+    fetch(API, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => setRequests(data.filter(r => r.status !== "COMPLETED")))
+      .catch(() => {});
+  };
+
+  const acceptRequest = async (id) => {
+    await fetch(`${API}/${id}/assign?technicianId=${user.id}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${user.token}` },
+    });
+    loadRequests();
+  };
+
+  const completeRequest = async (id) => {
+    await fetch(`${API}/${id}/complete`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${user.token}` },
+    });
+    loadRequests();
+  };
+
+  useEffect(() => {
+    loadRequests();
+    const interval = setInterval(loadRequests, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-bold">Assistance Requests</h2>
+
+      {requests.length === 0 ? (
+        <p>No requests</p>
+      ) : (
+        <ul className="space-y-2">
+          {requests.map((req) => (
+            <li key={req.id} className="border p-3 rounded">
+              <p className="font-medium">{req.problemDescription}</p>
+              <p className="text-sm text-gray-500">
+                Machine: {req.machineName}
+              </p>
+
+              <button
+                className="text-blue-600 underline mt-2"
+                onClick={() => onGoToMachine(req.machineId)}
+              >
+                Go to machine
+              </button>
+
+              {req.status === "PENDING" && (
+                <button
+                  className="text-green-600 underline ml-4"
+                  onClick={() => acceptRequest(req.id)}
+                >
+                  Accept Request
+                </button>
+              )}
+
+              {req.status === "ACCEPTED" && (
+                <button
+                  className="text-purple-600 underline ml-4"
+                  onClick={() => completeRequest(req.id)}
+                >
+                  Mark as Completed
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 };

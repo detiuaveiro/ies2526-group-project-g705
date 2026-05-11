@@ -5,29 +5,41 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { toast } from "sonner";
-const EndMaintenanceDialog = ({
-  open,
-  onOpenChange,
-  onConfirm,
-  machineName
-}) => {
+import { useAuth } from "../contexts/AuthContext";
+
+export const EndMaintenanceDialog = ({ open, onOpenChange, onConfirm, machineName }) => {
+  const { user } = useAuth();
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [hoursSpent, setHoursSpent] = useState("");
+  const [cost, setCost] = useState("");
+  const [partsUsed, setPartsUsed] = useState("");
+
   const handleSubmit = () => {
-    if (!title.trim()) {
-      toast.error("Please provide a title for the maintenance log");
-      return;
-    }
-    if (!description.trim()) {
-      toast.error("Please provide a description of the work performed");
-      return;
-    }
-    onConfirm(title, description);
+    if (!title.trim()) return toast.error("Please provide a title");
+    if (!description.trim()) return toast.error("Please provide a description");
+
+    onConfirm({
+      title,
+      description,
+      hoursSpent: Number(hoursSpent),
+      cost: Number(cost),
+      partsUsed,
+      technicianId: user.id
+    });
+
     setTitle("");
     setDescription("");
+    setHoursSpent("");
+    setCost("");
+    setPartsUsed("");
+
     onOpenChange(false);
   };
-  return <Dialog open={open} onOpenChange={onOpenChange}>
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>End Maintenance</DialogTitle>
@@ -35,29 +47,47 @@ const EndMaintenanceDialog = ({
             Conclude maintenance for {machineName}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 mt-4">
+          
           <div>
-            <Label htmlFor="title">Work Title</Label>
-            <Input
-    id="title"
-    value={title}
-    onChange={(e) => setTitle(e.target.value)}
-    placeholder="e.g. Broken valve replacement"
-    className="mt-2"
-  />
+            <Label>Work Title</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
 
           <div>
-            <Label htmlFor="description">Detailed Description</Label>
+            <Label>Detailed Description</Label>
             <Textarea
-    id="description"
-    value={description}
-    onChange={(e) => setDescription(e.target.value)}
-    placeholder="Describe the actions taken, parts replaced, and overall result..."
-    rows={5}
-    className="mt-2"
-  />
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={5}
+            />
+          </div>
+
+          <div>
+            <Label>Hours Spent</Label>
+            <Input
+              type="number"
+              value={hoursSpent}
+              onChange={(e) => setHoursSpent(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label>Cost (€)</Label>
+            <Input
+              type="number"
+              value={cost}
+              onChange={(e) => setCost(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label>Parts Used</Label>
+            <Input
+              value={partsUsed}
+              onChange={(e) => setPartsUsed(e.target.value)}
+            />
           </div>
 
           <div className="flex gap-2 justify-end">
@@ -70,8 +100,6 @@ const EndMaintenanceDialog = ({
           </div>
         </div>
       </DialogContent>
-    </Dialog>;
-};
-export {
-  EndMaintenanceDialog
+    </Dialog>
+  );
 };

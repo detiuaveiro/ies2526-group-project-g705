@@ -2,82 +2,71 @@ package com.example.service;
 
 import com.example.domain.Maintenance;
 import com.example.dto.MaintenanceDTO;
-import com.example.repository.MachineRepository;
+import com.example.mapper.MaintenanceMapper;
 import com.example.repository.MaintenanceRepository;
+import com.example.repository.MachineRepository;
 import com.example.repository.TechnicianRepository;
-import jakarta.persistence.EntityNotFoundException;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class MaintenanceService {
 
     private final MaintenanceRepository maintenanceRepository;
     private final MachineRepository machineRepository;
     private final TechnicianRepository technicianRepository;
 
-    @Transactional(readOnly = true)
-    public List<Maintenance> getAllMaintenance() {
-        return maintenanceRepository.findAll();
+    // -------------------------
+    //  DTO METHODS
+    // -------------------------
+
+    public List<MaintenanceDTO> getAllMaintenanceDTO() {
+        return maintenanceRepository.findAll()
+                .stream()
+                .map(MaintenanceMapper::toDTO)
+                .toList();
     }
 
-    @Transactional(readOnly = true)
-    public Maintenance getMaintenanceById(Long id) {
-        return maintenanceRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Maintenance record not found with id: " + id));
+    public MaintenanceDTO getMaintenanceByIdDTO(Long id) {
+        return MaintenanceMapper.toDTO(
+                maintenanceRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("Maintenance not found"))
+        );
     }
 
-    @Transactional(readOnly = true)
-    public List<Maintenance> getMaintenanceByMachine(Long machineId) {
-        return maintenanceRepository.findByMachineId(machineId);
+    public List<MaintenanceDTO> getMaintenanceByMachineDTO(Long machineId) {
+        return maintenanceRepository.findByMachineId(machineId)
+                .stream()
+                .map(MaintenanceMapper::toDTO)
+                .toList();
     }
 
-    @Transactional(readOnly = true)
-    public List<Maintenance> getMaintenanceByTechnician(Long technicianId) {
-        return maintenanceRepository.findByTechnicianId(technicianId);
+    public List<MaintenanceDTO> getMaintenanceByTechnicianDTO(Long technicianId) {
+        return maintenanceRepository.findByTechnicianId(technicianId)
+                .stream()
+                .map(MaintenanceMapper::toDTO)
+                .toList();
     }
 
-    public Maintenance createMaintenance(MaintenanceDTO dto) {
-        var machine = machineRepository.findById(dto.getMachineId())
-                .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + dto.getMachineId()));
-
-        var technician = dto.getTechnicianId() != null
-                ? technicianRepository.findById(dto.getTechnicianId())
-                        .orElseThrow(() -> new EntityNotFoundException("Technician not found with id: " + dto.getTechnicianId()))
-                : null;
-
-        Maintenance maintenance = Maintenance.builder()
-                .machine(machine)
-                .technician(technician)
-                .type(dto.getType())
-                .status(dto.getStatus())
-                .notes(dto.getNotes())
-                .build();
-
-        return maintenanceRepository.save(maintenance);
+    public MaintenanceDTO createMaintenanceDTO(MaintenanceDTO dto) {
+        Maintenance m = MaintenanceMapper.toEntity(dto, machineRepository, technicianRepository);
+        return MaintenanceMapper.toDTO(maintenanceRepository.save(m));
     }
 
-    public Maintenance updateMaintenance(Long id, MaintenanceDTO dto) {
-        Maintenance maintenance = getMaintenanceById(id);
-        maintenance.setType(dto.getType());
-        maintenance.setStatus(dto.getStatus());
-        maintenance.setNotes(dto.getNotes());
+    public MaintenanceDTO updateMaintenanceDTO(Long id, MaintenanceDTO dto) {
+        Maintenance existing = maintenanceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Maintenance not found"));
 
-        if (dto.getTechnicianId() != null) {
-            var technician = technicianRepository.findById(dto.getTechnicianId())
-                    .orElseThrow(() -> new EntityNotFoundException("Technician not found with id: " + dto.getTechnicianId()));
-            maintenance.setTechnician(technician);
-        }
+        MaintenanceMapper.updateEntity(existing, dto, machineRepository, technicianRepository);
 
-        return maintenanceRepository.save(maintenance);
+        return MaintenanceMapper.toDTO(maintenanceRepository.save(existing));
     }
 
     public void deleteMaintenance(Long id) {
-        maintenanceRepository.delete(getMaintenanceById(id));
+        maintenanceRepository.deleteById(id);
     }
 }

@@ -1,29 +1,26 @@
 package com.example.dto;
 
-import com.example.domain.enums.RequestStatus;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import com.example.domain.enums.AssistanceRequestStatus;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class AssistanceRequestDTO {
-
     private Long id;
-
-    @NotNull
     private Long problemId;
-
-    @NotNull
+    private String problemDescription;
+    private Long machineId;
+    private String machineName;
     private Long requestedById;
-
-    @NotBlank
-    private String reason;
-
-    private RequestStatus status;
-
+    private String requestedByName;
     private Long assignedTechnicianId;
+    private String assignedTechnicianName;
+    private String reason;
+    private AssistanceRequestStatus status;
+    private LocalDateTime createdAt;
+    private LocalDateTime acceptedAt;
+    private LocalDateTime completedAt;
 }

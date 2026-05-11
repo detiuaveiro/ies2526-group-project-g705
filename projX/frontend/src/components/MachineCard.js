@@ -1,97 +1,54 @@
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { AlertTriangle, AlertCircle, CheckCircle, XCircle } from "lucide-react";
-import { cn } from "../lib/utils";
+import { Wrench, AlertTriangle, CheckCircle, Archive } from "lucide-react";
+
 const statusConfig = {
-  operational: {
-    icon: CheckCircle,
+  ACTIVE: {
+    label: "Active",
     color: "text-green-600",
-    bgColor: "bg-green-100",
-    label: "Operational"
+    bg: "bg-green-100",
+    icon: CheckCircle
   },
-  warning: {
-    icon: AlertTriangle,
+  MAINTENANCE: {
+    label: "Maintenance",
     color: "text-yellow-600",
-    bgColor: "bg-yellow-100",
-    label: "Warning"
+    bg: "bg-yellow-100",
+    icon: Wrench
   },
-  critical: {
-    icon: AlertCircle,
+  ASSISTANCE_REQUESTED: {
+    label: "Assistance Requested",
     color: "text-orange-600",
-    bgColor: "bg-orange-100",
-    label: "Critical"
+    bg: "bg-orange-100",
+    icon: AlertTriangle
   },
-  breakdown: {
-    icon: XCircle,
-    color: "text-red-600",
-    bgColor: "bg-red-100",
-    label: "Breakdown"
+  ARCHIVED: {
+    label: "Archived",
+    color: "text-gray-600",
+    bg: "bg-gray-200",
+    icon: Archive
   }
 };
-const MachineCard = ({ machine, onClick }) => {
-  const config = statusConfig[machine.status];
-  const Icon = config.icon;
-  return <Card
-    className="cursor-pointer hover:shadow-lg transition-shadow"
-    onClick={onClick}
-  >
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-lg">{machine.name}</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">{machine.location}</p>
-          </div>
-          <div className={cn("p-2 rounded-full", config.bgColor)}>
-            <Icon className={cn("w-5 h-5", config.color)} />
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Status</span>
-          <span className={cn("text-sm font-medium", config.color)}>
-            {config.label}
-          </span>
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Priority</span>
-          <span className="text-sm font-medium">
-            {machine.priority === 1 ? "High" : machine.priority <= 3 ? "Medium" : "Low"}
-          </span>
-        </div>
 
-        <div className="grid grid-cols-3 gap-2 pt-2 border-t">
-          <div className="text-center">
-            <div className="text-xs text-gray-600">Vibration</div>
-            <div className={cn(
-    "text-sm font-medium",
-    machine.vibration > 80 ? "text-red-600" : machine.vibration > 60 ? "text-yellow-600" : "text-green-600"
-  )}>
-              {machine.vibration}%
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-xs text-gray-600">Pressure</div>
-            <div className={cn(
-    "text-sm font-medium",
-    machine.pressure > 110 ? "text-red-600" : machine.pressure > 90 ? "text-yellow-600" : "text-green-600"
-  )}>
-              {machine.pressure} PSI
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-xs text-gray-600">Temp</div>
-            <div className={cn(
-    "text-sm font-medium",
-    machine.temperature > 90 ? "text-red-600" : machine.temperature > 70 ? "text-yellow-600" : "text-green-600"
-  )}>
-              {machine.temperature}°C
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>;
-};
-export {
-  MachineCard
+export const MachineCard = ({ machine, onClick }) => {
+  const config = statusConfig[machine.status] || statusConfig.ACTIVE;
+  const Icon = config.icon;
+
+  return (
+    <div
+      onClick={onClick}
+      className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition"
+    >
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-lg">{machine.name}</h3>
+
+        <span
+          className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.color}`}
+        >
+          <Icon className="w-4 h-4" />
+          {config.label}
+        </span>
+      </div>
+
+      <p className="text-sm text-gray-600">{machine.location}</p>
+      <p className="text-xs text-gray-500 mt-1">ID: {machine.id}</p>
+    </div>
+  );
 };

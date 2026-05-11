@@ -1,56 +1,144 @@
 package com.example.controller;
 
-import com.example.domain.Maintenance;
 import com.example.dto.MaintenanceDTO;
+import com.example.dto.MaintenanceSessionDTO;
+import com.example.dto.MaintenanceStatsDTO;
+import com.example.domain.MaintenanceSession;
+import com.example.domain.Technician;
 import com.example.service.MaintenanceService;
+import com.example.repository.MaintenanceSessionRepository;
+import com.example.repository.TechnicianRepository;
+import com.example.repository.MachineRepository;
+import com.example.domain.enums.MachineStatus;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/maintenance")
+@RequestMapping("/api/v1/maintenances")
 @RequiredArgsConstructor
 public class MaintenanceController {
 
     private final MaintenanceService maintenanceService;
+    private final MaintenanceSessionRepository sessionRepository;
+    private final TechnicianRepository technicianRepository;
+    private final MachineRepository machineRepository;
 
     @GetMapping
-    public ResponseEntity<List<Maintenance>> getAllMaintenance() {
-        return ResponseEntity.ok(maintenanceService.getAllMaintenance());
+    public ResponseEntity<List<MaintenanceDTO>> getAllMaintenance() {
+        return ResponseEntity.ok(maintenanceService.getAllMaintenanceDTO());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Maintenance> getMaintenanceById(@PathVariable Long id) {
-        return ResponseEntity.ok(maintenanceService.getMaintenanceById(id));
+    public ResponseEntity<MaintenanceDTO> getMaintenanceById(@PathVariable Long id) {
+        return ResponseEntity.ok(maintenanceService.getMaintenanceByIdDTO(id));
     }
 
     @GetMapping("/machine/{machineId}")
-    public ResponseEntity<List<Maintenance>> getByMachine(@PathVariable Long machineId) {
-        return ResponseEntity.ok(maintenanceService.getMaintenanceByMachine(machineId));
+    public ResponseEntity<List<MaintenanceDTO>> getByMachine(@PathVariable Long machineId) {
+        return ResponseEntity.ok(maintenanceService.getMaintenanceByMachineDTO(machineId));
     }
 
     @GetMapping("/technician/{technicianId}")
-    public ResponseEntity<List<Maintenance>> getByTechnician(@PathVariable Long technicianId) {
-        return ResponseEntity.ok(maintenanceService.getMaintenanceByTechnician(technicianId));
+    public ResponseEntity<List<MaintenanceDTO>> getByTechnician(@PathVariable Long technicianId) {
+        return ResponseEntity.ok(maintenanceService.getMaintenanceByTechnicianDTO(technicianId));
     }
 
     @PostMapping
-    public ResponseEntity<Maintenance> createMaintenance(@Valid @RequestBody MaintenanceDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(maintenanceService.createMaintenance(dto));
+    public ResponseEntity<MaintenanceDTO> createMaintenance(@Valid @RequestBody MaintenanceDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(maintenanceService.createMaintenanceDTO(dto));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Maintenance> updateMaintenance(@PathVariable Long id, @Valid @RequestBody MaintenanceDTO dto) {
-        return ResponseEntity.ok(maintenanceService.updateMaintenance(id, dto));
+    public ResponseEntity<MaintenanceDTO> updateMaintenance(@PathVariable Long id,
+                                                            @Valid @RequestBody MaintenanceDTO dto) {
+        return ResponseEntity.ok(maintenanceService.updateMaintenanceDTO(id, dto));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteMaintenance(@PathVariable Long id) {
         maintenanceService.deleteMaintenance(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private MaintenanceSessionDTO toDTO(MaintenanceSession s) {
+        MaintenanceSessionDTO dto = new MaintenanceSessionDTO();
+        dto.setId(s.getId());
+        dto.setTechnicianId(s.getTechnician().getId());
+        dto.setTechnicianName(s.getTechnician().getName());
+        dto.setMachineId(s.getMachine().getId());
+        dto.setMachineName(s.getMachine().getName());
+        dto.setStartTime(s.getStartTime());
+        dto.setEndTime(s.getEndTime());
+        dto.setActive(s.isActive());
+        return dto;
+    }
+
+    @GetMapping("/current/{technicianId}")
+    public ResponseEntity<MaintenanceSessionDTO> getCurrent(@PathVariable Long technicianId) {
+        var sessions = sessionRepository.findByTechnicianIdAndActiveTrue(technicianId);
+
+        if (sessions.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        sessions.sort((a, b) -> b.getStartTime().compareTo(a.getStartTime()));
+        MaintenanceSession active = sessions.get(0);
+
+        for (int i = 1; i < sessions.size(); i++) {
+            MaintenanceSession old = sessions.get(i);
+            old.setActive(false);
+            old.setEndTime(LocalDateTime.now());
+            sessionRepository.save(old);
+        }
+
+        return ResponseEntity.ok(toDTO(active));
+    }
+
+    @PutMapping("/finish/{sessionId}")
+    public ResponseEntity<Void> finish(@PathVariable Long sessionId) {
+        MaintenanceSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Session not found"));
+
+        session.setActive(false);
+        session.setEndTime(LocalDateTime.now());
+        sessionRepository.save(session);
+
+        var tech = session.getTechnician();
+        var machine = session.getMachine();
+
+        tech.setAvailable(true);
+        tech.setTasksCompleted(tech.getTasksCompleted() + 1);
+        tech.setCurrentAssignment(null);
+        technicianRepository.save(tech);
+
+        machine.setStatus(MachineStatus.ACTIVE);
+        machine.setActionRequiredCount(Math.max(0, machine.getActionRequiredCount() - 1));
+        machineRepository.save(machine);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/stats/{techId}")
+    public ResponseEntity<MaintenanceStatsDTO> getStats(@PathVariable Long techId) {
+        Technician t = technicianRepository.findById(techId)
+                .orElseThrow(() -> new EntityNotFoundException("Technician not found"));
+
+        MaintenanceStatsDTO dto = MaintenanceStatsDTO.builder()
+                .tasksCompleted(t.getTasksCompleted())
+                .tasksPending(t.getTasksPending())
+                .averageRepairTime(t.getAverageRepairTime())
+                .assistedOthers(t.getAssistedCounter())
+                .wasAssisted(t.getWasAssistedCounter())
+                .available(t.isAvailable())
+                .build();
+
+        return ResponseEntity.ok(dto);
     }
 }

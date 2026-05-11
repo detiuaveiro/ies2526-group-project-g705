@@ -7,11 +7,11 @@ import jakarta.persistence.Entity;
 
 @Entity
 @DiscriminatorValue("TEMP_SENSOR")
-public class TemperatureSensor extends Sensor<TemperatureReading> {
+public class TemperatureSensor extends Sensor {
 
     @Override
-    public TemperatureReading getMeasurement() {
-        List<TemperatureReading> readings = getReadings();
+    public Reading getMeasurement() {
+        List<Reading> readings = getReadings();
         if (readings == null || readings.isEmpty()) {
             return null;
         }

@@ -1,11 +1,7 @@
 package com.example.dto;
 
-import com.example.domain.enums.Gender;
+import com.example.domain.User;
 import com.example.domain.enums.UserRole;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Getter
@@ -16,32 +12,35 @@ import lombok.*;
 public class UserDTO {
 
     private Long id;
-
-    @NotBlank
     private String name;
-
-    @NotBlank
-    @Email
     private String email;
-
-    @NotBlank
+    private UserRole role;
+    private boolean active;
+    private boolean online;
+    private boolean privileged;
     private String password;
 
-    private String phoneNumber;
+    public static UserDTO fromEntity(User u) {
+        return UserDTO.builder()
+                .id(u.getId())
+                .name(u.getName())
+                .email(u.getEmail())
+                .role(u.getRole())
+                .active(u.isActive())
+                .online(u.isOnline())
+                .privileged(u.isPrivileged())
+                .build();
+    }
 
-    private Integer age;
-
-    private Gender gender;
-
-    @NotNull
-    private UserRole role;
-
-    @JsonProperty("isActive")
-    private boolean isActive;
-    
-    @JsonProperty("isOnline")
-    private boolean isOnline;
-    
-    @JsonProperty("isPrivileged")
-    private boolean isPrivileged;
+    public User toEntity() {
+        User u = new User();
+        u.setId(id);
+        u.setName(name);
+        u.setEmail(email);
+        u.setRole(role != null ? role : UserRole.TECHNICIAN);
+        u.setActive(active);
+        u.setOnline(online);
+        u.setPrivileged(privileged);
+        return u;
+    }
 }
