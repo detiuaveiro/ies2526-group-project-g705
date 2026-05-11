@@ -1,114 +1,178 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { mockMachines, mockBreakdowns, mockAssistanceRequests } from "../data/mockData";
-import { AlertCircle, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
-const Dashboard = () => {
-  const operationalCount = mockMachines.filter((m) => m.status === "operational").length;
-  const warningCount = mockMachines.filter((m) => m.status === "warning").length;
-  const criticalCount = mockMachines.filter((m) => m.status === "critical").length;
-  const breakdownCount = mockMachines.filter((m) => m.status === "breakdown").length;
-  const recentBreakdowns = mockBreakdowns.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
-  const pendingRequests = mockAssistanceRequests.filter((r) => r.status === "pending");
-  const hazardMachines = mockMachines.filter(
-    (m) => m.vibration > 80 || m.pressure > 110 || m.temperature > 90
+import { CheckCircle, Wrench, AlertTriangle, Users } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { toast } from "sonner";
+
+const API_URL = "http://localhost:8080/api/v1";
+
+export const Dashboard = () => {
+  const { user } = useAuth();
+
+  const [machines, setMachines] = useState([]);
+  const [problems, setProblems] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [ranking, setRanking] = useState([]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/machines`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((res) => res.json())
+      .then(setMachines)
+      .catch(() => toast.error("Failed to load machines"));
+  }, [user]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/problems/history`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((res) => res.json())
+      .then(setProblems)
+      .catch(() => toast.error("Failed to load breakdown history"));
+  }, [user]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/assistance-requests`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((res) => res.json())
+      .then(setRequests)
+      .catch(() => toast.error("Failed to load assistance requests"));
+  }, [user]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/machines/ranking`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((res) => res.json())
+      .then(setRanking)
+      .catch(() => toast.error("Failed to load ranking"));
+  }, [user]);
+
+  const active = machines.filter((m) => m.status === "ACTIVE").length;
+  const maintenance = machines.filter((m) => m.status === "MAINTENANCE").length;
+  const archived = machines.filter((m) => m.status === "ARCHIVED").length;
+
+  const assistanceRequested = machines.reduce(
+    (sum, m) => sum + (m.assistanceRequestedCount || 0),
+    0
   );
-  return <div className="space-y-6">
+
+  const actionRequired = machines.reduce(
+    (sum, m) => sum + (m.actionRequiredCount || 0),
+    0
+  );
+
+  const recentBreakdowns = problems
+    .sort(
+      (a, b) =>
+        new Date(b.startProblemDate).getTime() -
+        new Date(a.startProblemDate).getTime()
+    )
+    .slice(0, 5);
+
+  const pendingRequests = requests.filter((r) => r.status === "PENDING");
+
+  return (
+    <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-gray-600">Overview of the industrial monitoring system</p>
+        <p className="text-gray-600">Real-time overview of the system</p>
       </div>
 
-
-
-      {
-    /* Status Cards */
-  }
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-2 border-green-200">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-600">Operational</div>
-                <div className="text-3xl font-bold mt-1 text-green-700">{operationalCount}</div>
-              </div>
-              <div className="p-3 bg-green-500 rounded-full">
-                <CheckCircle className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 border-yellow-200">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-600">Warning</div>
-                <div className="text-3xl font-bold mt-1 text-yellow-700">{warningCount}</div>
-              </div>
-              <div className="p-3 bg-yellow-500 rounded-full">
-                <AlertTriangle className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 border-orange-200">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-600">Critical</div>
-                <div className="text-3xl font-bold mt-1 text-orange-700">{criticalCount}</div>
-              </div>
-              <div className="p-3 bg-orange-500 rounded-full">
-                <AlertCircle className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 border-red-200">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-600">Breakdown</div>
-                <div className="text-3xl font-bold mt-1 text-red-700">{breakdownCount}</div>
-              </div>
-              <div className="p-3 bg-red-500 rounded-full">
-                <XCircle className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="space-y-6">
+      {/* STATUS CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardHeader>
-            <CardTitle>Recent Breakdowns</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentBreakdowns.map((breakdown) => {
-    const machine = mockMachines.find((m) => m.id === breakdown.machineId);
-    return <div key={breakdown.id} className="flex items-start gap-3 pb-3 border-b last:border-b-0">
-                    <div className={`p-2 rounded-full ${breakdown.resolved ? "bg-green-500" : "bg-red-500"}`}>
-                      {breakdown.resolved ? <CheckCircle className="w-4 h-4 text-white" /> : <XCircle className="w-4 h-4 text-white" />}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium">{machine?.name}</div>
-                      <div className="text-sm text-gray-600">{breakdown.description}</div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {new Date(breakdown.date).toLocaleDateString("en-US")}
-                      </div>
-                    </div>
-                  </div>;
-  })}
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-sm text-gray-600">Active</div>
+                <div className="text-3xl font-bold">{active}</div>
+              </div>
+              <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
 
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-sm text-gray-600">Maintenance</div>
+                <div className="text-3xl font-bold">{maintenance}</div>
+              </div>
+              <Wrench className="w-8 h-8 text-yellow-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-sm text-gray-600">Assistance Requested</div>
+                <div className="text-3xl font-bold">{assistanceRequested}</div>
+              </div>
+              <AlertTriangle className="w-8 h-8 text-orange-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-sm text-gray-600">Action Required</div>
+                <div className="text-3xl font-bold">{actionRequired}</div>
+              </div>
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>;
-};
-export {
-  Dashboard
+
+      {/* RECENT BREAKDOWNS */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Breakdowns</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {recentBreakdowns.map((p) => (
+              <div key={p.id} className="border-b pb-3">
+                <div className="font-medium">{p.machineName}</div>
+                <div className="text-sm text-gray-600">{p.description}</div>
+                <div className="text-xs text-gray-500">
+                  {new Date(p.startProblemDate).toLocaleString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* PENDING ASSISTANCE REQUESTS */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Pending Assistance Requests</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {pendingRequests.length === 0 && (
+            <p className="text-gray-500 text-sm">No pending requests</p>
+          )}
+
+          {pendingRequests.map((r) => (
+            <div key={r.id} className="border-b pb-3 mb-3">
+              <div className="font-medium">{r.machineName}</div>
+              <div className="text-sm text-gray-600">{r.reason}</div>
+              <div className="text-xs text-gray-500">
+                Requested by {r.requestedByName}
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
 };

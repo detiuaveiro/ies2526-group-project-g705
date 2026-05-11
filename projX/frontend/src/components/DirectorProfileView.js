@@ -1,19 +1,49 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "./ui/card";
 import { useAuth } from "../contexts/AuthContext";
-import { mockMachines, mockUsers } from "../data/mockData";
 import { Users, Target, Activity, CheckCircle, User as UserIcon } from "lucide-react";
-const DirectorProfileView = () => {
+import { toast } from "sonner";
+
+const API_URL = "http://localhost:8080/api/v1";
+
+export const DirectorProfileView = () => {
   const { user } = useAuth();
-  const totalTechnicians = mockUsers.filter((u) => u.role === "Maintenance Technician").length;
-  const totalMachines = mockMachines.length;
-  const operationalMachines = mockMachines.filter((m) => m.status === "operational").length;
-  const brokenMachines = mockMachines.filter((m) => m.status === "critical" || m.status === "breakdown").length;
-  return <div className="space-y-6 max-w-4xl mx-auto">
+
+  const [technicians, setTechnicians] = useState([]);
+  const [machines, setMachines] = useState([]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/users/technicians`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((res) => res.json())
+      .then(setTechnicians)
+      .catch(() => toast.error("Failed to load technicians"));
+  }, [user]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/machines`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((res) => res.json())
+      .then(setMachines)
+      .catch(() => toast.error("Failed to load machines"));
+  }, [user]);
+
+  const totalMachines = machines.length;
+  const operational = machines.filter((m) => m.status === "ACTIVE").length;
+  const actionRequired = machines.filter(
+    (m) => m.status === "MAINTENANCE" || m.status === "ASSISTANCE_REQUESTED"
+  ).length;
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
       <div>
         <h1 className="text-3xl font-bold mb-2">Director Profile</h1>
-        <p className="text-gray-600">View your account details and high-level factory metrics</p>
+        <p className="text-gray-600">View your account details and factory metrics</p>
       </div>
 
+      {/* PROFILE CARD */}
       <Card className="border-t-4 border-t-purple-600">
         <CardContent className="pt-6">
           <div className="flex items-center gap-6">
@@ -29,14 +59,17 @@ const DirectorProfileView = () => {
         </CardContent>
       </Card>
 
+      {/* METRICS */}
       <h3 className="text-xl font-bold mt-8 mb-4">Operations Overview</h3>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Technicians */}
         <Card>
           <CardContent className="pt-6">
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Technicians</p>
-                <h3 className="text-3xl font-bold mt-2">{totalTechnicians}</h3>
+                <h3 className="text-3xl font-bold mt-2">{technicians.length}</h3>
               </div>
               <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
                 <Users className="w-5 h-5" />
@@ -45,6 +78,7 @@ const DirectorProfileView = () => {
           </CardContent>
         </Card>
 
+        {/* Total Machines */}
         <Card>
           <CardContent className="pt-6">
             <div className="flex justify-between items-start">
@@ -59,12 +93,13 @@ const DirectorProfileView = () => {
           </CardContent>
         </Card>
 
+        {/* Operational */}
         <Card>
           <CardContent className="pt-6">
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-medium text-gray-600">Operational</p>
-                <h3 className="text-3xl font-bold mt-2 text-green-600">{operationalMachines}</h3>
+                <h3 className="text-3xl font-bold mt-2 text-green-600">{operational}</h3>
               </div>
               <div className="p-2 bg-green-100 text-green-600 rounded-lg">
                 <CheckCircle className="w-5 h-5" />
@@ -73,12 +108,13 @@ const DirectorProfileView = () => {
           </CardContent>
         </Card>
 
+        {/* Action Required */}
         <Card>
           <CardContent className="pt-6">
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-medium text-gray-600">Action Required</p>
-                <h3 className="text-3xl font-bold mt-2 text-red-600">{brokenMachines}</h3>
+                <h3 className="text-3xl font-bold mt-2 text-red-600">{actionRequired}</h3>
               </div>
               <div className="p-2 bg-red-100 text-red-600 rounded-lg">
                 <Activity className="w-5 h-5" />
@@ -87,8 +123,6 @@ const DirectorProfileView = () => {
           </CardContent>
         </Card>
       </div>
-    </div>;
-};
-export {
-  DirectorProfileView
+    </div>
+  );
 };

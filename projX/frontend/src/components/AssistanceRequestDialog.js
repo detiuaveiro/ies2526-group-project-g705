@@ -1,84 +1,80 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
-import { mockAssistanceRequests } from "../data/mockData";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
-const AssistanceRequestDialog = ({
-  machine,
-  open,
-  onOpenChange
-}) => {
+
+const API = "http://localhost:8080/api/v1/assistance-requests";
+
+export const AssistanceRequestDialog = ({ machine, open, onOpenChange }) => {
   const { user } = useAuth();
   const [reason, setReason] = useState("");
-  const handleSubmit = () => {
+
+  if (!machine) return null;
+
+  const handleSubmit = async () => {
     if (!reason.trim()) {
-      toast.error("Please provide a reason for assistance");
+      toast.error("Please provide a reason");
       return;
     }
-    const request = {
-      id: `AR${String(mockAssistanceRequests.length + 1).padStart(3, "0")}`,
-      machineId: machine.id,
-      machineName: machine.name,
-      location: machine.location,
-      reason,
-      requestedBy: user?.name || "Unknown",
-      timestamp: /* @__PURE__ */ new Date(),
-      status: "pending"
-    };
-    mockAssistanceRequests.push(request);
-    toast.success("Assistance request sent", {
-      description: "The director will assign technicians shortly"
-    });
-    setReason("");
-    onOpenChange(false);
+
+    try {
+      const res = await fetch(API, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          machineId: machine.id,
+          requestedById: user.id,
+          reason,
+        }),
+      });
+
+      if (!res.ok) throw new Error();
+
+      toast.success("Assistance request sent");
+      setReason("");
+      onOpenChange(false);
+    } catch {
+      toast.error("Failed to send request");
+    }
   };
-  return <Dialog open={open} onOpenChange={onOpenChange}>
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Request Assistance</DialogTitle>
-          <DialogDescription>
-            Request help from other maintenance technicians for this machine
-          </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 mt-4">
           <div>
-            <div className="text-sm text-gray-600">Machine</div>
-            <div className="font-medium">{machine.name}</div>
-          </div>
-          
-          <div>
-            <div className="text-sm text-gray-600">Location</div>
-            <div className="font-medium">{machine.location}</div>
+            <Label>Machine</Label>
+            <p className="font-medium">{machine.name}</p>
           </div>
 
           <div>
-            <Label htmlFor="reason">Reason for Assistance</Label>
+            <Label>Reason</Label>
             <Textarea
-    id="reason"
-    value={reason}
-    onChange={(e) => setReason(e.target.value)}
-    placeholder="Describe why you need assistance with this machine..."
-    rows={4}
-    className="mt-2"
-  />
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Describe the issue..."
+              rows={4}
+            />
           </div>
 
-          <div className="flex gap-2 justify-end">
+          <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>
-              Send Request
-            </Button>
+            <Button onClick={handleSubmit}>Send</Button>
           </div>
         </div>
       </DialogContent>
-    </Dialog>;
-};
-export {
-  AssistanceRequestDialog
+    </Dialog>
+  );
 };
