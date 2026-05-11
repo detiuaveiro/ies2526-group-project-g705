@@ -1,11 +1,12 @@
 package com.example.service;
 
+import com.example.domain.Machine;
 import com.example.domain.Problem;
-import com.example.domain.Technician;
 import com.example.dto.ProblemDTO;
+import com.example.dto.ProblemHistoryDTO;
+import com.example.mapper.ProblemMapper;
 import com.example.repository.MachineRepository;
 import com.example.repository.ProblemRepository;
-import com.example.repository.TechnicianRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,74 +22,75 @@ public class ProblemService {
 
     private final ProblemRepository problemRepository;
     private final MachineRepository machineRepository;
-    private final TechnicianRepository technicianRepository;
 
     @Transactional(readOnly = true)
-    public List<Problem> getAllProblems() {
-        return problemRepository.findAll();
+    public List<ProblemDTO> getAllProblemsDTO() {
+        return problemRepository.findAll()
+                .stream()
+                .map(ProblemMapper::toDTO)
+                .toList();
     }
 
     @Transactional(readOnly = true)
-    public Problem getProblemById(Long id) {
+    public ProblemDTO getProblemByIdDTO(Long id) {
         return problemRepository.findById(id)
+                .map(ProblemMapper::toDTO)
                 .orElseThrow(() -> new EntityNotFoundException("Problem not found with id: " + id));
     }
 
     @Transactional(readOnly = true)
-    public List<Problem> getProblemsByMachine(Long machineId) {
-        return problemRepository.findByMachineId(machineId);
+    public List<ProblemDTO> getProblemsByMachineDTO(Long machineId) {
+        return problemRepository.findByMachineId(machineId)
+                .stream()
+                .map(ProblemMapper::toDTO)
+                .toList();
     }
 
-    public Problem createProblem(ProblemDTO dto) {
-        var machine = machineRepository.findById(dto.getMachineId())
-                .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + dto.getMachineId()));
-
-        Technician technician = null;
-        if (dto.getAssignedTechnicianId() != null) {
-            technician = technicianRepository.findById(dto.getAssignedTechnicianId())
-                    .orElseThrow(() -> new EntityNotFoundException("Technician not found with id: " + dto.getAssignedTechnicianId()));
-        }
+    public ProblemDTO createProblemDTO(ProblemDTO dto) {
+        Machine machine = machineRepository.findById(dto.getMachineId())
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
 
         Problem problem = Problem.builder()
                 .machine(machine)
                 .description(dto.getDescription())
-                .priority(dto.getPriority())
                 .resolved(dto.isResolved())
-                .startProblemDate(dto.getStartProblemDate())
-                .faultSeverity(dto.getFaultSeverity())
-                .assignedTechnician(technician)
+                .startProblemDate(LocalDateTime.now())
                 .build();
 
-        return problemRepository.save(problem);
+        return ProblemMapper.toDTO(problemRepository.save(problem));
     }
 
-    public Problem updateProblem(Long id, ProblemDTO dto) {
-        Problem problem = getProblemById(id);
+    public ProblemDTO updateProblemDTO(Long id, ProblemDTO dto) {
+        Problem problem = problemRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Problem not found"));
+
         problem.setDescription(dto.getDescription());
-        problem.setPriority(dto.getPriority());
         problem.setResolved(dto.isResolved());
-        problem.setStartProblemDate(dto.getStartProblemDate());
-        problem.setSolvedProblemDate(dto.getSolvedProblemDate());
-        problem.setFaultSeverity(dto.getFaultSeverity());
 
-        if (dto.getAssignedTechnicianId() != null) {
-            Technician technician = technicianRepository.findById(dto.getAssignedTechnicianId())
-                    .orElseThrow(() -> new EntityNotFoundException("Technician not found with id: " + dto.getAssignedTechnicianId()));
-            problem.setAssignedTechnician(technician);
-        }
-
-        return problemRepository.save(problem);
+        return ProblemMapper.toDTO(problemRepository.save(problem));
     }
 
-    /** Marks a problem as resolved, recording the resolution timestamp */
-    public Problem resolveProblem(Long id) {
-        Problem problem = getProblemById(id);
+    public ProblemDTO resolveProblemDTO(Long id) {
+        Problem problem = problemRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Problem not found"));
+
         problem.setResolved(true);
         problem.setSolvedProblemDate(LocalDateTime.now());
-        return problemRepository.save(problem);
+
+        return ProblemMapper.toDTO(problemRepository.save(problem));
     }
 
     public void deleteProblem(Long id) {
-        problemRepository.delete(getProblemById(id));
+        Problem problem = problemRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Problem not found"));
+        problemRepository.delete(problem);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProblemHistoryDTO> getHistory() {
+        return problemRepository.findAll()
+                .stream()
+                .map(ProblemMapper::toHistoryDTO)
+                .toList();
     }
 }

@@ -1,16 +1,23 @@
 package com.example.service;
 
-import com.example.domain.Machine;
-import com.example.domain.enums.MachineStatus;
-import com.example.dto.MachineDTO;
-import com.example.repository.MachineRepository;
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import com.example.domain.Machine;
+import com.example.domain.Technician;
+import com.example.domain.enums.MachineStatus;
+import com.example.dto.MachineDTO;
+import com.example.dto.MachineRankingDTO;
+import com.example.mapper.MachineMapper;
+import com.example.repository.MachineRepository;
+import com.example.repository.TechnicianRepository;
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -18,29 +25,40 @@ import java.util.List;
 public class MachineService {
 
     private final MachineRepository machineRepository;
+    private final TechnicianRepository technicianRepository;
 
     @Transactional(readOnly = true)
-    public List<Machine> getAllMachines() {
-        return machineRepository.findAll();
+    public List<MachineDTO> getAllMachinesDTO() {
+        return machineRepository.findAll()
+                .stream()
+                .map(MachineMapper::toDTO)
+                .toList();
     }
 
     @Transactional(readOnly = true)
-    public Machine getMachineById(Long id) {
+    public MachineDTO getMachineByIdDTO(Long id) {
         return machineRepository.findById(id)
+                .map(MachineMapper::toDTO)
                 .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
     }
 
     @Transactional(readOnly = true)
-    public List<Machine> getArchivedMachines() {
-        return machineRepository.findByArchivedAtIsNotNull();
+    public List<MachineDTO> getArchivedMachinesDTO() {
+        return machineRepository.findByArchivedAtIsNotNull()
+                .stream()
+                .map(MachineMapper::toDTO)
+                .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<Machine> getActiveMachines() {
-        return machineRepository.findByArchivedAtIsNull();
+    public List<MachineDTO> getActiveMachinesDTO() {
+        return machineRepository.findByArchivedAtIsNull()
+                .stream()
+                .map(MachineMapper::toDTO)
+                .toList();
     }
 
-    public Machine createMachine(MachineDTO dto) {
+    public MachineDTO createMachineDTO(MachineDTO dto) {
         Machine machine = Machine.builder()
                 .name(dto.getName())
                 .location(dto.getLocation())
@@ -48,33 +66,94 @@ public class MachineService {
                 .status(dto.getStatus() != null ? dto.getStatus() : MachineStatus.ACTIVE)
                 .downtimeSum(dto.getDowntimeSum() != null ? dto.getDowntimeSum() : 0.0)
                 .suspicionFlag(dto.isSuspicionFlag())
+                .vibrationSensor(dto.isVibrationSensor())
+                .temperatureSensor(dto.isTemperatureSensor())
+                .pressureSensor(dto.isPressureSensor())
                 .build();
-        return machineRepository.save(machine);
+
+        return MachineMapper.toDTO(machineRepository.save(machine));
     }
 
-    public Machine updateMachine(Long id, MachineDTO dto) {
-        Machine machine = getMachineById(id);
+    public MachineDTO updateMachineDTO(Long id, MachineDTO dto) {
+        Machine machine = machineRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
+
         machine.setName(dto.getName());
         machine.setLocation(dto.getLocation());
         machine.setImportanceLevel(dto.getImportanceLevel());
         machine.setStatus(dto.getStatus());
         machine.setSuspicionFlag(dto.isSuspicionFlag());
+
         if (dto.getDowntimeSum() != null) {
             machine.setDowntimeSum(dto.getDowntimeSum());
         }
-        return machineRepository.save(machine);
+
+        machine.setVibrationSensor(dto.isVibrationSensor());
+        machine.setTemperatureSensor(dto.isTemperatureSensor());
+        machine.setPressureSensor(dto.isPressureSensor());
+
+        return MachineMapper.toDTO(machineRepository.save(machine));
     }
 
-    /** Archives machine: sets status=ARCHIVED and archivedAt timestamp */
-    public Machine archiveMachine(Long id) {
-        Machine machine = getMachineById(id);
-        machine.setStatus(MachineStatus.ARCHIVED);
-        machine.setArchivedAt(LocalDateTime.now());
-        return machineRepository.save(machine);
+    public MachineDTO restoreMachineDTO(Long id) {
+        Machine machine = machineRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
+        machine.setStatus(MachineStatus.ACTIVE);
+        machine.setArchivedAt(null);
+        return MachineMapper.toDTO(machineRepository.save(machine));
     }
 
     public void deleteMachine(Long id) {
-        Machine machine = getMachineById(id);
+        Machine machine = machineRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
         machineRepository.delete(machine);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MachineRankingDTO> getMachinesRanked() {
+        List<Machine> machines = machineRepository.findAll();
+
+        return machines.stream()
+                .map(m -> {
+                    double priority = calculatePriority(m);
+                    return MachineRankingDTO.from(m, priority);
+                })
+                .sorted(Comparator.comparingDouble(MachineRankingDTO::getPriority).reversed())
+                .toList();
+    }
+
+    private double calculatePriority(Machine m) {
+        double importance = m.getImportanceLevel() != null ? m.getImportanceLevel() : 0;
+        double downtime = m.getDowntimeSum() != null ? m.getDowntimeSum() : 0;
+
+        return importance * 0.5 + downtime * 0.4;
+    }
+
+    public MachineDTO archiveMachineDTO(Long id) {
+        Machine machine = machineRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
+        machine.setStatus(MachineStatus.ARCHIVED);
+        machine.setArchivedAt(LocalDateTime.now());
+        return MachineMapper.toDTO(machineRepository.save(machine));
+    }
+
+    public MachineDTO assignTechnicianDTO(Long machineId, Long technicianId) {
+        Machine machine = machineRepository.findById(machineId)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
+
+        Technician tech = technicianRepository.findById(technicianId)
+                .orElseThrow(() -> new EntityNotFoundException("Technician not found"));
+
+        machine.getAssignedTechnicians().add(tech);
+        return MachineMapper.toDTO(machineRepository.save(machine));
+    }
+
+    public List<MachineDTO> getMachinesAssignedToTechnicianDTO(Long technicianId) {
+        return machineRepository.findAll().stream()
+                .filter(m -> m.getAssignedTechnicians() != null &&
+                        m.getAssignedTechnicians().stream()
+                                .anyMatch(t -> t.getId().equals(technicianId)))
+                .map(MachineMapper::toDTO)
+                .toList();
     }
 }

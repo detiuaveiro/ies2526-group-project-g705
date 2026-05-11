@@ -1,6 +1,6 @@
 package com.example.domain;
 
-import com.example.domain.enums.RequestStatus;
+import com.example.domain.enums.AssistanceRequestStatus;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,7 +36,7 @@ public class AssistanceRequest {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private RequestStatus status = RequestStatus.PENDING;
+    private AssistanceRequestStatus status = AssistanceRequestStatus.PENDING;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_technician_id")
@@ -45,4 +45,8 @@ public class AssistanceRequest {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    private LocalDateTime acceptedAt;
+
+    private LocalDateTime completedAt;
 }

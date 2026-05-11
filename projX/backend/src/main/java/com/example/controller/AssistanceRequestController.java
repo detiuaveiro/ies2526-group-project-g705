@@ -1,58 +1,41 @@
 package com.example.controller;
 
-import com.example.domain.AssistanceRequest;
+import com.example.dto.AssistanceRequestCreateDTO;
 import com.example.dto.AssistanceRequestDTO;
 import com.example.service.AssistanceRequestService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/requests")
+@RequestMapping("/api/v1/assistance-requests")
 @RequiredArgsConstructor
 public class AssistanceRequestController {
 
-    private final AssistanceRequestService requestService;
-
-    @GetMapping
-    public ResponseEntity<List<AssistanceRequest>> getAllRequests() {
-        return ResponseEntity.ok(requestService.getAllRequests());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<AssistanceRequest> getRequestById(@PathVariable Long id) {
-        return ResponseEntity.ok(requestService.getRequestById(id));
-    }
-
-    @GetMapping("/technician/{technicianId}")
-    public ResponseEntity<List<AssistanceRequest>> getRequestsByTechnician(@PathVariable Long technicianId) {
-        return ResponseEntity.ok(requestService.getRequestsByTechnician(technicianId));
-    }
+    private final AssistanceRequestService assistanceRequestService;
 
     @PostMapping
-    public ResponseEntity<AssistanceRequest> createRequest(@Valid @RequestBody AssistanceRequestDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(requestService.createRequest(dto));
+    public AssistanceRequestDTO create(@RequestBody AssistanceRequestCreateDTO dto) {
+        return assistanceRequestService.create(dto);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<AssistanceRequest> updateRequest(@PathVariable Long id, @Valid @RequestBody AssistanceRequestDTO dto) {
-        return ResponseEntity.ok(requestService.updateRequest(id, dto));
+    @GetMapping
+    public List<AssistanceRequestDTO> getAll() {
+        return assistanceRequestService.getAll();
     }
 
-    @PatchMapping("/{id}/accept")
-    public ResponseEntity<AssistanceRequest> acceptRequest(
+    @PostMapping("/{id}/assign")
+    public AssistanceRequestDTO assign(
             @PathVariable Long id,
-            @RequestParam Long technicianId) {
-        return ResponseEntity.ok(requestService.acceptRequest(id, technicianId));
+            @RequestParam Long technicianId
+    ) {
+        return assistanceRequestService.assign(id, technicianId);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRequest(@PathVariable Long id) {
-        requestService.deleteRequest(id);
-        return ResponseEntity.noContent().build();
+
+    @PostMapping("/{id}/complete")
+    public AssistanceRequestDTO complete(@PathVariable Long id) {
+        return assistanceRequestService.complete(id);
     }
 }

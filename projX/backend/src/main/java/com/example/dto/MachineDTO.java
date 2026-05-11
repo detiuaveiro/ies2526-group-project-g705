@@ -1,9 +1,8 @@
 package com.example.dto;
 
 import com.example.domain.enums.MachineStatus;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import java.util.List;
 
 @Getter
 @Setter
@@ -14,16 +13,20 @@ public class MachineDTO {
 
     private Long id;
 
-    @NotBlank
     private String name;
-
     private String location;
-
     private Integer importanceLevel;
-
-    @NotNull
     private MachineStatus status;
 
     private Double downtimeSum;
     private boolean suspicionFlag;
+
+    private boolean vibrationSensor;
+    private boolean temperatureSensor;
+    private boolean pressureSensor;
+
+    private int actionRequiredCount;
+    private int assistanceRequestedCount;
+
+    private List<TechnicianDTO> assignedTechnicians;
 }

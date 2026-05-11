@@ -7,11 +7,11 @@ import jakarta.persistence.Entity;
 
 @Entity
 @DiscriminatorValue("PRES_SENSOR")
-public class PressureSensor extends Sensor<PressureReading> {
+public class PressureSensor extends Sensor {
 
     @Override
-    public PressureReading getMeasurement() {
-        List<PressureReading> readings = getReadings();
+    public Reading getMeasurement() {
+        List<Reading> readings = getReadings();
         if (readings == null || readings.isEmpty()) {
             return null;
         }

@@ -1,10 +1,18 @@
 package com.example.domain;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -13,7 +21,7 @@ import lombok.NoArgsConstructor;
 @DiscriminatorColumn(name = "sensor_type")
 @Getter
 @NoArgsConstructor
-public abstract class Sensor<T extends Reading> {
+public abstract class Sensor {
 
     @Id
     @GeneratedValue
@@ -23,9 +31,8 @@ public abstract class Sensor<T extends Reading> {
     @JoinColumn(name = "machine_id", nullable = false)
     private Machine machine;
 
-    @OneToMany(mappedBy = "sensor")
-    private List<T> readings;
+    @OneToMany(mappedBy = "sensor", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Reading> readings;
 
-    public abstract T getMeasurement();
+    public abstract Reading getMeasurement();
 }
-

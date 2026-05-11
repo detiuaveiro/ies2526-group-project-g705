@@ -7,21 +7,26 @@ import {
   Settings,
   LogOut,
   Activity,
-  ClipboardList
+  ClipboardList,
+  BarChart3
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
+
 const Sidebar = ({ activeTab, onTabChange }) => {
   const { user, logout } = useAuth();
+
   const getMenuItems = () => {
     switch (user?.role) {
-      case "Maintenance Technician":
+      case "TECHNICIAN":
         return [
           { id: "machines", label: "Machines", icon: Wrench },
           { id: "requests", label: "Requests", icon: ClipboardList },
-          { id: "current-maintenance", label: "Current Maintenance", icon: Activity }
+          { id: "current-maintenance", label: "Current Maintenance", icon: Activity },
+          { id: "stats", label: "Your Statistics", icon: BarChart3 }
         ];
-      case "Maintenance Director":
+
+      case "DIRECTOR":
         return [
           { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
           { id: "machines", label: "Machines", icon: Wrench },
@@ -29,20 +34,25 @@ const Sidebar = ({ activeTab, onTabChange }) => {
           { id: "requests", label: "Requests", icon: ClipboardList },
           { id: "team", label: "Team Activity", icon: Users }
         ];
-      case "Administrator":
+
+      case "ADMIN":
         return [
           { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
           { id: "managing", label: "Machines", icon: Settings },
           { id: "team", label: "Team", icon: Users }
         ];
+
       default:
         return [
           { id: "dashboard", label: "Dashboard", icon: LayoutDashboard }
         ];
     }
   };
+
   const menuItems = getMenuItems();
-  return <div className="flex flex-col h-screen w-64 bg-gray-900 text-white">
+
+  return (
+    <div className="flex flex-col h-screen w-64 bg-gray-900 text-white">
       <div className="p-4 flex items-center gap-3">
         <div className="bg-blue-600 p-2 rounded-lg">
           <Activity className="w-6 h-6" />
@@ -52,16 +62,17 @@ const Sidebar = ({ activeTab, onTabChange }) => {
           <div className="text-xs text-gray-400">Industrial Monitoring</div>
         </div>
       </div>
-      
+
       <Separator className="bg-gray-700" />
-      
+
+      {/* User info */}
       <div
-    className={cn(
-      "p-4 mx-2 mt-2 mb-2 rounded-lg cursor-pointer transition-colors border border-transparent hover:bg-gray-800",
-      activeTab === "user" && "bg-gray-800 border-gray-700"
-    )}
-    onClick={() => onTabChange("user")}
-  >
+        className={cn(
+          "p-4 mx-2 mt-2 mb-2 rounded-lg cursor-pointer transition-colors border border-transparent hover:bg-gray-800",
+          activeTab === "user" && "bg-gray-800 border-gray-700"
+        )}
+        onClick={() => onTabChange("user")}
+      >
         <div className="text-xs text-gray-400 mb-1">Signed in as</div>
         <div className="text-sm font-medium">{user?.name}</div>
         <div className="text-xs text-gray-500">{user?.role}</div>
@@ -69,35 +80,41 @@ const Sidebar = ({ activeTab, onTabChange }) => {
 
       <Separator className="bg-gray-700" />
 
+      {/* Menu */}
       <nav className="flex-1 p-4 space-y-2">
         {menuItems.map((item) => {
-    const Icon = item.icon;
-    return <button
-      key={item.id}
-      onClick={() => onTabChange(item.id)}
-      className={cn(
-        "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
-        activeTab === item.id ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-800"
-      )}
-    >
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onTabChange(item.id)}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
+                activeTab === item.id
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-300 hover:bg-gray-800"
+              )}
+            >
               <Icon className="w-5 h-5" />
               <span>{item.label}</span>
-            </button>;
-  })}
+            </button>
+          );
+        })}
       </nav>
 
+      {/* Logout */}
       <div className="p-4">
         <Button
-    variant="outline"
-    className="w-full justify-start gap-3 bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
-    onClick={logout}
-  >
+          variant="outline"
+          className="w-full justify-start gap-3 bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
+          onClick={logout}
+        >
           <LogOut className="w-5 h-5" />
           <span>Logout</span>
         </Button>
       </div>
-    </div>;
+    </div>
+  );
 };
-export {
-  Sidebar
-};
+
+export { Sidebar };
