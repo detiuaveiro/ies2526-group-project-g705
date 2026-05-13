@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir requests pika
 COPY populate_all_machines.py .
 
 # Executa o script
-CMD ["python", "populate_all_machines.py"]
+CMD ["python", "-u", "populate_all_machines.py"]
