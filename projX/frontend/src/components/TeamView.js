@@ -53,6 +53,7 @@ export const TeamView = () => {
   const [newTech, setNewTech] = useState({
     name: "",
     email: "",
+    password: "",
   });
 
   // LOAD TECHNICIANS FROM BACKEND
@@ -87,10 +88,9 @@ export const TeamView = () => {
     loadTechnicians();
   }, [user]);
 
-  // ADD TECHNICIAN
   const handleAddTechnician = () => {
-    if (!newTech.name || !newTech.email) {
-      toast.error("Name and Email are required");
+    if (!newTech.name || !newTech.email || !newTech.password) {
+      toast.error("Name, Email and Password are required");
       return;
     }
 
@@ -103,11 +103,8 @@ export const TeamView = () => {
       body: JSON.stringify({
         name: newTech.name,
         email: newTech.email,
-        phoneNumber: newTech.phone,
-        gender: newTech.gender,
-        age: Number(newTech.age),
-        role: "TECHNICIAN",
-        password: "1234"
+        password: newTech.password,
+        role: "TECHNICIAN"
       })
     })
       .then((res) => {
@@ -118,7 +115,7 @@ export const TeamView = () => {
         setTechnicians((prev) => [...prev, created]);
         toast.success(`${created.name} added to the team`);
         setIsAddDialogOpen(false);
-        setNewTech({ name: "", email: "" });
+        setNewTech({ name: "", email: "", password: "" });
       })
       .catch(() => toast.error("Failed to create technician"));
   };
@@ -226,6 +223,17 @@ export const TeamView = () => {
                   value={newTech.email}
                   onChange={(e) =>
                     setNewTech((p) => ({ ...p, email: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <Label>Password *</Label>
+                <Input
+                  type="password"
+                  value={newTech.password}
+                  onChange={(e) =>
+                    setNewTech((p) => ({ ...p, password: e.target.value }))
                   }
                 />
               </div>

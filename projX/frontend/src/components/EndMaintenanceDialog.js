@@ -13,7 +13,6 @@ export const EndMaintenanceDialog = ({ open, onOpenChange, onConfirm, machineNam
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [hoursSpent, setHoursSpent] = useState("");
-  const [cost, setCost] = useState("");
   const [partsUsed, setPartsUsed] = useState("");
 
   const handleSubmit = () => {
@@ -24,7 +23,6 @@ export const EndMaintenanceDialog = ({ open, onOpenChange, onConfirm, machineNam
       title,
       description,
       hoursSpent: Number(hoursSpent),
-      cost: Number(cost),
       partsUsed,
       technicianId: user.id
     });
@@ -32,7 +30,6 @@ export const EndMaintenanceDialog = ({ open, onOpenChange, onConfirm, machineNam
     setTitle("");
     setDescription("");
     setHoursSpent("");
-    setCost("");
     setPartsUsed("");
 
     onOpenChange(false);
@@ -49,7 +46,7 @@ export const EndMaintenanceDialog = ({ open, onOpenChange, onConfirm, machineNam
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
-          
+
           <div>
             <Label>Work Title</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -70,15 +67,6 @@ export const EndMaintenanceDialog = ({ open, onOpenChange, onConfirm, machineNam
               type="number"
               value={hoursSpent}
               onChange={(e) => setHoursSpent(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <Label>Cost (€)</Label>
-            <Input
-              type="number"
-              value={cost}
-              onChange={(e) => setCost(e.target.value)}
             />
           </div>
 
