@@ -191,20 +191,23 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
           {sensors.length === 0 ? (
             <p className="text-gray-500">No sensor data available for this machine.</p>
           ) : (
-            <div className="h-80 mt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={formatSensorData()}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
-                  <YAxis />
-                  <RechartsTooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="TEMPERATURE" stroke="#ef4444" name="Temperature (°C)" strokeWidth={2} />
-                  <Line type="monotone" dataKey="PRESSURE" stroke="#3b82f6" name="Pressure (bar)" strokeWidth={2} />
-                  <Line type="monotone" dataKey="VIBRATION" stroke="#10b981" name="Vibration (mm/s)" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <div className="h-80 mt-4 w-full" style={{ minWidth: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={formatSensorData()}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="time" />
+                    <YAxis />
+                    <RechartsTooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="TEMPERATURE" stroke="#ef4444" name="Temperature (°C)" strokeWidth={2} />
+                    <Line type="monotone" dataKey="PRESSURE" stroke="#3b82f6" name="Pressure (bar)" strokeWidth={2} />
+                    <Line type="monotone" dataKey="VIBRATION" stroke="#10b981" name="Vibration (mm/s)" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
           )}
         </CardContent>
       </Card>
