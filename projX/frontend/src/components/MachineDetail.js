@@ -129,8 +129,7 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
           <div className="text-2xl font-bold mt-1">{machine.id}</div>
         </CardContent>
       </Card>
-    </div>
-
+      
       {/* PROBLEMS */}
       <Card>
         <CardHeader>
