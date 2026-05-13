@@ -10,6 +10,7 @@ import com.example.repository.MaintenanceSessionRepository;
 import com.example.repository.TechnicianRepository;
 import com.example.repository.MachineRepository;
 import com.example.domain.enums.MachineStatus;
+import com.example.domain.Machine;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -99,6 +100,34 @@ public class MaintenanceController {
         }
 
         return ResponseEntity.ok(toDTO(active));
+    }
+
+    @PostMapping("/start")
+    public ResponseEntity<MaintenanceSessionDTO> startMaintenance(
+            @RequestParam Long technicianId,
+            @RequestParam Long machineId) {
+
+        Technician tech = technicianRepository.findById(technicianId)
+                .orElseThrow(() -> new EntityNotFoundException("Technician not found"));
+        Machine machine = machineRepository.findById(machineId)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
+
+        MaintenanceSession session = MaintenanceSession.builder()
+                .technician(tech)
+                .machine(machine)
+                .startTime(LocalDateTime.now())
+                .active(true)
+                .build();
+
+        session = sessionRepository.save(session);
+
+        tech.setAvailable(false);
+        technicianRepository.save(tech);
+
+        machine.setStatus(MachineStatus.MAINTENANCE);
+        machineRepository.save(machine);
+
+        return ResponseEntity.ok(toDTO(session));
     }
 
     @PutMapping("/finish/{sessionId}")

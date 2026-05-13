@@ -26,7 +26,7 @@ public class MaintenanceSession {
     private Machine machine;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "request_id", nullable = false)
+    @JoinColumn(name = "request_id", nullable = true)
     private AssistanceRequest request;
 
     private LocalDateTime startTime;
