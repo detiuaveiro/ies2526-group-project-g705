@@ -50,29 +50,29 @@ export const Dashboard = () => {
       .catch(() => toast.error("Failed to load ranking"));
   }, [user]);
 
-  const active = machines.filter((m) => m.status === "ACTIVE").length;
-  const maintenance = machines.filter((m) => m.status === "MAINTENANCE").length;
-  const archived = machines.filter((m) => m.status === "ARCHIVED").length;
+  const active = Array.isArray(machines) ? machines.filter((m) => m.status === "ACTIVE").length : 0;
+  const maintenance = Array.isArray(machines) ? machines.filter((m) => m.status === "MAINTENANCE").length : 0;
+  const archived = Array.isArray(machines) ? machines.filter((m) => m.status === "ARCHIVED").length : 0;
 
-  const assistanceRequested = machines.reduce(
+  const assistanceRequested = Array.isArray(machines) ? machines.reduce(
     (sum, m) => sum + (m.assistanceRequestedCount || 0),
     0
-  );
+  ) : 0;
 
-  const actionRequired = machines.reduce(
+  const actionRequired = Array.isArray(machines) ? machines.reduce(
     (sum, m) => sum + (m.actionRequiredCount || 0),
     0
-  );
+  ) : 0;
 
-  const recentBreakdowns = problems
+  const recentBreakdowns = Array.isArray(problems) ? problems
     .sort(
       (a, b) =>
         new Date(b.startProblemDate).getTime() -
         new Date(a.startProblemDate).getTime()
     )
-    .slice(0, 5);
+    .slice(0, 5) : [];
 
-  const pendingRequests = requests.filter((r) => r.status === "PENDING");
+  const pendingRequests = Array.isArray(requests) ? requests.filter((r) => r.status === "PENDING") : [];
 
   return (
     <div className="space-y-6">

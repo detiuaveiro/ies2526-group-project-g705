@@ -30,11 +30,11 @@ export const DirectorProfileView = () => {
       .catch(() => toast.error("Failed to load machines"));
   }, [user]);
 
-  const totalMachines = machines.length;
-  const operational = machines.filter((m) => m.status === "ACTIVE").length;
-  const actionRequired = machines.filter(
+  const totalMachines = Array.isArray(machines) ? machines.length : 0;
+  const operational = Array.isArray(machines) ? machines.filter((m) => m.status === "ACTIVE").length : 0;
+  const actionRequired = Array.isArray(machines) ? machines.filter(
     (m) => m.status === "MAINTENANCE" || m.status === "ASSISTANCE_REQUESTED"
-  ).length;
+  ).length : 0;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">

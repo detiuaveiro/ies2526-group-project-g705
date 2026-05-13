@@ -48,7 +48,7 @@ const MainApp = () => {
       },
     })
       .then((res) => res.json())
-      .then((data) => setAppMachines(data))
+      .then((data) => setAppMachines(Array.isArray(data) ? data : []))
       .catch(() => toast.error("Failed to load machines"));
   }, [user]);
 
