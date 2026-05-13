@@ -159,15 +159,15 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
             </span>
           </div>
 
-          {/* REQUEST ASSISTANCE BUTTON */}
-          <Button className="w-full mt-4" onClick={() => onRequestAssistance(machine)}>
-            Request Assistance
-          </Button>
-
-          {/* START MAINTENANCE BUTTON (TECHNICIAN ONLY) */}
           {user?.role === "TECHNICIAN" && machine.status !== "MAINTENANCE" && (
-            <Button className="w-full mt-2 bg-blue-600 hover:bg-blue-700" onClick={handleStartMaintenance}>
+            <Button className="w-full mt-4 bg-blue-600 hover:bg-blue-700" onClick={handleStartMaintenance}>
               Start Maintenance
+            </Button>
+          )}
+
+          {(user?.role !== "TECHNICIAN" || machine.status === "MAINTENANCE") && (
+            <Button className="w-full mt-4" onClick={() => onRequestAssistance(machine)}>
+              Request Assistance
             </Button>
           )}
         </CardContent>
