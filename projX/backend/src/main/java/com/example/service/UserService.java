@@ -17,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -25,6 +28,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final TechnicianRepository technicianRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
 
     @Transactional(readOnly = true)
@@ -134,6 +140,33 @@ public class UserService {
     }
 
     public void deleteUser(Long id) {
+        entityManager.createNativeQuery("UPDATE problems SET assigned_technician_id = NULL WHERE assigned_technician_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("UPDATE maintenance_records SET technician_id = NULL WHERE technician_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM maintenance_sessions WHERE technician_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM maintenance_logs WHERE technician_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM assistance_requests WHERE requested_by_id = :id OR assigned_technician_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM machine_technician WHERE technician_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM technician_skills WHERE technician_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM technicians WHERE id = :id")
+                .setParameter("id", id).executeUpdate();
+                
+        entityManager.createNativeQuery("DELETE FROM maintenance_technicians WHERE id = :id")
+                .setParameter("id", id).executeUpdate();
+
         userRepository.deleteById(id);
     }
 

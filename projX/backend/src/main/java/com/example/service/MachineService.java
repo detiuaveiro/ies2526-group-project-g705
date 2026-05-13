@@ -19,6 +19,9 @@ import com.example.repository.TechnicianRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -26,6 +29,9 @@ public class MachineService {
 
     private final MachineRepository machineRepository;
     private final TechnicianRepository technicianRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Transactional(readOnly = true)
     public List<MachineDTO> getAllMachinesDTO() {
@@ -106,6 +112,31 @@ public class MachineService {
     public void deleteMachine(Long id) {
         Machine machine = machineRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
+
+        entityManager.createNativeQuery("UPDATE technicians SET current_machine_id = NULL WHERE current_machine_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM machine_technician WHERE machine_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM sensor_readings WHERE machine_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM maintenance_sessions WHERE machine_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM maintenance_logs WHERE maintenance_id IN (SELECT id FROM maintenance_records WHERE machine_id = :id)")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM maintenance_records WHERE machine_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM assistance_requests WHERE problem_id IN (SELECT id FROM problems WHERE machine_id = :id)")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM problems WHERE machine_id = :id")
+                .setParameter("id", id).executeUpdate();
+
         machineRepository.delete(machine);
     }
 
