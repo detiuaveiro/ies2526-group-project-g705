@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Wrench, AlertTriangle, ArrowLeft, Users, Activity } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
+import { toast } from "sonner";
 
 const API = "http://localhost:8080/api/v1";
 
@@ -85,6 +86,19 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
     return Object.values(grouped).sort((a, b) => a.time.localeCompare(b.time));
   };
 
+  const handleStartMaintenance = () => {
+    fetch(`${API}/maintenances/start?technicianId=${user.id}&machineId=${machineId}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to start maintenance");
+        toast.success("Maintenance started!");
+        loadMachine();
+      })
+      .catch((e) => toast.error(e.message));
+  };
+
   if (!machine) return <p>Loading...</p>;
 
   return (
@@ -145,10 +159,17 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
             </span>
           </div>
 
-          {/* REQUEST ASSISTANCE BUTTON */}
-          <Button className="w-full mt-4" onClick={() => onRequestAssistance(machine)}>
-            Request Assistance
-          </Button>
+          {user?.role === "TECHNICIAN" && machine.status !== "MAINTENANCE" && (
+            <Button className="w-full mt-4 bg-blue-600 hover:bg-blue-700" onClick={handleStartMaintenance}>
+              Start Maintenance
+            </Button>
+          )}
+
+          {user?.role !== "DIRECTOR" && (user?.role !== "TECHNICIAN" || machine.status === "MAINTENANCE") && (
+            <Button className="w-full mt-4" onClick={() => onRequestAssistance(machine)}>
+              Request Assistance
+            </Button>
+          )}
         </CardContent>
       </Card>
       <Card>

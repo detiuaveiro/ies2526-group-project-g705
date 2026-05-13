@@ -24,7 +24,9 @@ const AssistanceRequestDialog = ({
         try {
           // Extrai o número do ID da máquina (ex: "M002" -> 2), ou usa o ID direto se já for numérico
           const parsedMachineId = machine.id.toString().replace(/\D/g, '') || machine.id;
-          const res = await fetch(`/api/v1/problems/machine/${parsedMachineId}`);
+          const res = await fetch(`http://localhost:8080/api/v1/problems/machine/${parsedMachineId}`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          });
           if (!res.ok) throw new Error("Failed to fetch problems");
 
           const data = await res.json();
@@ -59,10 +61,11 @@ const AssistanceRequestDialog = ({
     }
 
     try {
-      const response = await fetch('/api/v1/requests', {
+      const response = await fetch('http://localhost:8080/api/v1/assistance-requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
         },
         body: JSON.stringify({
           problemId: parseInt(selectedProblemId),

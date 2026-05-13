@@ -53,7 +53,6 @@ export const DirectorProfileView = () => {
             <div>
               <h2 className="text-2xl font-bold">{user?.name}</h2>
               <div className="text-purple-600 font-medium">{user?.role}</div>
-              <div className="text-gray-500 text-sm mt-1">Username: {user?.username}</div>
             </div>
           </div>
         </CardContent>

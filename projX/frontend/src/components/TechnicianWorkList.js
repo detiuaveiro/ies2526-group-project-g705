@@ -26,12 +26,17 @@ export const TechnicianWorkList = () => {
   }, [user]);
 
   const handleStartMaintenance = (machine) => {
-    fetch(`${API_URL}/maintenance/start/${machine.id}`, {
+    fetch(`${API_URL}/maintenances/start?technicianId=${user.id}&machineId=${machine.id}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${user.token}` },
     })
-      .then(() => toast.success(`Maintenance started for ${machine.name}`))
-      .catch(() => toast.error("Failed to start maintenance"));
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Failed to start maintenance");
+        toast.success(`Maintenance started for ${machine.name}`);
+        // Update the machine list locally to reflect the change
+        setMachines(machines.map(m => m.id === machine.id ? { ...m, status: "MAINTENANCE" } : m));
+      })
+      .catch((e) => toast.error(e.message));
   };
 
   const handleEndMaintenance = (machine) => {

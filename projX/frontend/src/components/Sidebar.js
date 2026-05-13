@@ -22,8 +22,7 @@ const Sidebar = ({ activeTab, onTabChange }) => {
         return [
           { id: "machines", label: "Machines", icon: Wrench },
           { id: "requests", label: "Requests", icon: ClipboardList },
-          { id: "current-maintenance", label: "Current Maintenance", icon: Activity },
-          { id: "stats", label: "Your Statistics", icon: BarChart3 }
+          { id: "current-maintenance", label: "Current Maintenance", icon: Activity }
         ];
 
       case "DIRECTOR":

@@ -69,15 +69,6 @@ const Login = () => {
               Sign In
             </Button>
           </form>
-
-          <div className="mt-6 text-sm text-gray-600">
-            <p className="mb-2">Demo credentials (mock login):</p>
-            <ul className="space-y-1 text-xs">
-              <li>• <strong>joao.neves</strong> / password (Technician)</li>
-              <li>• <strong>manuel.gomes</strong> / password (Director)</li>
-              <li>• <strong>sara.lopes</strong> / password (Administrator)</li>
-            </ul>
-          </div>
         </CardContent>
       </Card>
     </div>

@@ -52,6 +52,13 @@ public class UserService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<TechnicianDTO> getArchivedTechniciansDTO() {
+        return userRepository.findByRoleAndArchivedTrue(UserRole.TECHNICIAN)
+                .stream()
+                .map(u -> TechnicianMapper.toDTO((Technician) u))
+                .toList();
+    }
 
     @Transactional(readOnly = true)
     public List<UserDTO> getAllDirectorsDTO() {
@@ -113,6 +120,7 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         user.setArchived(true);
+        user.setActive(false);
         return UserDTO.fromEntity(userRepository.save(user));
     }
 
@@ -121,6 +129,7 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         user.setArchived(false);
+        user.setActive(true);
         return UserDTO.fromEntity(userRepository.save(user));
     }
 

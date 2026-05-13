@@ -52,9 +52,6 @@ export const TechnicianProfileView = () => {
             <div>
               <h2 className="text-2xl font-bold">{user?.name}</h2>
               <div className="text-blue-600 font-medium">{user?.role}</div>
-              <div className="text-gray-500 text-sm mt-1">
-                Username: {user?.username}
-              </div>
             </div>
           </div>
         </CardContent>
@@ -116,23 +113,6 @@ export const TechnicianProfileView = () => {
               </div>
               <div className="p-2 bg-yellow-100 text-yellow-600 rounded-lg">
                 <Clock className="w-5 h-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* TOTAL COST */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Total Repair Cost
-                </p>
-                <h3 className="text-3xl font-bold mt-2">€{totalCost.toFixed(0)}</h3>
-              </div>
-              <div className="p-2 bg-red-100 text-red-600 rounded-lg">
-                <Wrench className="w-5 h-5" />
               </div>
             </div>
           </CardContent>
