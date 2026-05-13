@@ -49,7 +49,13 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         jwt = authHeader.substring(7);
-        userEmail = jwtService.extractUsername(jwt);
+        try {
+            userEmail = jwtService.extractUsername(jwt);
+        } catch (Exception e) {
+            // Token inv\u00E1lido ou malformado (ex: "undefined")
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         // VALIDAR TOKEN
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {

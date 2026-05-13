@@ -7,6 +7,7 @@ import com.example.dto.UserDTO;
 import com.example.dto.TechnicianDTO;
 import com.example.mapper.TechnicianMapper;
 import com.example.repository.UserRepository;
+import com.example.repository.TechnicianRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +23,7 @@ import java.util.List;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final TechnicianRepository technicianRepository;
     private final PasswordEncoder passwordEncoder;
 
 
@@ -45,6 +47,7 @@ public class UserService {
     public List<TechnicianDTO> getAllTechniciansDTO() {
         return userRepository.findByRoleAndArchivedFalse(UserRole.TECHNICIAN)
                 .stream()
+                .filter(u -> u instanceof Technician)
                 .map(u -> TechnicianMapper.toDTO((Technician) u))
                 .toList();
     }

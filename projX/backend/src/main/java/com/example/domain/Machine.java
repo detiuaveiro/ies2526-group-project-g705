@@ -1,21 +1,16 @@
 package com.example.domain;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import com.example.domain.enums.MachineStatus;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import java.util.ArrayList;
+import java.util.List;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "machines")
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -56,13 +51,20 @@ public class Machine {
     @Builder.Default
     private boolean pressureSensor = false;
 
-    @Column(nullable = false, columnDefinition = "integer default 0")
     @Builder.Default
-    private int actionRequiredCount = 0;
+    private Integer actionRequiredCount = 0;
 
-    @Column(nullable = false)
     @Builder.Default
-    private int assistanceRequestedCount = 0;
+    private Integer assistanceRequestedCount = 0;
+
+    @ManyToMany
+    @JoinTable(
+            name = "machine_technician",
+            joinColumns = @JoinColumn(name = "machine_id"),
+            inverseJoinColumns = @JoinColumn(name = "technician_id")
+    )
+    @Builder.Default
+    private List<Technician> assignedTechnicians = new ArrayList<>();
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -72,14 +74,4 @@ public class Machine {
     private LocalDateTime updatedAt;
 
     private LocalDateTime archivedAt;
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "machine_technicians",
-        joinColumns = @JoinColumn(name = "machine_id"),
-        inverseJoinColumns = @JoinColumn(name = "technician_id")
-    )
-    @Builder.Default
-    private List<Technician> assignedTechnicians = new ArrayList<>();
-
 }
