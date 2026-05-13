@@ -13,11 +13,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.domain.Technician;
-import com.example.domain.User;
 import com.example.dto.UserDTO;
-import com.example.service.UserService;
 import com.example.dto.TechnicianDTO;
+import com.example.service.UserService;
 
 
 import jakarta.validation.Valid;
@@ -43,6 +41,11 @@ public class UserController {
     @GetMapping("/technicians")
     public ResponseEntity<List<TechnicianDTO>> getAllTechnicians() {
         return ResponseEntity.ok(userService.getAllTechniciansDTO());
+    }
+
+    @GetMapping("/technicians/archived")
+    public ResponseEntity<List<TechnicianDTO>> getArchivedTechnicians() {
+        return ResponseEntity.ok(userService.getArchivedTechniciansDTO());
     }
 
     @GetMapping("/directors")

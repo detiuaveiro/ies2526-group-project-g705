@@ -57,15 +57,34 @@ export const TeamView = () => {
 
   // LOAD TECHNICIANS FROM BACKEND
   useEffect(() => {
-    fetch(`${API_URL}/users/technicians`, {
-      headers: { Authorization: `Bearer ${user.token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setTechnicians(data.filter((t) => t.active));
-        setArchivedTechnicians(data.filter((t) => !t.active));
-      })
-      .catch(() => toast.error("Failed to load technicians"));
+    const loadTechnicians = async () => {
+      try {
+        const [activeRes, archivedRes] = await Promise.all([
+          fetch(`${API_URL}/users/technicians`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          fetch(`${API_URL}/users/technicians/archived`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+        ]);
+
+        if (!activeRes.ok || !archivedRes.ok) {
+          throw new Error("Failed to load technicians");
+        }
+
+        const [activeData, archivedData] = await Promise.all([
+          activeRes.json(),
+          archivedRes.json(),
+        ]);
+
+        setTechnicians(activeData);
+        setArchivedTechnicians(archivedData);
+      } catch (error) {
+        toast.error("Failed to load technicians");
+      }
+    };
+
+    loadTechnicians();
   }, [user]);
 
   // ADD TECHNICIAN
@@ -90,9 +109,11 @@ export const TeamView = () => {
         role: "TECHNICIAN",
         password: "1234"
       })
-
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
       .then((created) => {
         setTechnicians((prev) => [...prev, created]);
         toast.success(`${created.name} added to the team`);
@@ -108,10 +129,14 @@ export const TeamView = () => {
       method: "PUT",
       headers: { Authorization: `Bearer ${user.token}` },
     })
-      .then(() => {
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((updated) => {
         const tech = technicians.find((t) => t.id === id);
         setTechnicians((prev) => prev.filter((t) => t.id !== id));
-        setArchivedTechnicians((prev) => [...prev, tech]);
+        setArchivedTechnicians((prev) => [...prev, updated]);
         toast.success(`${tech.name} archived`);
       })
       .catch(() => toast.error("Failed to archive technician"));
@@ -123,11 +148,14 @@ export const TeamView = () => {
       method: "PUT",
       headers: { Authorization: `Bearer ${user.token}` },
     })
-      .then(() => {
-        const tech = archivedTechnicians.find((t) => t.id === id);
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((updated) => {
         setArchivedTechnicians((prev) => prev.filter((t) => t.id !== id));
-        setTechnicians((prev) => [...prev, tech]);
-        toast.success(`${tech.name} restored`);
+        setTechnicians((prev) => [...prev, updated]);
+        toast.success(`${updated.name} restored`);
       })
       .catch(() => toast.error("Failed to restore technician"));
   };
@@ -138,6 +166,9 @@ export const TeamView = () => {
       method: "DELETE",
       headers: { Authorization: `Bearer ${user.token}` },
     })
+      .then((res) => {
+        if (!res.ok) throw new Error();
+      })
       .then(() => {
         setArchivedTechnicians((prev) =>
           prev.filter((t) => t.id !== techToDelete)
