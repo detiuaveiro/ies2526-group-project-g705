@@ -12,7 +12,7 @@ import lombok.*;
 @Getter
 @Setter
 @NoArgsConstructor
-public abstract class Sensor<T extends Reading> { // Add the <T extends Reading>
+public abstract class Sensor {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,9 +23,8 @@ public abstract class Sensor<T extends Reading> { // Add the <T extends Reading>
     @Enumerated(EnumType.STRING)
     private SensorType sensorType;
 
-    // This allows the subclasses to have a list of their specific reading types
     @OneToMany(mappedBy = "sensor")
-    private List<T> readings; 
+    private List<Reading> readings;
 
-    public abstract T getMeasurement();
+    public abstract Reading getMeasurement();
 }

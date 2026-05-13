@@ -1,7 +1,6 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: G705-db
     restart: unless-stopped
     environment:
       POSTGRES_DB: g705
@@ -17,7 +16,6 @@ services:
 
   rabbitmq:
     image: rabbitmq:4-management
-    container_name: rabbitmq
     restart: unless-stopped
     ports:
       - "5672:5672"
@@ -28,11 +26,10 @@ services:
       timeout: 5s
       retries: 20
 
-  toname:
+  backend:
     build:
       context: ./projX
       dockerfile: Dockerfile
-    container_name: G705-app
     restart: unless-stopped
     depends_on:
       postgres:
@@ -46,6 +43,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/g705
       SPRING_DATASOURCE_USERNAME: g705user
       SPRING_DATASOURCE_PASSWORD: g705password
+      JWT_SECRET: g705-development-secret-key-that-is-at-least-32-characters-long
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
@@ -59,15 +57,25 @@ services:
   sensor-generator:
     build:
       context: ./tools/sensor_publisher
-    container_name: sensor-generator
     restart: always 
     depends_on:
-      toname:
+      backend:
         condition: service_healthy
     environment:
-      API_URL: http://toname:8080/api/v1/machines
+      API_URL: http://backend:8080/api/v1/machines
       RABBITMQ_HOST: rabbitmq
       PUBLISH_INTERVAL: 60 
+
+  frontend:
+    build:
+      context: ./projX/frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
 
 volumes:
   postgres_data:

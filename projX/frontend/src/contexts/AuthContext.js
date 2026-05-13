@@ -17,9 +17,9 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const mockLogin = (username, password) => {
+  const mockLogin = (usernameOrEmail, password) => {
     const foundUser = mockUsers.find(
-      (u) => u.username === username && u.password === password
+      (u) => (u.username === usernameOrEmail || u.email === usernameOrEmail) && u.password === password
     );
 
     if (foundUser) {
@@ -41,7 +41,11 @@ export const AuthProvider = ({ children }) => {
         }),
       });
 
-      if (!response.ok) return false;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.warn(`Backend login failed with status ${response.status}:`, errorData.error || "Unknown error");
+        return false;
+      }
 
       const data = await response.json();
 
@@ -60,6 +64,7 @@ export const AuthProvider = ({ children }) => {
 
       return true;
     } catch (err) {
+      console.error("Backend login error:", err);
       return false;
     }
   };

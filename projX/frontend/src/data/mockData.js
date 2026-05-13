@@ -2,6 +2,7 @@ const mockUsers = [
   {
     id: "1",
     username: "joao.neves",
+    email: "joao.neves@example.com",
     password: "password",
     role: "Maintenance Technician",
     name: "Jo\xE3o Neves"
@@ -9,6 +10,7 @@ const mockUsers = [
   {
     id: "2",
     username: "manuel.gomes",
+    email: "manuel.gomes@example.com",
     password: "password",
     role: "Maintenance Director",
     name: "Manuel Gomes"
@@ -16,6 +18,7 @@ const mockUsers = [
   {
     id: "3",
     username: "ana.costa",
+    email: "ana.costa@example.com",
     password: "password",
     role: "Maintenance Technician",
     name: "Ana Costa"
@@ -23,6 +26,7 @@ const mockUsers = [
   {
     id: "4",
     username: "sara.lopes",
+    email: "sara.lopes@example.com",
     password: "password",
     role: "Administrator",
     name: "Sara Lopes"
