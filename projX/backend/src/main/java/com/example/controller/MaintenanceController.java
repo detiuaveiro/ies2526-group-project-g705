@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -81,6 +82,7 @@ public class MaintenanceController {
         return dto;
     }
 
+    @Transactional
     @GetMapping("/current/{technicianId}")
     public ResponseEntity<MaintenanceSessionDTO> getCurrent(@PathVariable Long technicianId) {
         var sessions = sessionRepository.findByTechnicianIdAndActiveTrue(technicianId);
@@ -96,12 +98,18 @@ public class MaintenanceController {
             MaintenanceSession old = sessions.get(i);
             old.setActive(false);
             old.setEndTime(LocalDateTime.now());
+            
+            Machine oldMachine = old.getMachine();
+            oldMachine.setStatus(MachineStatus.ACTIVE);
+            machineRepository.save(oldMachine);
+            
             sessionRepository.save(old);
         }
 
         return ResponseEntity.ok(toDTO(active));
     }
 
+    @Transactional
     @PostMapping("/start")
     public ResponseEntity<MaintenanceSessionDTO> startMaintenance(
             @RequestParam Long technicianId,
@@ -109,6 +117,10 @@ public class MaintenanceController {
 
         Technician tech = technicianRepository.findById(technicianId)
                 .orElseThrow(() -> new EntityNotFoundException("Technician not found"));
+
+        if (!tech.isAvailable()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
         Machine machine = machineRepository.findById(machineId)
                 .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
 
@@ -130,6 +142,7 @@ public class MaintenanceController {
         return ResponseEntity.ok(toDTO(session));
     }
 
+    @Transactional
     @PutMapping("/finish/{sessionId}")
     public ResponseEntity<Void> finish(@PathVariable Long sessionId) {
         MaintenanceSession session = sessionRepository.findById(sessionId)

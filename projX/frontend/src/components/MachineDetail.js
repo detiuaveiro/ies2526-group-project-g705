@@ -44,7 +44,7 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
   };
 
   const loadSensors = () => {
-    fetch(`${API}/sensors/${machineId}`, {
+    fetch(`${API}/sensors/${machineId}/history`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((r) => r.json())
@@ -91,8 +91,10 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
       method: "POST",
       headers: { Authorization: `Bearer ${user.token}` },
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to start maintenance");
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error("Failed to start maintenance. Make sure you don't have another active session.");
+        }
         toast.success("Maintenance started!");
         loadMachine();
       })
