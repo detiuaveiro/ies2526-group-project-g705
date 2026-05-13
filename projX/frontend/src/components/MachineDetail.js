@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Wrench, AlertTriangle, ArrowLeft, Users } from "lucide-react";
+import { Wrench, AlertTriangle, ArrowLeft, Users, Activity } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 
 const API = "http://localhost:8080/api/v1";
 
@@ -13,6 +14,7 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
   const [machine, setMachine] = useState(null);
   const [problems, setProblems] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [sensors, setSensors] = useState([]);
 
   const loadMachine = () => {
     fetch(`${API}/machines/${machineId}`, {
@@ -36,8 +38,17 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
     })
       .then((r) => r.json())
       .then((allLogs) =>
-        setLogs(allLogs.filter((l) => l.maintenanceId === machineId))
+        setLogs(allLogs.filter((l) => l.machineId === machineId))
       );
+  };
+
+  const loadSensors = () => {
+    fetch(`${API}/sensors/${machineId}`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((r) => r.json())
+      .then(setSensors)
+      .catch((e) => console.error("Failed to load sensors", e));
   };
 
   useEffect(() => {
@@ -45,6 +56,7 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
     loadMachine();
     loadProblems();
     loadLogs();
+    loadSensors();
   }, [machineId, user]);
 
   useEffect(() => {
@@ -52,10 +64,26 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
       loadMachine();
       loadProblems();
       loadLogs();
+      loadSensors();
     }, 5000);
 
     return () => clearInterval(interval);
   }, []);
+
+  const formatSensorData = () => {
+    if (!sensors || sensors.length === 0) return [];
+    
+    // Group by recordedAt
+    const grouped = sensors.reduce((acc, curr) => {
+      const time = new Date(curr.recordedAt).toLocaleTimeString("pt-PT", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      if (!acc[time]) acc[time] = { time };
+      acc[time][curr.sensorType] = curr.value;
+      return acc;
+    }, {});
+    
+    // Sort by time
+    return Object.values(grouped).sort((a, b) => a.time.localeCompare(b.time));
+  };
 
   if (!machine) return <p>Loading...</p>;
 
@@ -129,7 +157,36 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
           <div className="text-2xl font-bold mt-1">{machine.id}</div>
         </CardContent>
       </Card>
-    </div>
+
+      {/* HEALTH STATUS */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="w-5 h-5 text-green-600" />
+            Health Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {sensors.length === 0 ? (
+            <p className="text-gray-500">No sensor data available for this machine.</p>
+          ) : (
+            <div className="h-80 mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={formatSensorData()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" />
+                  <YAxis />
+                  <RechartsTooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="TEMPERATURE" stroke="#ef4444" name="Temperature (°C)" strokeWidth={2} />
+                  <Line type="monotone" dataKey="PRESSURE" stroke="#3b82f6" name="Pressure (bar)" strokeWidth={2} />
+                  <Line type="monotone" dataKey="VIBRATION" stroke="#10b981" name="Vibration (mm/s)" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* PROBLEMS */}
       <Card>

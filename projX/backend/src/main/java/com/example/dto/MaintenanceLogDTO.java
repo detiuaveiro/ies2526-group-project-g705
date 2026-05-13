@@ -14,4 +14,6 @@ public class MaintenanceLogDTO {
     private String partsUsed;
     private String technicianName;
     private String createdAt;
+    private Long maintenanceId;
+    private Long machineId;
 }

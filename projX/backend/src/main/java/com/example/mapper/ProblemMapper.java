@@ -17,6 +17,11 @@ public class ProblemMapper {
                                 ? p.getStartProblemDate().toString()
                                 : null
                 )
+                .solvedProblemDate(
+                        p.getSolvedProblemDate() != null
+                                ? p.getSolvedProblemDate().toString()
+                                : null
+                )
                 .build();
     }
 
@@ -29,6 +34,11 @@ public class ProblemMapper {
                 .startProblemDate(
                         p.getStartProblemDate() != null
                                 ? p.getStartProblemDate().toString()
+                                : null
+                )
+                .solvedProblemDate(
+                        p.getSolvedProblemDate() != null
+                                ? p.getSolvedProblemDate().toString()
                                 : null
                 )
                 .build();

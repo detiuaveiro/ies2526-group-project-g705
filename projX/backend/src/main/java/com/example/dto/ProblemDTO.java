@@ -14,4 +14,5 @@ public class ProblemDTO {
     private String description;
     private boolean resolved;
     private String startProblemDate;
+    private String solvedProblemDate;
 }
