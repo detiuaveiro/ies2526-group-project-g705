@@ -30,9 +30,8 @@ public class Request {
     @Column(name="reason", nullable=false)
     private String reason;
 
-    @ManyToOne
-    @JoinColumn(name = "assigned_technician")
-    private Technician assignedTechnician;
+    @Column(name = "assigned_technician")
+    private UUID assignedTechnician;
 
     @Enumerated(EnumType.STRING)
     @Column(name="status",nullable = false)
@@ -41,8 +40,8 @@ public class Request {
     @Column(name = "createdAt")
     private LocalDateTime createdAt;
 
-    public void accept(Technician technician){
-        this.assignedTechnician = technician;
+    public void accept(UUID technicianID){
+        this.assignedTechnician = technicianID;
     }
 
     public void complete(){

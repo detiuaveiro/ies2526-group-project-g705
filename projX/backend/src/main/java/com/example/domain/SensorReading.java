@@ -1,6 +1,8 @@
 package com.example.domain;
 
 import com.example.domain.enums.SensorType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,7 +21,12 @@ public class SensorReading {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /**
+     * The full Machine entity is excluded from serialization to avoid circular references.
+     * The machineId is exposed separately via the @JsonProperty getter below.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
     @JoinColumn(name = "machine_id", nullable = false)
     private Machine machine;
 
@@ -32,4 +39,13 @@ public class SensorReading {
 
     @Column(nullable = false)
     private LocalDateTime recordedAt;
+
+    /**
+     * Expose machineId in JSON response without loading the full Machine object.
+     * e.g.: { "id": 1, "machineId": 5, "sensorType": "TEMPERATURE", "value": 72.3, "recordedAt": "..." }
+     */
+    @JsonProperty("machineId")
+    public Long getMachineId() {
+        return machine != null ? machine.getId() : null;
+    }
 }
