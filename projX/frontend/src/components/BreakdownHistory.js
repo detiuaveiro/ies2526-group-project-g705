@@ -4,6 +4,7 @@ import { History, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 
 const API_URL = "http://localhost:8080/api/v1";
 
@@ -77,6 +78,31 @@ export const BreakdownHistory = () => {
           Complete log of breakdowns and maintenance per machine
         </p>
       </div>
+
+      {breakdownsByMachine.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Breakdowns Overview</CardTitle>
+          </CardHeader>
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={breakdownsByMachine.map(item => ({
+                name: item.machine.name,
+                Total: item.totalBreakdowns,
+                Unresolved: item.unresolvedCount
+              }))}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <RechartsTooltip />
+                <Legend />
+                <Bar dataKey="Total" fill="#3b82f6" name="Total Breakdowns" />
+                <Bar dataKey="Unresolved" fill="#ef4444" name="Unresolved" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6">
         {breakdownsByMachine.map(
