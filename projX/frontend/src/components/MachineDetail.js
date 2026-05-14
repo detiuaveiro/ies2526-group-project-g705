@@ -38,9 +38,19 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((r) => r.json())
-      .then((allLogs) =>
-        setLogs(allLogs.filter((l) => l.machineId === machineId))
-      );
+      .then((allLogs) => {
+        // Ensure allLogs is an array before filtering
+        if (Array.isArray(allLogs)) {
+          setLogs(allLogs.filter((l) => l.machineId === machineId));
+        } else {
+          console.error("Expected array of logs, got:", allLogs);
+          setLogs([]);
+        }
+      })
+      .catch((e) => {
+        console.error("Failed to load maintenance logs", e);
+        setLogs([]);
+      });
   };
 
   const loadSensors = () => {

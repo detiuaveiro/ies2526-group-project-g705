@@ -77,6 +77,11 @@ public class MachineController {
             @PathVariable Long id,
             @RequestBody AssignRequest request
     ) {
+        // If multiple technicians are provided, use the new method
+        if (request.getTechnicianIds() != null && !request.getTechnicianIds().isEmpty()) {
+            return ResponseEntity.ok(machineService.assignTechniciansDTO(id, request.getTechnicianIds()));
+        }
+        // Otherwise, use the single technician method for backward compatibility
         return ResponseEntity.ok(machineService.assignTechnicianDTO(id, request.getTechnicianId()));
     }
 

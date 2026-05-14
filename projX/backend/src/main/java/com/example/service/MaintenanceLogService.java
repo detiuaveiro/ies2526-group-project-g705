@@ -10,11 +10,13 @@ import com.example.repository.MaintenanceRepository;
 import com.example.repository.MaintenanceTechnicianRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class MaintenanceLogService {
 
     private final MaintenanceLogRepository logRepository;
@@ -64,6 +66,7 @@ public class MaintenanceLogService {
         return dto;
     }
 
+    @Transactional(readOnly = true)
     public List<MaintenanceLogDTO> getAllLogs() {
         return logRepository.findAll()
                 .stream()
