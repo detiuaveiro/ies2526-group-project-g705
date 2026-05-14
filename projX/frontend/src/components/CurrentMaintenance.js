@@ -31,14 +31,36 @@ export default function CurrentMaintenance({ user }) {
   }, [user.id]);
 
   const handleEndMaintenance = (logData) => {
-    // End the maintenance session
-    fetch(`${API}/finish/${session.id}`, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${user.token}` },
+    const maintenanceId = session.maintenanceRecordId;
+    
+    if (!maintenanceId) {
+      toast.error("Internal error: maintenance record ID missing");
+      return;
+    }
+
+    // 1. Post the log
+    fetch(`http://localhost:8080/api/v1/maintenance/${maintenanceId}/log`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${user.token}` 
+      },
+      body: JSON.stringify(logData),
     })
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to end maintenance");
-        toast.success("Maintenance finished successfully!");
+        if (!res.ok) throw new Error("Failed to save maintenance log");
+        return res.json();
+      })
+      .then(() => {
+        // 2. End the session
+        return fetch(`${API}/finish/${session.id}`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+      })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to end maintenance session");
+        toast.success("Maintenance finished and logged successfully!");
         setSession(null);
       })
       .catch((e) => toast.error(e.message));

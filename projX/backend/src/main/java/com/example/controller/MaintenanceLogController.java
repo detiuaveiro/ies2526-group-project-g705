@@ -5,6 +5,7 @@ import com.example.dto.MaintenanceLogDTO;
 import com.example.service.MaintenanceLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -18,7 +19,7 @@ public class MaintenanceLogController {
     @PostMapping("/{maintenanceId}/log")
     public MaintenanceLogDTO createLog(
             @PathVariable String maintenanceId,
-            @RequestBody MaintenanceLogCreateDTO dto
+            @Valid @RequestBody MaintenanceLogCreateDTO dto
     ) {
         return logService.createLog(maintenanceId, dto);
     }

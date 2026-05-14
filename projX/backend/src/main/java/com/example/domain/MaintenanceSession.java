@@ -29,6 +29,10 @@ public class MaintenanceSession {
     @JoinColumn(name = "request_id", nullable = true)
     private AssistanceRequest request;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "maintenance_record_id", nullable = true)
+    private Maintenance maintenanceRecord;
+
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
