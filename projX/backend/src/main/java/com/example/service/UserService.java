@@ -7,7 +7,6 @@ import com.example.dto.UserDTO;
 import com.example.dto.TechnicianDTO;
 import com.example.mapper.TechnicianMapper;
 import com.example.repository.UserRepository;
-import com.example.repository.TechnicianRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -26,7 +25,6 @@ import jakarta.persistence.PersistenceContext;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final TechnicianRepository technicianRepository;
     private final PasswordEncoder passwordEncoder;
 
     @PersistenceContext
@@ -140,6 +138,9 @@ public class UserService {
     }
 
     public void deleteUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
         entityManager.createNativeQuery("UPDATE problems SET assigned_technician_id = NULL WHERE assigned_technician_id = :id")
                 .setParameter("id", id).executeUpdate();
 
@@ -161,13 +162,7 @@ public class UserService {
         entityManager.createNativeQuery("DELETE FROM technician_skills WHERE technician_id = :id")
                 .setParameter("id", id).executeUpdate();
 
-        entityManager.createNativeQuery("DELETE FROM technicians WHERE id = :id")
-                .setParameter("id", id).executeUpdate();
-                
-        entityManager.createNativeQuery("DELETE FROM maintenance_technicians WHERE id = :id")
-                .setParameter("id", id).executeUpdate();
-
-        userRepository.deleteById(id);
+        userRepository.delete(user);
     }
 
 }

@@ -12,8 +12,6 @@ import { Label } from "./ui/label";
 import {
   Users,
   Plus,
-  Archive,
-  RefreshCw,
   Trash2,
 } from "lucide-react";
 import {
@@ -44,7 +42,6 @@ export const TeamView = () => {
   const { user } = useAuth();
 
   const [technicians, setTechnicians] = useState([]);
-  const [archivedTechnicians, setArchivedTechnicians] = useState([]);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -60,26 +57,17 @@ export const TeamView = () => {
   useEffect(() => {
     const loadTechnicians = async () => {
       try {
-        const [activeRes, archivedRes] = await Promise.all([
-          fetch(`${API_URL}/users/technicians`, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }),
-          fetch(`${API_URL}/users/technicians/archived`, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }),
-        ]);
+        const activeRes = await fetch(`${API_URL}/users/technicians`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
 
-        if (!activeRes.ok || !archivedRes.ok) {
+        if (!activeRes.ok) {
           throw new Error("Failed to load technicians");
         }
 
-        const [activeData, archivedData] = await Promise.all([
-          activeRes.json(),
-          archivedRes.json(),
-        ]);
+        const activeData = await activeRes.json();
 
         setTechnicians(activeData);
-        setArchivedTechnicians(archivedData);
       } catch (error) {
         toast.error("Failed to load technicians");
       }
@@ -120,43 +108,6 @@ export const TeamView = () => {
       .catch(() => toast.error("Failed to create technician"));
   };
 
-  // ARCHIVE TECHNICIAN
-  const handleArchive = (id) => {
-    fetch(`${API_URL}/users/${id}/archive`, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${user.token}` },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then((updated) => {
-        const tech = technicians.find((t) => t.id === id);
-        setTechnicians((prev) => prev.filter((t) => t.id !== id));
-        setArchivedTechnicians((prev) => [...prev, updated]);
-        toast.success(`${tech.name} archived`);
-      })
-      .catch(() => toast.error("Failed to archive technician"));
-  };
-
-  // RESTORE TECHNICIAN
-  const handleRestore = (id) => {
-    fetch(`${API_URL}/users/${id}/restore`, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${user.token}` },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then((updated) => {
-        setArchivedTechnicians((prev) => prev.filter((t) => t.id !== id));
-        setTechnicians((prev) => [...prev, updated]);
-        toast.success(`${updated.name} restored`);
-      })
-      .catch(() => toast.error("Failed to restore technician"));
-  };
-
   // DELETE TECHNICIAN
   const handleDelete = () => {
     fetch(`${API_URL}/users/${techToDelete}`, {
@@ -167,9 +118,7 @@ export const TeamView = () => {
         if (!res.ok) throw new Error();
       })
       .then(() => {
-        setArchivedTechnicians((prev) =>
-          prev.filter((t) => t.id !== techToDelete)
-        );
+        setTechnicians((prev) => prev.filter((t) => t.id !== techToDelete));
         toast.success("Technician permanently deleted");
       })
       .catch(() => toast.error("Failed to delete technician"))
@@ -283,63 +232,18 @@ export const TeamView = () => {
                 </div>
 
                 <Button
-                  variant="outline"
+                  variant="destructive"
                   size="sm"
-                  onClick={() => handleArchive(tech.id)}
+                  onClick={() => {
+                    setTechToDelete(tech.id);
+                    setDeleteDialogOpen(true);
+                  }}
                 >
-                  <Archive className="w-4 h-4 mr-1" /> Archive
+                  <Trash2 className="w-4 h-4 mr-1" /> Delete
                 </Button>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* ARCHIVED TECHNICIANS */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Archived Technicians</CardTitle>
-        </CardHeader>
-
-        <CardContent>
-          {archivedTechnicians.length === 0 ? (
-            <p className="text-gray-500">No archived technicians</p>
-          ) : (
-            <div className="space-y-3">
-              {archivedTechnicians.map((tech) => (
-                <div
-                  key={tech.id}
-                  className="flex items-center justify-between p-4 border rounded-lg bg-gray-50"
-                >
-                  <div>
-                    <div className="font-semibold">{tech.name}</div>
-                    <div className="text-sm text-gray-600">{tech.email}</div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRestore(tech.id)}
-                    >
-                      <RefreshCw className="w-4 h-4 mr-1" /> Restore
-                    </Button>
-
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        setTechToDelete(tech.id);
-                        setDeleteDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" /> Delete
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </CardContent>
       </Card>
 
