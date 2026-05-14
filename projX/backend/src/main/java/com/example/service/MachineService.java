@@ -175,7 +175,26 @@ public class MachineService {
         Technician tech = technicianRepository.findById(technicianId)
                 .orElseThrow(() -> new EntityNotFoundException("Technician not found"));
 
-        machine.getAssignedTechnicians().add(tech);
+        // Avoid duplicates - only add if not already assigned
+        if (!machine.getAssignedTechnicians().contains(tech)) {
+            machine.getAssignedTechnicians().add(tech);
+        }
+        return MachineMapper.toDTO(machineRepository.save(machine));
+    }
+
+    public MachineDTO assignTechniciansDTO(Long machineId, List<Long> technicianIds) {
+        Machine machine = machineRepository.findById(machineId)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
+
+        for (Long technicianId : technicianIds) {
+            Technician tech = technicianRepository.findById(technicianId)
+                    .orElseThrow(() -> new EntityNotFoundException("Technician not found with id: " + technicianId));
+            
+            // Avoid duplicates - only add if not already assigned
+            if (!machine.getAssignedTechnicians().contains(tech)) {
+                machine.getAssignedTechnicians().add(tech);
+            }
+        }
         return MachineMapper.toDTO(machineRepository.save(machine));
     }
 

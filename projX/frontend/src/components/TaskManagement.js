@@ -54,12 +54,14 @@ export const TaskManagement = ({ machines, onAssignTechnician, onMachineClick })
         "Content-Type": "application/json",
         Authorization: `Bearer ${user.token}`
       },
-      body: JSON.stringify({ technicianId: technicianIds[0] })
+      body: JSON.stringify({ technicianIds: technicianIds })
     })
       .then(res => {
         if (!res.ok) throw new Error();
         toast.success("Machine assigned successfully");
         onAssignTechnician(machine.id, technicianIds);
+        // Clear assignments after successful assign
+        setAssignments({ ...assignments, [machine.id]: [] });
       })
       .catch(() => toast.error("Failed to assign technicians"));
   };
