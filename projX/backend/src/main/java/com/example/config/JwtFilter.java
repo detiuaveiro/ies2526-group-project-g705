@@ -57,19 +57,23 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        // VALIDAR TOKEN
+        // VALIDAR TOKEN (safe: catch errors from user lookup or validation)
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            try {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
-            UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    var authToken = jwtService.getAuthenticationToken(userDetails);
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
 
-            if (jwtService.isTokenValid(jwt, userDetails)) {
-
-                var authToken = jwtService.getAuthenticationToken(userDetails);
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
-
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            } catch (Exception e) {
+                // Any problem validating or loading the user should not crash the request.
+                filterChain.doFilter(request, response);
+                return;
             }
         }
 

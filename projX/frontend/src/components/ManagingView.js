@@ -48,7 +48,16 @@ export const ManagingView = () => {
       headers: { Authorization: `Bearer ${user.token}` }
     })
       .then((r) => r.json())
-      .then(setMachines)
+      .then((data) => {
+        // Normalize API response to an array to avoid calling array methods on objects
+        if (Array.isArray(data)) {
+          setMachines(data);
+        } else if (data && Array.isArray(data.content)) {
+          setMachines(data.content);
+        } else {
+          setMachines([]);
+        }
+      })
       .catch(() => toast.error("Failed to load machines"))
       .finally(() => setLoading(false));
   };
