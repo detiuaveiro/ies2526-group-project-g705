@@ -1,8 +1,10 @@
 package com.example.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -98,6 +100,14 @@ public class MachineService {
         machine.setTemperatureSensor(dto.isTemperatureSensor());
         machine.setPressureSensor(dto.isPressureSensor());
 
+        if (dto.getAssignedTechnicians() != null) {
+            List<Technician> techs = dto.getAssignedTechnicians().stream()
+                    .map(t -> technicianRepository.findById(t.getId())
+                            .orElseThrow(() -> new EntityNotFoundException("Technician not found with id: " + t.getId())))
+                    .collect(Collectors.toList());
+            machine.setAssignedTechnicians(techs);
+        }
+
         return MachineMapper.toDTO(machineRepository.save(machine));
     }
 
@@ -186,15 +196,14 @@ public class MachineService {
         Machine machine = machineRepository.findById(machineId)
                 .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
 
+        List<Technician> newTechs = new ArrayList<>();
         for (Long technicianId : technicianIds) {
             Technician tech = technicianRepository.findById(technicianId)
                     .orElseThrow(() -> new EntityNotFoundException("Technician not found with id: " + technicianId));
-            
-            // Avoid duplicates - only add if not already assigned
-            if (!machine.getAssignedTechnicians().contains(tech)) {
-                machine.getAssignedTechnicians().add(tech);
-            }
+            newTechs.add(tech);
         }
+        
+        machine.setAssignedTechnicians(newTechs);
         return MachineMapper.toDTO(machineRepository.save(machine));
     }
 
