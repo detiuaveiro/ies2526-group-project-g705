@@ -177,7 +177,10 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
             </Button>
           )}
 
-          {user?.role !== "ADMIN" && user?.role !== "DIRECTOR" && (user?.role !== "TECHNICIAN" || machine.status === "MAINTENANCE") && (
+          {user?.role !== "ADMIN" && user?.role !== "DIRECTOR" && (
+            user?.role !== "TECHNICIAN" || 
+            (machine.status === "MAINTENANCE" && machine.activeMaintenanceTechnicianId === user.id)
+          ) && (
             <Button className="w-full mt-4" onClick={() => onRequestAssistance(machine)}>
               Request Assistance
             </Button>

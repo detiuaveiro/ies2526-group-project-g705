@@ -132,6 +132,11 @@ public class MaintenanceController {
         Machine machine = machineRepository.findById(machineId)
                 .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
 
+        // Check if machine is already in maintenance
+        if (machine.getStatus() == MachineStatus.MAINTENANCE) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        }
+
         // Check if this technician already has an active session
         var existingSessions = sessionRepository.findByTechnicianIdAndActiveTrue(technicianId);
         if (!existingSessions.isEmpty()) {
@@ -156,7 +161,7 @@ public class MaintenanceController {
                 .machine(machine)
                 .technician(tech)
                 .status(MaintenanceStatus.IN_PROGRESS)
-                .type(MaintenanceType.NORMAL)
+                .type(MaintenanceType.ORIGINAL)
                 .build();
         record = maintenanceRepository.save(record);
 

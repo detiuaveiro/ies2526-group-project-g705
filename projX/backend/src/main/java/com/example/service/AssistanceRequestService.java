@@ -69,6 +69,19 @@ public class AssistanceRequestService {
                     .orElseThrow(() -> new RuntimeException("Problem not found"));
         }
 
+        // Logic: if machine is in maintenance, only the original tech can request assistance
+        var machine = problem.getMachine();
+        if (machine.getStatus() == com.example.domain.enums.MachineStatus.MAINTENANCE) {
+            var originalMaintenance = maintenanceRepository.findByMachineIdAndStatus(machine.getId(), MaintenanceStatus.IN_PROGRESS)
+                    .stream()
+                    .filter(m -> m.getType() == MaintenanceType.ORIGINAL)
+                    .findFirst();
+
+            if (originalMaintenance.isPresent() && !originalMaintenance.get().getTechnician().getId().equals(requestedBy.getId())) {
+                throw new RuntimeException("Only the technician responsible for the original maintenance can request assistance.");
+            }
+        }
+
         AssistanceRequest request = AssistanceRequest.builder()
                 .problem(problem)
                 .requestedBy(requestedBy)

@@ -17,6 +17,9 @@ import com.example.dto.MachineRankingDTO;
 import com.example.mapper.MachineMapper;
 import com.example.repository.MachineRepository;
 import com.example.repository.TechnicianRepository;
+import com.example.repository.MaintenanceRepository;
+import com.example.domain.enums.MaintenanceStatus;
+import com.example.domain.enums.MaintenanceType;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,7 @@ public class MachineService {
 
     private final MachineRepository machineRepository;
     private final TechnicianRepository technicianRepository;
+    private final MaintenanceRepository maintenanceRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -39,22 +43,42 @@ public class MachineService {
     public List<MachineDTO> getAllMachinesDTO() {
         return machineRepository.findAll()
                 .stream()
-                .map(MachineMapper::toDTO)
+                .map(m -> {
+                    MachineDTO dto = MachineMapper.toDTO(m);
+                    populateActiveTechnician(dto);
+                    return dto;
+                })
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public MachineDTO getMachineByIdDTO(Long id) {
-        return machineRepository.findById(id)
-                .map(MachineMapper::toDTO)
+        Machine m = machineRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
+        MachineDTO dto = MachineMapper.toDTO(m);
+        populateActiveTechnician(dto);
+        return dto;
+    }
+
+    private void populateActiveTechnician(MachineDTO dto) {
+        if (dto.getStatus() == MachineStatus.MAINTENANCE) {
+            maintenanceRepository.findByMachineIdAndStatus(dto.getId(), MaintenanceStatus.IN_PROGRESS)
+                    .stream()
+                    .filter(m -> m.getType() == MaintenanceType.ORIGINAL)
+                    .findFirst()
+                    .ifPresent(m -> dto.setActiveMaintenanceTechnicianId(m.getTechnician().getId()));
+        }
     }
 
     @Transactional(readOnly = true)
     public List<MachineDTO> getArchivedMachinesDTO() {
         return machineRepository.findByArchivedAtIsNotNull()
                 .stream()
-                .map(MachineMapper::toDTO)
+                .map(m -> {
+                    MachineDTO dto = MachineMapper.toDTO(m);
+                    populateActiveTechnician(dto);
+                    return dto;
+                })
                 .toList();
     }
 
@@ -62,7 +86,11 @@ public class MachineService {
     public List<MachineDTO> getActiveMachinesDTO() {
         return machineRepository.findByArchivedAtIsNull()
                 .stream()
-                .map(MachineMapper::toDTO)
+                .map(m -> {
+                    MachineDTO dto = MachineMapper.toDTO(m);
+                    populateActiveTechnician(dto);
+                    return dto;
+                })
                 .toList();
     }
 
@@ -212,7 +240,11 @@ public class MachineService {
                 .filter(m -> m.getAssignedTechnicians() != null &&
                         m.getAssignedTechnicians().stream()
                                 .anyMatch(t -> t.getId().equals(technicianId)))
-                .map(MachineMapper::toDTO)
+                .map(m -> {
+                    MachineDTO dto = MachineMapper.toDTO(m);
+                    populateActiveTechnician(dto);
+                    return dto;
+                })
                 .toList();
     }
 }

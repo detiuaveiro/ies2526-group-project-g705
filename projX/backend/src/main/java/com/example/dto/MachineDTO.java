@@ -29,4 +29,5 @@ public class MachineDTO {
     private int assistanceRequestedCount;
 
     private List<TechnicianDTO> assignedTechnicians;
+    private Long activeMaintenanceTechnicianId;
 }
