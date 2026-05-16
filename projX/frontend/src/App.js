@@ -72,14 +72,22 @@ const MainApp = () => {
     }
   };
 
-  const handleAssignTechnician = (machineId, technicianIds) => {
-    setAppMachines((prev) =>
-      prev.map((m) =>
-        m.id === machineId
-          ? { ...m, assignedTechnicians: technicianIds }
-          : m
-      )
-    );
+  const reloadMachines = () => {
+    if (!user?.token) return;
+    const endpoint =
+      user.role === "TECHNICIAN"
+        ? `${API_URL}/machines/assigned/${user.id}`
+        : `${API_URL}/machines`;
+    fetch(endpoint, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => setAppMachines(Array.isArray(data) ? data : []))
+      .catch(() => toast.error("Failed to reload machines"));
+  };
+
+  const handleAssignTechnician = () => {
+    reloadMachines();
   };
 
   const renderContent = () => {
@@ -142,6 +150,10 @@ const MainApp = () => {
 
     if (activeTab === "requests") return <AssistanceRequestsView />;
     if (activeTab === "profitability") return <ProfitabilityView />;
+
+    if (user.role === "DIRECTOR" && activeTab === "managing") {
+      return <ManagingView />;
+    }
 
     if (user.role === "DIRECTOR" && activeTab === "team") {
       return <DirectorTeamView />;

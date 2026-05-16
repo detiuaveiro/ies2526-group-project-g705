@@ -15,6 +15,14 @@ import {
 
 const API_URL = "http://localhost:8080/api/v1";
 
+const uniqueIds = (ids) => [...new Set(ids.filter(Boolean))];
+
+const getSelectedIds = (machine, assignments) => {
+  const fromState = assignments[machine.id];
+  if (fromState !== undefined) return uniqueIds(fromState);
+  return uniqueIds((machine.assignedTechnicians || []).map((t) => t.id));
+};
+
 export const TaskManagement = ({ machines, onAssignTechnician, onMachineClick }) => {
   const { user } = useAuth();
 
@@ -41,7 +49,7 @@ export const TaskManagement = ({ machines, onAssignTechnician, onMachineClick })
   }, [user]);
 
   const handleAssignTechnicianClick = (machine) => {
-    const technicianIds = assignments[machine.id] || machine.assignedTechnicians?.map(t => t.id) || [];
+    const technicianIds = getSelectedIds(machine, assignments);
 
     if (technicianIds.length === 0) {
       toast.error("Please select at least one technician");
@@ -54,14 +62,13 @@ export const TaskManagement = ({ machines, onAssignTechnician, onMachineClick })
         "Content-Type": "application/json",
         Authorization: `Bearer ${user.token}`
       },
-      body: JSON.stringify({ technicianIds: technicianIds })
+      body: JSON.stringify({ technicianIds })
     })
       .then(res => {
         if (!res.ok) throw new Error();
         toast.success("Machine assigned successfully");
         onAssignTechnician(machine.id, technicianIds);
-        // Clear assignments after successful assign
-        setAssignments({ ...assignments, [machine.id]: [] });
+        setAssignments((prev) => ({ ...prev, [machine.id]: technicianIds }));
       })
       .catch(() => toast.error("Failed to assign technicians"));
   };
@@ -195,7 +202,7 @@ export const TaskManagement = ({ machines, onAssignTechnician, onMachineClick })
                             <DropdownMenuTrigger asChild>
                               <Button variant="outline" className="w-full text-left font-normal bg-white justify-between">
                                 {(() => {
-                                  const current = assignments[machine.id] || machine.assignedTechnicians?.map(t => t.id) || [];
+                                  const current = getSelectedIds(machine, assignments);
                                   if (current.length === 0) return <span className="text-gray-500">Select technicians</span>;
                                   if (current.length === technicians.length) return "All Technicians";
                                   if (current.length === 1) return technicians.find((t) => t.id === current[0])?.name || "1 selected";
@@ -208,17 +215,13 @@ export const TaskManagement = ({ machines, onAssignTechnician, onMachineClick })
                               {/* Select all */}
                               <DropdownMenuCheckboxItem
                                 checked={technicians.every((t) =>
-                                  (assignments[machine.id] || machine.assignedTechnicians?.map(t => t.id) || []).includes(t.id)
+                                  getSelectedIds(machine, assignments).includes(t.id)
                                 )}
                                 onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setAssignments({
-                                      ...assignments,
-                                      [machine.id]: technicians.map((t) => t.id)
-                                    });
-                                  } else {
-                                    setAssignments({ ...assignments, [machine.id]: [] });
-                                  }
+                                  setAssignments({
+                                    ...assignments,
+                                    [machine.id]: checked ? technicians.map((t) => t.id) : [],
+                                  });
                                 }}
                               >
                                 All
@@ -230,11 +233,11 @@ export const TaskManagement = ({ machines, onAssignTechnician, onMachineClick })
                               {technicians.map((tech) => (
                                 <DropdownMenuCheckboxItem
                                   key={tech.id}
-                                  checked={(assignments[machine.id] || machine.assignedTechnicians?.map(t => t.id) || []).includes(tech.id)}
+                                  checked={getSelectedIds(machine, assignments).includes(tech.id)}
                                   onCheckedChange={(checked) => {
-                                    const current = assignments[machine.id] || machine.assignedTechnicians?.map(t => t.id) || [];
+                                    const current = getSelectedIds(machine, assignments);
                                     const next = checked
-                                      ? [...current, tech.id]
+                                      ? uniqueIds([...current, tech.id])
                                       : current.filter((id) => id !== tech.id);
 
                                     setAssignments({ ...assignments, [machine.id]: next });

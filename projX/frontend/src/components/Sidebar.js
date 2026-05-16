@@ -29,6 +29,7 @@ const Sidebar = ({ activeTab, onTabChange }) => {
         return [
           { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
           { id: "machines", label: "Machines", icon: Wrench },
+          { id: "managing", label: "Manage Equipment", icon: Settings },
           { id: "task-management", label: "Machine Assignment", icon: Wrench },
           { id: "requests", label: "Requests", icon: ClipboardList },
           { id: "team", label: "Team Activity", icon: Users }

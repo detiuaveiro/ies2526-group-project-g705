@@ -21,8 +21,14 @@ public class AssistanceRequestController {
     }
 
     @GetMapping
-    public List<AssistanceRequestDTO> getAll() {
-        return assistanceRequestService.getAll();
+    public List<AssistanceRequestDTO> getAll(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) Long userId
+    ) {
+        if (role != null) {
+            return assistanceRequestService.getForRole(role, userId);
+        }
+        return assistanceRequestService.getForAuthenticatedUser();
     }
 
     @PostMapping("/{id}/assign")

@@ -196,8 +196,9 @@ public class MachineService {
         Machine machine = machineRepository.findById(machineId)
                 .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
 
+        List<Long> uniqueIds = technicianIds.stream().distinct().toList();
         List<Technician> newTechs = new ArrayList<>();
-        for (Long technicianId : technicianIds) {
+        for (Long technicianId : uniqueIds) {
             Technician tech = technicianRepository.findById(technicianId)
                     .orElseThrow(() -> new EntityNotFoundException("Technician not found with id: " + technicianId));
             newTechs.add(tech);

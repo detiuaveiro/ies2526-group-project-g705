@@ -17,6 +17,9 @@ RUN mvn clean package -DskipTests
 # Stage 2: Runtime stage
 FROM eclipse-temurin:17-jre-alpine
 
+# Required for Docker healthcheck (wget is not included in the base JRE image)
+RUN apk add --no-cache wget
+
 # Set working directory
 WORKDIR /app
 

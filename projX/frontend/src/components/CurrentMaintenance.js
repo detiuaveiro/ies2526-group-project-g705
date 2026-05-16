@@ -94,6 +94,7 @@ export default function CurrentMaintenance({ user }) {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         machineName={session.machineName}
+        session={session}
         onConfirm={handleEndMaintenance}
       />
     </div>

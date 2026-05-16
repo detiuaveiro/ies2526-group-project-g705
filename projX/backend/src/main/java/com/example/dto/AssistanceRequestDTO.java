@@ -14,6 +14,7 @@ public class AssistanceRequestDTO {
     private String problemDescription;
     private Long machineId;
     private String machineName;
+    private String machineLocation;
     private Long requestedById;
     private String requestedByName;
     private Long assignedTechnicianId;
