@@ -6,6 +6,7 @@ import com.example.mapper.MaintenanceMapper;
 import com.example.repository.MaintenanceRepository;
 import com.example.repository.MachineRepository;
 import com.example.repository.TechnicianRepository;
+import com.example.domain.enums.MaintenanceType;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,7 +40,7 @@ public class MaintenanceService {
     }
 
     public List<MaintenanceDTO> getMaintenanceByMachineDTO(Long machineId) {
-        return maintenanceRepository.findByMachineId(machineId)
+        return maintenanceRepository.findByMachineIdAndTypeNot(machineId, MaintenanceType.ASSISTANCE)
                 .stream()
                 .map(MaintenanceMapper::toDTO)
                 .toList();

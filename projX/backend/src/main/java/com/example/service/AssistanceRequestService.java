@@ -104,7 +104,7 @@ public class AssistanceRequestService {
         Maintenance maintenance = Maintenance.builder()
                 .machine(machine)
                 .technician(tech)
-                .type(MaintenanceType.NORMAL)
+                .type(MaintenanceType.ASSISTANCE)
                 .status(MaintenanceStatus.IN_PROGRESS)
                 .notes("Maintenance started automatically from assistance request")
                 .build();
@@ -115,6 +115,7 @@ public class AssistanceRequestService {
                 .technician(tech)
                 .machine(machine)
                 .request(request)
+                .maintenanceRecord(maintenance)
                 .startTime(LocalDateTime.now())
                 .active(true)
                 .build();
@@ -157,6 +158,13 @@ public class AssistanceRequestService {
             for (MaintenanceSession s : sessions) {
                 s.setActive(false);
                 s.setEndTime(LocalDateTime.now());
+                
+                if (s.getMaintenanceRecord() != null) {
+                    Maintenance m = s.getMaintenanceRecord();
+                    m.setStatus(MaintenanceStatus.COMPLETED);
+                    maintenanceRepository.save(m);
+                }
+                
                 maintenanceSessionRepository.save(s);
             }
 

@@ -15,6 +15,8 @@ import com.example.domain.enums.MaintenanceType;
 import com.example.domain.Machine;
 import com.example.domain.Maintenance;
 import com.example.repository.MaintenanceRepository;
+import com.example.repository.AssistanceRequestRepository;
+import com.example.domain.enums.AssistanceRequestStatus;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,7 @@ public class MaintenanceController {
     private final TechnicianRepository technicianRepository;
     private final MachineRepository machineRepository;
     private final MaintenanceRepository maintenanceRepository;
+    private final AssistanceRequestRepository assistanceRequestRepository;
 
     @GetMapping
     public ResponseEntity<List<MaintenanceDTO>> getAllMaintenance() {
@@ -182,6 +185,10 @@ public class MaintenanceController {
         MaintenanceSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found"));
 
+        if (!session.isActive()) {
+            return ResponseEntity.ok(toDTO(session));
+        }
+
         session.setActive(false);
         session.setEndTime(LocalDateTime.now());
         
@@ -202,8 +209,55 @@ public class MaintenanceController {
         tech.setCurrentAssignment(null);
         technicianRepository.save(tech);
 
+        // --- CONCLUDE EVERYTHING ELSE ON THIS MACHINE ---
+        
+        // 1. Close all other active sessions for this machine
+        var otherSessions = sessionRepository.findByMachineIdAndActiveTrue(machine.getId());
+        for (MaintenanceSession other : otherSessions) {
+            other.setActive(false);
+            other.setEndTime(LocalDateTime.now());
+            
+            if (other.getMaintenanceRecord() != null) {
+                Maintenance record = other.getMaintenanceRecord();
+                record.setStatus(MaintenanceStatus.COMPLETED);
+                maintenanceRepository.save(record);
+            }
+            
+            var otherTech = other.getTechnician();
+            if (!otherTech.getId().equals(tech.getId())) {
+                otherTech.setAvailable(true);
+                otherTech.setTasksCompleted(otherTech.getTasksCompleted() + 1);
+                otherTech.setCurrentAssignment(null);
+                technicianRepository.save(otherTech);
+            }
+            
+            sessionRepository.save(other);
+        }
+
+        // 2. Complete all assistance requests for this machine
+        var assistanceRequests = assistanceRequestRepository.findByProblemMachineIdAndStatusIn(
+                machine.getId(), 
+                List.of(AssistanceRequestStatus.PENDING, AssistanceRequestStatus.ACCEPTED)
+        );
+        for (var req : assistanceRequests) {
+            req.setStatus(AssistanceRequestStatus.COMPLETED);
+            req.setCompletedAt(LocalDateTime.now());
+            var problem = req.getProblem();
+            if (problem != null) {
+                problem.setResolved(true);
+            }
+            assistanceRequestRepository.save(req);
+        }
+
+        // 3. Mark all IN_PROGRESS maintenance records for this machine as COMPLETED
+        var openMaintenances = maintenanceRepository.findByMachineIdAndStatus(machine.getId(), MaintenanceStatus.IN_PROGRESS);
+        for (var m : openMaintenances) {
+            m.setStatus(MaintenanceStatus.COMPLETED);
+            maintenanceRepository.save(m);
+        }
+
         machine.setStatus(MachineStatus.ACTIVE);
-        machine.setActionRequiredCount(Math.max(0, machine.getActionRequiredCount() - 1));
+        machine.setActionRequiredCount(0); // Everything concluded
         machineRepository.save(machine);
 
         return ResponseEntity.ok(toDTO(session));

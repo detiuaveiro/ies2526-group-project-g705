@@ -12,4 +12,5 @@ public interface AssistanceRequestRepository extends JpaRepository<AssistanceReq
     List<AssistanceRequest> findByStatus(AssistanceRequestStatus status);
     List<AssistanceRequest> findByRequestedById(Long technicianId);
     List<AssistanceRequest> findByAssignedTechnicianId(Long technicianId);
+    List<AssistanceRequest> findByProblemMachineIdAndStatusIn(Long machineId, List<AssistanceRequestStatus> statuses);
 }
