@@ -80,7 +80,9 @@ public class UserService {
 
         User user;
 
-        if (dto.getRole() == UserRole.TECHNICIAN) {
+        UserRole role = dto.getRole() != null ? dto.getRole() : UserRole.TECHNICIAN;
+
+        if (role == UserRole.TECHNICIAN) {
             user = new Technician();
         } else {
             user = new User();
@@ -88,10 +90,20 @@ public class UserService {
 
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
-        user.setRole(dto.getRole());
+        user.setRole(role);
+        user.setPhoneNumber(dto.getPhoneNumber());
+        user.setAge(dto.getAge());
+        user.setGender(dto.getGender());
         user.setActive(true);
         user.setOnline(false);
-        user.setPrivileged(false);
+        user.setPrivileged(dto.isPrivileged());
+
+        if (user instanceof Technician technician) {
+            technician.setAvailable(dto.getAvailable() == null || dto.getAvailable());
+            if (dto.getSkillSet() != null) {
+                technician.setSkillSet(dto.getSkillSet());
+            }
+        }
 
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
 

@@ -17,7 +17,7 @@ public class MachineMapper {
                 Optional.ofNullable(m.getAssignedTechnicians())
                         .orElse(List.of())
                         .stream()
-                        .map(TechnicianMapper::toDTO)
+                        .map(TechnicianMapper::toBasicDTO)
                         .toList();
 
         return MachineDTO.builder()

@@ -29,7 +29,7 @@ public class Technician extends User {
     @JoinColumn(name = "current_machine_id")
     private Machine currentAssignment;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "technician_skills", joinColumns = @JoinColumn(name = "technician_id"))
     @Column(name = "skill")
     private List<String> skillSet = new ArrayList<>();

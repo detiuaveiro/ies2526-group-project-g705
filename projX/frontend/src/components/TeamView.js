@@ -38,8 +38,19 @@ import { useAuth } from "../contexts/AuthContext";
 
 const API_URL = "http://localhost:8080/api/v1";
 
+const emptyTechnician = {
+  name: "",
+  email: "",
+  password: "",
+  phoneNumber: "",
+  age: "",
+  gender: "",
+  skillSet: "",
+};
+
 export const TeamView = () => {
   const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
 
   const [technicians, setTechnicians] = useState([]);
 
@@ -47,40 +58,46 @@ export const TeamView = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [techToDelete, setTechToDelete] = useState(null);
 
-  const [newTech, setNewTech] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
+  const [newTech, setNewTech] = useState(emptyTechnician);
 
   // LOAD TECHNICIANS FROM BACKEND
-  useEffect(() => {
-    const loadTechnicians = async () => {
-      try {
-        const activeRes = await fetch(`${API_URL}/users/technicians`, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
+  const loadTechnicians = async () => {
+    try {
+      const activeRes = await fetch(`${API_URL}/users/technicians`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
 
-        if (!activeRes.ok) {
-          throw new Error("Failed to load technicians");
-        }
-
-        const activeData = await activeRes.json();
-
-        setTechnicians(activeData);
-      } catch (error) {
-        toast.error("Failed to load technicians");
+      if (!activeRes.ok) {
+        throw new Error("Failed to load technicians");
       }
-    };
 
+      const activeData = await activeRes.json();
+
+      setTechnicians(activeData);
+    } catch (error) {
+      toast.error("Failed to load technicians");
+    }
+  };
+
+  useEffect(() => {
     loadTechnicians();
   }, [user]);
 
   const handleAddTechnician = () => {
+    if (!isAdmin) {
+      toast.error("Only administrators can create technicians");
+      return;
+    }
+
     if (!newTech.name || !newTech.email || !newTech.password) {
       toast.error("Name, Email and Password are required");
       return;
     }
+
+    const skillSet = newTech.skillSet
+      .split(",")
+      .map((skill) => skill.trim())
+      .filter(Boolean);
 
     fetch(`${API_URL}/users`, {
       method: "POST",
@@ -92,36 +109,47 @@ export const TeamView = () => {
         name: newTech.name,
         email: newTech.email,
         password: newTech.password,
+        phoneNumber: newTech.phoneNumber || null,
+        age: newTech.age ? Number(newTech.age) : null,
+        gender: newTech.gender || null,
+        skillSet,
         role: "TECHNICIAN"
       })
     })
       .then((res) => {
-        if (!res.ok) throw new Error();
+        if (res.status === 403) throw new Error("Session expired. Please log out and log in again.");
+        if (!res.ok) throw new Error("Failed to create technician");
         return res.json();
       })
       .then((created) => {
-        setTechnicians((prev) => [...prev, created]);
+        loadTechnicians();
         toast.success(`${created.name} added to the team`);
         setIsAddDialogOpen(false);
-        setNewTech({ name: "", email: "", password: "" });
+        setNewTech(emptyTechnician);
       })
-      .catch(() => toast.error("Failed to create technician"));
+      .catch((err) => toast.error(err.message || "Failed to create technician"));
   };
 
   // DELETE TECHNICIAN
   const handleDelete = () => {
+    if (!isAdmin) {
+      toast.error("Only administrators can delete technicians");
+      return;
+    }
+
     fetch(`${API_URL}/users/${techToDelete}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => {
-        if (!res.ok) throw new Error();
+        if (res.status === 403) throw new Error("Session expired. Please log out and log in again.");
+        if (!res.ok) throw new Error("Failed to delete technician");
       })
       .then(() => {
-        setTechnicians((prev) => prev.filter((t) => t.id !== techToDelete));
+        loadTechnicians();
         toast.success("Technician permanently deleted");
       })
-      .catch(() => toast.error("Failed to delete technician"))
+      .catch((err) => toast.error(err.message || "Failed to delete technician"))
       .finally(() => {
         setDeleteDialogOpen(false);
         setTechToDelete(null);
@@ -137,65 +165,118 @@ export const TeamView = () => {
           <p className="text-gray-600">Manage technicians</p>
         </div>
 
-        {/* ADD TECHNICIAN */}
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="lg">
-              <Plus className="w-5 h-5 mr-2" />
-              Add Technician
-            </Button>
-          </DialogTrigger>
-
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Register New Technician</DialogTitle>
-              <DialogDescription>
-                Fill in the technician's profile details.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 mt-2">
-              <div>
-                <Label>Name *</Label>
-                <Input
-                  value={newTech.name}
-                  onChange={(e) =>
-                    setNewTech((p) => ({ ...p, name: e.target.value }))
-                  }
-                />
-              </div>
-
-              <div>
-                <Label>Email *</Label>
-                <Input
-                  type="email"
-                  value={newTech.email}
-                  onChange={(e) =>
-                    setNewTech((p) => ({ ...p, email: e.target.value }))
-                  }
-                />
-              </div>
-
-              <div>
-                <Label>Password *</Label>
-                <Input
-                  type="password"
-                  value={newTech.password}
-                  onChange={(e) =>
-                    setNewTech((p) => ({ ...p, password: e.target.value }))
-                  }
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="mt-4">
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancel
+        {isAdmin && (
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="lg">
+                <Plus className="w-5 h-5 mr-2" />
+                Add Technician
               </Button>
-              <Button onClick={handleAddTechnician}>Add Technician</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Register New Technician</DialogTitle>
+                <DialogDescription>
+                  Fill in the technician's profile details.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                <div>
+                  <Label>Name *</Label>
+                  <Input
+                    value={newTech.name}
+                    onChange={(e) =>
+                      setNewTech((p) => ({ ...p, name: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label>Email *</Label>
+                  <Input
+                    type="email"
+                    value={newTech.email}
+                    onChange={(e) =>
+                      setNewTech((p) => ({ ...p, email: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label>Password *</Label>
+                  <Input
+                    type="password"
+                    value={newTech.password}
+                    onChange={(e) =>
+                      setNewTech((p) => ({ ...p, password: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label>Phone Number</Label>
+                  <Input
+                    value={newTech.phoneNumber}
+                    onChange={(e) =>
+                      setNewTech((p) => ({ ...p, phoneNumber: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label>Age</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={newTech.age}
+                    onChange={(e) =>
+                      setNewTech((p) => ({ ...p, age: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label>Gender</Label>
+                  <select
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={newTech.gender}
+                    onChange={(e) =>
+                      setNewTech((p) => ({ ...p, gender: e.target.value }))
+                    }
+                  >
+                    <option value="">Not specified</option>
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                    <option value="OTHER">Other</option>
+                    <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <Label>Skills</Label>
+                  <Input
+                    placeholder="Electrical, Mechanical, Diagnostics"
+                    value={newTech.skillSet}
+                    onChange={(e) =>
+                      setNewTech((p) => ({ ...p, skillSet: e.target.value }))
+                    }
+                  />
+                </div>
+
+
+              </div>
+
+              <DialogFooter className="mt-4">
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddTechnician}>Add Technician</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* SUMMARY CARD */}
@@ -231,16 +312,18 @@ export const TeamView = () => {
                   <div className="text-sm text-gray-600">{tech.email}</div>
                 </div>
 
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    setTechToDelete(tech.id);
-                    setDeleteDialogOpen(true);
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 mr-1" /> Delete
-                </Button>
+                {isAdmin && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setTechToDelete(tech.id);
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" /> Delete
+                  </Button>
+                )}
               </div>
             ))}
           </div>

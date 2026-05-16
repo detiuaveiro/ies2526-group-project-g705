@@ -9,6 +9,22 @@ public class TechnicianMapper {
         return TechnicianDTO.builder()
                 .id(t.getId())
                 .name(t.getName())
+                .email(t.getEmail())
+                .phoneNumber(t.getPhoneNumber())
+                .age(t.getAge())
+                .gender(t.getGender())
+                .active(t.isActive())
+                .privileged(t.isPrivileged())
+                .available(t.isAvailable())
+                .skillSet(t.getSkillSet())
+                .build();
+    }
+
+    public static TechnicianDTO toBasicDTO(Technician t) {
+        return TechnicianDTO.builder()
+                .id(t.getId())
+                .name(t.getName())
+                .email(t.getEmail())
                 .build();
     }
 }
