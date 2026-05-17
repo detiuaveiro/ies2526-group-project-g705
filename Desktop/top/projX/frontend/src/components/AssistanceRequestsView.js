@@ -1,0 +1,249 @@
+import { useEffect, useState } from "react";
+import { Card, CardContent } from "./ui/card";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
+import { useAuth } from "../contexts/AuthContext";
+import { toast } from "sonner";
+import { AlertCircle, Clock, MapPin, UserPlus } from "lucide-react";
+
+const API = "http://localhost:8080/api/v1";
+
+const formatDate = (value) => {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("pt-PT");
+};
+
+const statusLabel = (status) => {
+  switch (status) {
+    case "PENDING":
+      return "Pending";
+    case "ACCEPTED":
+      return "In Progress";
+    case "COMPLETED":
+      return "Completed";
+    default:
+      return status;
+  }
+};
+
+const statusColor = (status) => {
+  switch (status) {
+    case "PENDING":
+      return "bg-yellow-100 text-yellow-800 border-yellow-300";
+    case "ACCEPTED":
+      return "bg-blue-100 text-blue-800 border-blue-300";
+    case "COMPLETED":
+      return "bg-green-100 text-green-800 border-green-300";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-300";
+  }
+};
+
+export const AssistanceRequestsView = () => {
+  const { user } = useAuth();
+  const [requests, setRequests] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
+  const [selectedTechByRequest, setSelectedTechByRequest] = useState({});
+  const [filter, setFilter] = useState("active");
+
+  const loadRequests = () => {
+    fetch(`${API}/assistance-requests?role=DIRECTOR`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => setRequests(Array.isArray(data) ? data : []))
+      .catch(() => toast.error("Failed to load assistance requests"));
+  };
+
+  useEffect(() => {
+    fetch(`${API}/users/technicians`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => setTechnicians(Array.isArray(data) ? data : []))
+      .catch(() => toast.error("Failed to load technicians"));
+  }, [user]);
+
+  useEffect(() => {
+    loadRequests();
+    const interval = setInterval(loadRequests, 5000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const handleAssign = async (request) => {
+    const technicianId =
+      selectedTechByRequest[request.id] ?? request.assignedTechnicianId;
+
+    if (!technicianId) {
+      toast.error("Select a technician to assign");
+      return;
+    }
+
+    if (Number(technicianId) === Number(request.requestedById)) {
+      toast.error("Cannot assign the request to the technician who created it");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${API}/assistance-requests/${request.id}/assign?technicianId=${technicianId}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || err.message || "Failed to assign");
+      }
+      toast.success("Technician assigned successfully");
+      loadRequests();
+    } catch (e) {
+      toast.error(e.message || "Failed to assign technician");
+    }
+  };
+
+  const filteredRequests = requests.filter((req) => {
+    const status = String(req.status || "").toUpperCase();
+    if (filter === "completed") return status === "COMPLETED";
+    return status === "PENDING" || status === "ACCEPTED";
+  });
+
+  const activeCount = requests.filter((r) => String(r.status).toUpperCase() !== "COMPLETED").length;
+  const completedCount = requests.filter((r) => String(r.status).toUpperCase() === "COMPLETED").length;
+
+  const eligibleTechnicians = (request) =>
+    technicians.filter((t) => t.id !== request.requestedById);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold mb-2">Assistance Requests</h1>
+        <p className="text-gray-600">
+          Review requests and assign them to technicians. Only assigned technicians will see each request.
+        </p>
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          variant={filter === "active" ? "default" : "outline"}
+          onClick={() => setFilter("active")}
+        >
+          Active ({activeCount})
+        </Button>
+        <Button
+          variant={filter === "completed" ? "default" : "outline"}
+          onClick={() => setFilter("completed")}
+        >
+          Completed ({completedCount})
+        </Button>
+      </div>
+
+      {filteredRequests.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-gray-600">
+            No {filter === "completed" ? "completed" : "active"} requests
+          </CardContent>
+        </Card>
+      ) : (
+        <div key={filter} className="grid gap-4">
+          {filteredRequests.map((request) => {
+            const eligible = eligibleTechnicians(request);
+            const selectedId =
+              selectedTechByRequest[request.id] ?? request.assignedTechnicianId ?? "";
+
+            return (
+              <Card
+                key={request.id}
+                className={`border-l-4 ${
+                  request.status === "PENDING" ? "border-l-yellow-500" : "border-l-blue-500"
+                }`}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex flex-col lg:flex-row gap-4 justify-between">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <AlertCircle className="w-5 h-5 text-orange-600" />
+                        <h3 className="font-semibold text-lg">{request.machineName}</h3>
+                        <Badge className={statusColor(request.status)}>
+                          {statusLabel(request.status)}
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <MapPin className="w-4 h-4" />
+                        {request.machineLocation || "—"}
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Clock className="w-4 h-4" />
+                        Created: {formatDate(request.createdAt)}
+                      </div>
+
+                      <p className="text-sm text-gray-600">
+                        Problem #{request.problemId}: {request.problemDescription}
+                      </p>
+
+                      <div className="bg-orange-50 border border-orange-200 rounded p-3">
+                        <p className="text-sm font-medium text-orange-900">Reason</p>
+                        <p className="text-sm text-orange-800">{request.reason}</p>
+                      </div>
+
+                      <p className="text-sm text-gray-600">
+                        Requested by: <span className="font-medium">{request.requestedByName}</span>
+                      </p>
+
+                      {request.assignedTechnicianName && (
+                        <p className="text-sm text-gray-600">
+                          Assigned to:{" "}
+                          <span className="font-medium">{request.assignedTechnicianName}</span>
+                        </p>
+                      )}
+
+                      {request.acceptedAt && (
+                        <p className="text-xs text-gray-500">
+                          Accepted: {formatDate(request.acceptedAt)}
+                        </p>
+                      )}
+                      {request.completedAt && (
+                        <p className="text-xs text-gray-500">
+                          Completed: {formatDate(request.completedAt)}
+                        </p>
+                      )}
+                    </div>
+
+                    {(request.status === "PENDING" || request.status === "ACCEPTED") && (
+                      <div className="flex flex-col gap-2 min-w-[220px]">
+                        <select
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          value={selectedId}
+                          onChange={(e) =>
+                            setSelectedTechByRequest({
+                              ...selectedTechByRequest,
+                              [request.id]: Number(e.target.value),
+                            })
+                          }
+                        >
+                          <option value="">Select technician</option>
+                          {eligible.map((tech) => (
+                            <option key={tech.id} value={tech.id}>
+                              {tech.name}
+                            </option>
+                          ))}
+                        </select>
+                        <Button onClick={() => handleAssign(request)} className="w-full">
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          {request.assignedTechnicianId ? "Update Assignee" : "Assign Technician"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
