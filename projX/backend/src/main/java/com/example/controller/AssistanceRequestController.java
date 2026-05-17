@@ -4,9 +4,11 @@ import com.example.dto.AssistanceRequestCreateDTO;
 import com.example.dto.AssistanceRequestDTO;
 import com.example.service.AssistanceRequestService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/assistance-requests")
@@ -21,16 +23,26 @@ public class AssistanceRequestController {
     }
 
     @GetMapping
-    public List<AssistanceRequestDTO> getAll() {
-        return assistanceRequestService.getAll();
+    public List<AssistanceRequestDTO> getAll(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) Long userId
+    ) {
+        if (role != null) {
+            return assistanceRequestService.getForRole(role, userId);
+        }
+        return assistanceRequestService.getForAuthenticatedUser();
     }
 
     @PostMapping("/{id}/assign")
-    public AssistanceRequestDTO assign(
+    public ResponseEntity<?> assign(
             @PathVariable Long id,
             @RequestParam Long technicianId
     ) {
-        return assistanceRequestService.assign(id, technicianId);
+        try {
+            return ResponseEntity.ok(assistanceRequestService.assign(id, technicianId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
 

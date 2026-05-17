@@ -7,9 +7,9 @@ import java.util.List;
 
 public interface MaintenanceLogRepository extends JpaRepository<MaintenanceLog, Long> {
 
-    List<MaintenanceLog> findByMaintenanceId(Long maintenanceId);
+    List<MaintenanceLog> findByMaintenanceIdOrderByCreatedAtDesc(Long maintenanceId);
 
     List<MaintenanceLog> findByTechnicianId(Long technicianId);
 
-    List<MaintenanceLog> findByMaintenanceMachineId(Long machineId);
+    List<MaintenanceLog> findByMaintenanceMachineIdOrderByCreatedAtDesc(Long machineId);
 }

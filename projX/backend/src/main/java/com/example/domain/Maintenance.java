@@ -29,7 +29,7 @@ public class Maintenance {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private MaintenanceType type = MaintenanceType.NORMAL;
+    private MaintenanceType type = MaintenanceType.ORIGINAL;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

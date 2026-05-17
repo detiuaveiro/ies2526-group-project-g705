@@ -26,7 +26,9 @@ const API_URL = "http://localhost:8080/api/v1";
 const MainApp = () => {
   const { user } = useAuth();
 
-  const [activeTab, setActiveTab] = useState("machines");
+  const [activeTab, setActiveTab] = useState(
+    () => (user?.role === "DIRECTOR" || user?.role === "ADMIN" ? "dashboard" : "machines")
+  );
   const [selectedMachine, setSelectedMachine] = useState(null);
 
   const [selectedMachineForAssistance, setSelectedMachineForAssistance] = useState(null);
@@ -72,14 +74,22 @@ const MainApp = () => {
     }
   };
 
-  const handleAssignTechnician = (machineId, technicianIds) => {
-    setAppMachines((prev) =>
-      prev.map((m) =>
-        m.id === machineId
-          ? { ...m, assignedTechnicians: technicianIds }
-          : m
-      )
-    );
+  const reloadMachines = () => {
+    if (!user?.token) return;
+    const endpoint =
+      user.role === "TECHNICIAN"
+        ? `${API_URL}/machines/assigned/${user.id}`
+        : `${API_URL}/machines`;
+    fetch(endpoint, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => setAppMachines(Array.isArray(data) ? data : []))
+      .catch(() => toast.error("Failed to reload machines"));
+  };
+
+  const handleAssignTechnician = () => {
+    reloadMachines();
   };
 
   const renderContent = () => {

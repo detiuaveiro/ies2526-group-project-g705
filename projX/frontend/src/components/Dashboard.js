@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { CheckCircle, Wrench, AlertTriangle, Users } from "lucide-react";
+import { CheckCircle, Wrench, AlertTriangle, Eye } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -12,14 +12,13 @@ export const Dashboard = () => {
   const [machines, setMachines] = useState([]);
   const [problems, setProblems] = useState([]);
   const [requests, setRequests] = useState([]);
-  const [ranking, setRanking] = useState([]);
 
   useEffect(() => {
     fetch(`${API_URL}/machines`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
-      .then(setMachines)
+      .then((data) => setMachines(Array.isArray(data) ? data : []))
       .catch(() => toast.error("Failed to load machines"));
   }, [user]);
 
@@ -28,51 +27,40 @@ export const Dashboard = () => {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
-      .then(setProblems)
+      .then((data) => setProblems(Array.isArray(data) ? data : []))
       .catch(() => toast.error("Failed to load breakdown history"));
   }, [user]);
 
   useEffect(() => {
-    fetch(`${API_URL}/assistance-requests`, {
+    fetch(`${API_URL}/assistance-requests?role=DIRECTOR`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
-      .then(setRequests)
+      .then((data) => setRequests(Array.isArray(data) ? data : []))
       .catch(() => toast.error("Failed to load assistance requests"));
   }, [user]);
 
-  useEffect(() => {
-    fetch(`${API_URL}/machines/ranking`, {
-      headers: { Authorization: `Bearer ${user.token}` },
-    })
-      .then((res) => res.json())
-      .then(setRanking)
-      .catch(() => toast.error("Failed to load ranking"));
-  }, [user]);
+  const active = machines.filter((m) => m.status === "ACTIVE").length;
+  const maintenance = machines.filter((m) => m.status === "MAINTENANCE").length;
 
-  const active = Array.isArray(machines) ? machines.filter((m) => m.status === "ACTIVE").length : 0;
-  const maintenance = Array.isArray(machines) ? machines.filter((m) => m.status === "MAINTENANCE").length : 0;
-  const archived = Array.isArray(machines) ? machines.filter((m) => m.status === "ARCHIVED").length : 0;
+  const suspiciousCount = machines.filter((m) => m.suspicionFlag).length;
 
-  const assistanceRequested = Array.isArray(machines) ? machines.reduce(
-    (sum, m) => sum + (m.assistanceRequestedCount || 0),
-    0
-  ) : 0;
+  const machinesWithDuplicateAssignments = machines.filter((m) => {
+    const ids = (m.assignedTechnicians || []).map((t) => t.id);
+    return ids.length !== new Set(ids).size;
+  });
 
-  const actionRequired = Array.isArray(machines) ? machines.reduce(
-    (sum, m) => sum + (m.actionRequiredCount || 0),
-    0
-  ) : 0;
-
-  const recentBreakdowns = Array.isArray(problems) ? problems
+  const recentBreakdowns = problems
     .sort(
       (a, b) =>
         new Date(b.startProblemDate).getTime() -
         new Date(a.startProblemDate).getTime()
     )
-    .slice(0, 5) : [];
+    .slice(0, 5);
 
-  const pendingRequests = Array.isArray(requests) ? requests.filter((r) => r.status === "PENDING") : [];
+  const pendingRequests = requests.filter(
+    (r) => String(r.status).toUpperCase() === "PENDING"
+  );
 
   return (
     <div className="space-y-6">
@@ -81,7 +69,6 @@ export const Dashboard = () => {
         <p className="text-gray-600">Real-time overview of the system</p>
       </div>
 
-      {/* STATUS CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
@@ -111,8 +98,8 @@ export const Dashboard = () => {
           <CardContent className="pt-6">
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-sm text-gray-600">Assistance Requested</div>
-                <div className="text-3xl font-bold">{assistanceRequested}</div>
+                <div className="text-sm text-gray-600">Pending Requests</div>
+                <div className="text-3xl font-bold">{pendingRequests.length}</div>
               </div>
               <AlertTriangle className="w-8 h-8 text-orange-600" />
             </div>
@@ -123,24 +110,42 @@ export const Dashboard = () => {
           <CardContent className="pt-6">
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-sm text-gray-600">Action Required</div>
-                <div className="text-3xl font-bold">{actionRequired}</div>
+                <div className="text-sm text-gray-600">Suspicious Machines</div>
+                <div className="text-3xl font-bold">{suspiciousCount}</div>
               </div>
-              <AlertTriangle className="w-8 h-8 text-red-600" />
+              <Eye className="w-8 h-8 text-red-600" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* RECENT BREAKDOWNS */}
+      {machinesWithDuplicateAssignments.length > 0 && (
+        <Card className="border-amber-300 bg-amber-50">
+          <CardHeader>
+            <CardTitle className="text-amber-900">Duplicate technician assignments</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {machinesWithDuplicateAssignments.map((m) => (
+              <p key={m.id} className="text-sm text-amber-800">
+                <span className="font-medium">{m.name}</span> has the same technician listed more than once.
+                Re-assign in Machine Assignment to fix.
+              </p>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Recent Breakdowns</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentBreakdowns.map((p) => (
-              <div key={p.id} className="border-b pb-3">
+            {recentBreakdowns.length === 0 && (
+              <p className="text-sm text-gray-500">No breakdowns recorded</p>
+            )}
+            {recentBreakdowns.map((p, index) => (
+              <div key={p.problemId ?? p.id ?? `breakdown-${index}`} className="border-b pb-3">
                 <div className="font-medium">{p.machineName}</div>
                 <div className="text-sm text-gray-600">{p.description}</div>
                 <div className="text-xs text-gray-500">
@@ -152,7 +157,6 @@ export const Dashboard = () => {
         </CardContent>
       </Card>
 
-      {/* PENDING ASSISTANCE REQUESTS */}
       <Card>
         <CardHeader>
           <CardTitle>Pending Assistance Requests</CardTitle>
@@ -161,7 +165,6 @@ export const Dashboard = () => {
           {pendingRequests.length === 0 && (
             <p className="text-gray-500 text-sm">No pending requests</p>
           )}
-
           {pendingRequests.map((r) => (
             <div key={r.id} className="border-b pb-3 mb-3">
               <div className="font-medium">{r.machineName}</div>

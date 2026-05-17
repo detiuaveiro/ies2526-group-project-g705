@@ -17,6 +17,8 @@ RUN mvn clean package -DskipTests
 # Stage 2: Runtime stage
 FROM eclipse-temurin:17-jre-alpine
 
+RUN apk add --no-cache wget
+
 # Set working directory
 WORKDIR /app
 

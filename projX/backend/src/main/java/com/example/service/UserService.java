@@ -92,6 +92,13 @@ public class UserService {
         user.setActive(true);
         user.setOnline(false);
         user.setPrivileged(false);
+        user.setPhoneNumber(dto.getPhoneNumber());
+        user.setAge(dto.getAge());
+        user.setGender(dto.getGender());
+
+        if (user instanceof Technician tech && dto.getSkillSet() != null) {
+            tech.setSkillSet(new java.util.ArrayList<>(dto.getSkillSet()));
+        }
 
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
 
@@ -108,6 +115,21 @@ public class UserService {
         user.setEmail(dto.getEmail());
         if (dto.getRole() != null) {
             user.setRole(dto.getRole());
+        }
+        if (dto.getPhoneNumber() != null) {
+            user.setPhoneNumber(dto.getPhoneNumber());
+        }
+        if (dto.getAge() != null) {
+            user.setAge(dto.getAge());
+        }
+        if (dto.getGender() != null) {
+            user.setGender(dto.getGender());
+        }
+        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
+            user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
+        }
+        if (user instanceof Technician tech && dto.getSkillSet() != null) {
+            tech.setSkillSet(new java.util.ArrayList<>(dto.getSkillSet()));
         }
 
         return UserDTO.fromEntity(userRepository.save(user));

@@ -10,7 +10,6 @@ public class MaintenanceLogDTO {
     private String title;
     private String description;
     private Double hoursSpent;
-    private Double cost;
     private String partsUsed;
     private String technicianName;
     private String createdAt;

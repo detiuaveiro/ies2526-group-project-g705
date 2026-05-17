@@ -10,6 +10,7 @@ import java.util.List;
 @Repository
 public interface MaintenanceRepository extends JpaRepository<Maintenance, Long> {
     List<Maintenance> findByMachineId(Long machineId);
+    List<Maintenance> findByMachineIdAndStatus(Long machineId, MaintenanceStatus status);
     List<Maintenance> findByTechnicianId(Long technicianId);
     List<Maintenance> findByStatus(MaintenanceStatus status);
 }

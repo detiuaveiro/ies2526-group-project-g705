@@ -18,15 +18,18 @@ import com.example.repository.TechnicianRepository;
 import com.example.repository.MachineRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional
 public class AssistanceRequestService {
 
@@ -69,6 +72,19 @@ public class AssistanceRequestService {
                     .orElseThrow(() -> new RuntimeException("Problem not found"));
         }
 
+        // Logic: if machine is in maintenance, only the original tech can request assistance
+        var machine = problem.getMachine();
+        if (machine.getStatus() == com.example.domain.enums.MachineStatus.MAINTENANCE) {
+            var originalMaintenance = maintenanceRepository.findByMachineIdAndStatus(machine.getId(), MaintenanceStatus.IN_PROGRESS)
+                    .stream()
+                    .filter(m -> m.getType() == MaintenanceType.ORIGINAL)
+                    .findFirst();
+
+            if (originalMaintenance.isPresent() && !originalMaintenance.get().getTechnician().getId().equals(requestedBy.getId())) {
+                throw new RuntimeException("Only the technician responsible for the original maintenance can request assistance.");
+            }
+        }
+
         AssistanceRequest request = AssistanceRequest.builder()
                 .problem(problem)
                 .requestedBy(requestedBy)
@@ -87,6 +103,35 @@ public class AssistanceRequestService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<AssistanceRequestDTO> getForRole(String role, Long userId) {
+        if (role == null) {
+            return List.of();
+        }
+        return switch (role.toUpperCase()) {
+            case "DIRECTOR", "ADMIN" -> assistanceRequestRepository.findAll()
+                    .stream()
+                    .map(this::toDTO)
+                    .toList();
+            case "TECHNICIAN" -> {
+                if (userId == null) {
+                    yield List.of();
+                }
+                yield assistanceRequestRepository.findAllAssignedToTechnician(userId)
+                        .stream()
+                        .filter(r -> !Objects.equals(r.getRequestedBy().getId(), userId))
+                        .map(this::toDTO)
+                        .toList();
+            }
+            default -> List.of();
+        };
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssistanceRequestDTO> getForAuthenticatedUser() {
+        return List.of();
+    }
+
     public AssistanceRequestDTO assign(Long requestId, Long technicianId) {
 
         AssistanceRequest request = assistanceRequestRepository.findById(requestId)
@@ -95,40 +140,57 @@ public class AssistanceRequestService {
         Technician tech = technicianRepository.findById(technicianId)
                 .orElseThrow(() -> new RuntimeException("Technician not found"));
 
+        if (Objects.equals(request.getRequestedBy().getId(), technicianId)) {
+            throw new RuntimeException("Cannot assign the request to the technician who created it");
+        }
+
         var machine = request.getProblem().getMachine();
+
+        if (machine.getAssignedTechnicians().stream().noneMatch(t -> t.getId().equals(tech.getId()))) {
+            machine.getAssignedTechnicians().add(tech);
+            machineRepository.save(machine);
+        }
 
         request.setAssignedTechnician(tech);
         request.setStatus(AssistanceRequestStatus.ACCEPTED);
         request.setAcceptedAt(LocalDateTime.now());
-
-        Maintenance maintenance = Maintenance.builder()
-                .machine(machine)
-                .technician(tech)
-                .type(MaintenanceType.NORMAL)
-                .status(MaintenanceStatus.IN_PROGRESS)
-                .notes("Maintenance started automatically from assistance request")
-                .build();
-
-        maintenance = maintenanceRepository.save(maintenance);
-
-        MaintenanceSession session = MaintenanceSession.builder()
-                .technician(tech)
-                .machine(machine)
-                .request(request)
-                .startTime(LocalDateTime.now())
-                .active(true)
-                .build();
-
-        maintenanceSessionRepository.save(session);
+        assistanceRequestRepository.saveAndFlush(request);
 
         tech.setAvailable(false);
+        tech.setTasksPending(tech.getTasksPending() + 1);
         tech.setCurrentAssignment(machine);
-        technicianRepository.save(tech);
+        technicianRepository.saveAndFlush(tech);
 
-        machine.setStatus(com.example.domain.enums.MachineStatus.MAINTENANCE);
+        if (machine.getStatus() != com.example.domain.enums.MachineStatus.MAINTENANCE) {
+            machine.setStatus(com.example.domain.enums.MachineStatus.MAINTENANCE);
+        }
         machineRepository.save(machine);
 
-        return toDTO(assistanceRequestRepository.save(request));
+        try {
+            Maintenance maintenance = Maintenance.builder()
+                    .machine(machine)
+                    .technician(tech)
+                    .type(MaintenanceType.ASSISTANCE)
+                    .status(MaintenanceStatus.IN_PROGRESS)
+                    .notes("Maintenance started automatically from assistance request")
+                    .build();
+            maintenance = maintenanceRepository.save(maintenance);
+
+            MaintenanceSession session = MaintenanceSession.builder()
+                    .technician(tech)
+                    .machine(machine)
+                    .request(request)
+                    .maintenanceRecord(maintenance)
+                    .startTime(LocalDateTime.now())
+                    .active(true)
+                    .build();
+            maintenanceSessionRepository.save(session);
+        } catch (Exception e) {
+            log.warn("Assistance assigned to technician {} but maintenance session was not started: {}",
+                    technicianId, e.getMessage());
+        }
+
+        return toDTO(assistanceRequestRepository.findById(requestId).orElseThrow());
     }
 
         public AssistanceRequestDTO complete(Long requestId) {
@@ -157,12 +219,20 @@ public class AssistanceRequestService {
             for (MaintenanceSession s : sessions) {
                 s.setActive(false);
                 s.setEndTime(LocalDateTime.now());
+                
+                if (s.getMaintenanceRecord() != null) {
+                    Maintenance m = s.getMaintenanceRecord();
+                    m.setStatus(MaintenanceStatus.COMPLETED);
+                    maintenanceRepository.save(m);
+                }
+                
                 maintenanceSessionRepository.save(s);
             }
 
             tech.setAvailable(true);
             tech.setCurrentAssignment(null);
             tech.setTasksCompleted(tech.getTasksCompleted() + 1);
+            tech.setTasksPending(Math.max(0, tech.getTasksPending() - 1));
             technicianRepository.save(tech);
         }
 
@@ -178,6 +248,7 @@ public class AssistanceRequestService {
         dto.setProblemDescription(r.getProblem().getDescription());
         dto.setMachineId(r.getProblem().getMachine().getId());
         dto.setMachineName(r.getProblem().getMachine().getName());
+        dto.setMachineLocation(r.getProblem().getMachine().getLocation());
         dto.setRequestedById(r.getRequestedBy().getId());
         dto.setRequestedByName(r.getRequestedBy().getName());
         if (r.getAssignedTechnician() != null) {

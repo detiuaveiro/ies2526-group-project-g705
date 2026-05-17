@@ -18,7 +18,7 @@ services:
     image: rabbitmq:4-management
     restart: unless-stopped
     ports:
-      - "5672:5672"
+      - "5673:5672"
       - "15672:15672"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
@@ -49,10 +49,11 @@ services:
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/v1/machines"]
-      interval: 5s
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
       timeout: 5s
-      retries: 20
+      retries: 12
+      start_period: 45s
 
   sensor-generator:
     build:

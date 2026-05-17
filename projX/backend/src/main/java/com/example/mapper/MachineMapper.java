@@ -17,7 +17,14 @@ public class MachineMapper {
                 Optional.ofNullable(m.getAssignedTechnicians())
                         .orElse(List.of())
                         .stream()
-                        .map(TechnicianMapper::toDTO)
+                        .filter(t -> t.getId() != null)
+                        .collect(Collectors.toMap(
+                                com.example.domain.Technician::getId,
+                                TechnicianMapper::toDTO,
+                                (a, b) -> a
+                        ))
+                        .values()
+                        .stream()
                         .toList();
 
         return MachineDTO.builder()
