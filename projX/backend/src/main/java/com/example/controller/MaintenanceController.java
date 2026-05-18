@@ -208,7 +208,6 @@ public class MaintenanceController {
         tech.setCurrentAssignment(null);
         technicianRepository.save(tech);
 
-        
         var otherSessions = sessionRepository.findByMachineIdAndActiveTrue(machine.getId());
         for (MaintenanceSession other : otherSessions) {
             other.setActive(false);
@@ -252,7 +251,7 @@ public class MaintenanceController {
         }
 
         machine.setStatus(MachineStatus.ACTIVE);
-        machine.setActionRequiredCount(0); // Everything concluded
+        machine.setActionRequiredCount(0);
         machineRepository.save(machine);
 
         return ResponseEntity.ok(toDTO(session));

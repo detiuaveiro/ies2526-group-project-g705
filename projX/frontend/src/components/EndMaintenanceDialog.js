@@ -24,9 +24,7 @@ export const EndMaintenanceDialog = ({
   const handleSubmit = () => {
     if (!title.trim()) return toast.error("Please provide a title");
     if (!description.trim()) return toast.error("Please provide a description");
-    if (!hoursSpent || isNaN(hoursSpent) || Number(hoursSpent) <= 0) {
-      return toast.error("Please provide valid hours spent");
-    }
+    if (!hoursSpent || isNaN(hoursSpent) || Number(hoursSpent) <= 0) return toast.error("Please provide valid hours spent");
     if (!partsUsed.trim()) return toast.error("Please provide parts used (or 'None')");
 
     onConfirm({

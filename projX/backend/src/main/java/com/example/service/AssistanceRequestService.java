@@ -37,7 +37,6 @@ public class AssistanceRequestService {
     private final ProblemRepository problemRepository;
     private final TechnicianRepository technicianRepository;
     private final MachineRepository machineRepository;
-
     private final MaintenanceRepository maintenanceRepository;
     private final MaintenanceSessionRepository maintenanceSessionRepository;
 
@@ -165,34 +164,30 @@ public class AssistanceRequestService {
         }
         machineRepository.save(machine);
 
-        try {
-            Maintenance maintenance = Maintenance.builder()
-                    .machine(machine)
-                    .technician(tech)
-                    .type(MaintenanceType.ASSISTANCE)
-                    .status(MaintenanceStatus.IN_PROGRESS)
-                    .notes("Maintenance started automatically from assistance request")
-                    .build();
-            maintenance = maintenanceRepository.save(maintenance);
+        Maintenance maintenance = Maintenance.builder()
+                .machine(machine)
+                .technician(tech)
+                .type(MaintenanceType.ASSISTANCE)
+                .status(MaintenanceStatus.IN_PROGRESS)
+                .notes("Maintenance started automatically from assistance request")
+                .build();
+        maintenance = maintenanceRepository.save(maintenance);
 
-            MaintenanceSession session = MaintenanceSession.builder()
-                    .technician(tech)
-                    .machine(machine)
-                    .request(request)
-                    .maintenanceRecord(maintenance)
-                    .startTime(LocalDateTime.now())
-                    .active(true)
-                    .build();
-            maintenanceSessionRepository.save(session);
-        } catch (Exception e) {
-            log.warn("Assistance assigned to technician {} but maintenance session was not started: {}",
-                    technicianId, e.getMessage());
-        }
+        MaintenanceSession session = MaintenanceSession.builder()
+                .technician(tech)
+                .machine(machine)
+                .request(request)
+                .maintenanceRecord(maintenance)
+                .startTime(LocalDateTime.now())
+                .active(true)
+                .build();
+
+        maintenanceSessionRepository.save(session);
 
         return toDTO(assistanceRequestRepository.findById(requestId).orElseThrow());
     }
 
-        public AssistanceRequestDTO complete(Long requestId) {
+    public AssistanceRequestDTO complete(Long requestId) {
 
         AssistanceRequest request = assistanceRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
@@ -238,8 +233,6 @@ public class AssistanceRequestService {
         return toDTO(assistanceRequestRepository.save(request));
     }
 
-
-
     private AssistanceRequestDTO toDTO(AssistanceRequest r) {
         AssistanceRequestDTO dto = new AssistanceRequestDTO();
         dto.setId(r.getId());
@@ -261,5 +254,4 @@ public class AssistanceRequestService {
         dto.setCompletedAt(r.getCompletedAt());
         return dto;
     }
-
 }

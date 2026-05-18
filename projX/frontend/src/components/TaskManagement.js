@@ -49,7 +49,12 @@ export const TaskManagement = ({ machines, onAssignTechnician, onMachineClick })
   }, [user]);
 
   const handleAssignTechnicianClick = (machine) => {
-    const technicianIds = getSelectedIds(machine, assignments);
+    const technicianIds = assignments[machine.id] || machine.assignedTechnicians?.map(t => t.id) || [];
+
+    if (technicianIds.length === 0) {
+      toast.error("Please select at least one technician");
+      return;
+    }
 
     fetch(`${API_URL}/machines/${machine.id}/assign`, {
       method: "POST",
@@ -201,7 +206,7 @@ export const TaskManagement = ({ machines, onAssignTechnician, onMachineClick })
                             <DropdownMenuTrigger asChild>
                               <Button variant="outline" className="w-full text-left font-normal bg-white justify-between">
                                 {(() => {
-                                  const current = getSelectedIds(machine, assignments);
+                                  const current = assignments[machine.id] || machine.assignedTechnicians?.map(t => t.id) || [];
                                   if (current.length === 0) return <span className="text-gray-500">Select technicians</span>;
                                   if (current.length === technicians.length) return "All Technicians";
                                   if (current.length === 1) return technicians.find((t) => t.id === current[0])?.name || "1 selected";
@@ -214,7 +219,7 @@ export const TaskManagement = ({ machines, onAssignTechnician, onMachineClick })
                               {/* Select all */}
                               <DropdownMenuCheckboxItem
                                 checked={technicians.every((t) =>
-                                  getSelectedIds(machine, assignments).includes(t.id)
+                                  (assignments[machine.id] || machine.assignedTechnicians?.map(t => t.id) || []).includes(t.id)
                                 )}
                                 onCheckedChange={(checked) => {
                                   setAssignments({
@@ -232,9 +237,9 @@ export const TaskManagement = ({ machines, onAssignTechnician, onMachineClick })
                               {technicians.map((tech) => (
                                 <DropdownMenuCheckboxItem
                                   key={tech.id}
-                                  checked={getSelectedIds(machine, assignments).includes(tech.id)}
+                                  checked={(assignments[machine.id] || machine.assignedTechnicians?.map(t => t.id) || []).includes(tech.id)}
                                   onCheckedChange={(checked) => {
-                                    const current = getSelectedIds(machine, assignments);
+                                    const current = assignments[machine.id] || machine.assignedTechnicians?.map(t => t.id) || [];
                                     const next = checked
                                       ? uniqueIds([...current, tech.id])
                                       : current.filter((id) => id !== tech.id);
