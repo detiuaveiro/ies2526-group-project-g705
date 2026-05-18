@@ -66,7 +66,12 @@ export const DirectorProfileView = () => {
       toast.error("Name and email are required");
       return;
     }
+    const age = Number(form.age);
 
+    if (form.age && (age < 18 || age > 99)) {
+      toast.error("Age must be between 18 and 99");
+      return;
+    }
     const payload = {
       name: form.name.trim(),
       email: form.email.trim(),
@@ -185,11 +190,11 @@ export const DirectorProfileView = () => {
               />
             </div>
             <div>
-              <Label>Email *</Label>
               <Input
                 type="email"
                 value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                readOnly
+                className="bg-gray-100 cursor-not-allowed"
               />
             </div>
             <div>

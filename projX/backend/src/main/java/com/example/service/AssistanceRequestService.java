@@ -72,7 +72,6 @@ public class AssistanceRequestService {
                     .orElseThrow(() -> new RuntimeException("Problem not found"));
         }
 
-        // Logic: if machine is in maintenance, only the original tech can request assistance
         var machine = problem.getMachine();
         if (machine.getStatus() == com.example.domain.enums.MachineStatus.MAINTENANCE) {
             var originalMaintenance = maintenanceRepository.findByMachineIdAndStatus(machine.getId(), MaintenanceStatus.IN_PROGRESS)

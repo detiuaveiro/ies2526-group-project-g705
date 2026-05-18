@@ -132,27 +132,22 @@ public class MaintenanceController {
         Machine machine = machineRepository.findById(machineId)
                 .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
 
-        // Check if machine is already in maintenance
         if (machine.getStatus() == MachineStatus.MAINTENANCE) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
         }
 
-        // Check if this technician already has an active session
         var existingSessions = sessionRepository.findByTechnicianIdAndActiveTrue(technicianId);
         if (!existingSessions.isEmpty()) {
             existingSessions.sort((a, b) -> b.getStartTime().compareTo(a.getStartTime()));
             MaintenanceSession existing = existingSessions.get(0);
 
-            // Same machine → return existing session (idempotent)
             if (existing.getMachine().getId().equals(machineId)) {
                 return ResponseEntity.ok(toDTO(existing));
             }
 
-            // Different machine → technician already busy with another machine
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
         }
 
-        // Technician flagged as unavailable but no active session (stale state) → reset
         if (!tech.isAvailable()) {
             tech.setAvailable(true);
         }
@@ -197,7 +192,6 @@ public class MaintenanceController {
         session.setActive(false);
         session.setEndTime(LocalDateTime.now());
         
-        // Update historical record
         if (session.getMaintenanceRecord() != null) {
             Maintenance record = session.getMaintenanceRecord();
             record.setStatus(MaintenanceStatus.COMPLETED);
@@ -214,9 +208,7 @@ public class MaintenanceController {
         tech.setCurrentAssignment(null);
         technicianRepository.save(tech);
 
-        // --- CONCLUDE EVERYTHING ELSE ON THIS MACHINE ---
         
-        // 1. Close all other active sessions for this machine
         var otherSessions = sessionRepository.findByMachineIdAndActiveTrue(machine.getId());
         for (MaintenanceSession other : otherSessions) {
             other.setActive(false);
@@ -239,7 +231,6 @@ public class MaintenanceController {
             sessionRepository.save(other);
         }
 
-        // 2. Complete all assistance requests for this machine
         var assistanceRequests = assistanceRequestRepository.findByProblemMachineIdAndStatusIn(
                 machine.getId(), 
                 List.of(AssistanceRequestStatus.PENDING, AssistanceRequestStatus.ACCEPTED)
@@ -254,7 +245,6 @@ public class MaintenanceController {
             assistanceRequestRepository.save(req);
         }
 
-        // 3. Mark all IN_PROGRESS maintenance records for this machine as COMPLETED
         var openMaintenances = maintenanceRepository.findByMachineIdAndStatus(machine.getId(), MaintenanceStatus.IN_PROGRESS);
         for (var m : openMaintenances) {
             m.setStatus(MaintenanceStatus.COMPLETED);
