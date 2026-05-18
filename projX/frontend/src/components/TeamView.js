@@ -51,7 +51,13 @@ export const TeamView = () => {
     name: "",
     email: "",
     password: "",
+    phoneNumber: "",
+    age: "",
+    gender: "",
+    skillSet: "",
   });
+
+  const GENDERS = ["MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"];
 
   // LOAD TECHNICIANS FROM BACKEND
   useEffect(() => {
@@ -92,7 +98,13 @@ export const TeamView = () => {
         name: newTech.name,
         email: newTech.email,
         password: newTech.password,
-        role: "TECHNICIAN"
+        role: "TECHNICIAN",
+        phoneNumber: newTech.phoneNumber || null,
+        age: newTech.age ? Number(newTech.age) : null,
+        gender: newTech.gender || null,
+        skillSet: newTech.skillSet
+          ? newTech.skillSet.split(",").map((s) => s.trim()).filter(Boolean)
+          : [],
       })
     })
       .then((res) => {
@@ -103,7 +115,15 @@ export const TeamView = () => {
         setTechnicians((prev) => [...prev, created]);
         toast.success(`${created.name} added to the team`);
         setIsAddDialogOpen(false);
-        setNewTech({ name: "", email: "", password: "" });
+        setNewTech({
+          name: "",
+          email: "",
+          password: "",
+          phoneNumber: "",
+          age: "",
+          gender: "",
+          skillSet: "",
+        });
       })
       .catch(() => toast.error("Failed to create technician"));
   };
@@ -183,6 +203,57 @@ export const TeamView = () => {
                   value={newTech.password}
                   onChange={(e) =>
                     setNewTech((p) => ({ ...p, password: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <Label>Phone</Label>
+                <Input
+                  value={newTech.phoneNumber}
+                  onChange={(e) =>
+                    setNewTech((p) => ({ ...p, phoneNumber: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <Label>Age</Label>
+                <Input
+                  type="number"
+                  min={18}
+                  value={newTech.age}
+                  onChange={(e) =>
+                    setNewTech((p) => ({ ...p, age: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <Label>Gender</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={newTech.gender}
+                  onChange={(e) =>
+                    setNewTech((p) => ({ ...p, gender: e.target.value }))
+                  }
+                >
+                  <option value="">—</option>
+                  {GENDERS.map((g) => (
+                    <option key={g} value={g}>
+                      {g.replace(/_/g, " ")}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <Label>Skills (comma-separated)</Label>
+                <Input
+                  placeholder="Hydraulics, Electrical"
+                  value={newTech.skillSet}
+                  onChange={(e) =>
+                    setNewTech((p) => ({ ...p, skillSet: e.target.value }))
                   }
                 />
               </div>

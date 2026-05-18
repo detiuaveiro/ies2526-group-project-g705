@@ -1,8 +1,14 @@
 package com.example.dto;
 
+import com.example.domain.Technician;
 import com.example.domain.User;
+import com.example.domain.enums.Gender;
 import com.example.domain.enums.UserRole;
 import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -19,9 +25,15 @@ public class UserDTO {
     private boolean online;
     private boolean privileged;
     private String password;
+    private String phoneNumber;
+    private Integer age;
+    private Gender gender;
+    private List<String> skillSet;
+    private LocalDateTime createdAt;
+    private LocalDateTime lastLogin;
 
     public static UserDTO fromEntity(User u) {
-        return UserDTO.builder()
+        UserDTOBuilder builder = UserDTO.builder()
                 .id(u.getId())
                 .name(u.getName())
                 .email(u.getEmail())
@@ -29,7 +41,17 @@ public class UserDTO {
                 .active(u.isActive())
                 .online(u.isOnline())
                 .privileged(u.isPrivileged())
-                .build();
+                .phoneNumber(u.getPhoneNumber())
+                .age(u.getAge())
+                .gender(u.getGender())
+                .createdAt(u.getCreatedAt())
+                .lastLogin(u.getLastLogin());
+
+        if (u instanceof Technician tech && tech.getSkillSet() != null) {
+            builder.skillSet(new ArrayList<>(tech.getSkillSet()));
+        }
+
+        return builder.build();
     }
 
     public User toEntity() {

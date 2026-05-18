@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface MaintenanceSessionRepository extends JpaRepository<MaintenanceSession, Long> {
 
     List<MaintenanceSession> findByTechnicianIdAndActiveTrue(Long technicianId);
+    List<MaintenanceSession> findByMachineIdAndActiveTrue(Long machineId);
 }

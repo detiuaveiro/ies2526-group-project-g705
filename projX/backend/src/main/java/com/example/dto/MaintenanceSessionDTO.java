@@ -13,4 +13,5 @@ public class MaintenanceSessionDTO {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private boolean active;
+    private Long maintenanceRecordId;
 }

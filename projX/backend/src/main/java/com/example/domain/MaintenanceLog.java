@@ -25,7 +25,7 @@ public class MaintenanceLog {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "technician_id", nullable = false)
-    private MaintenanceTechnician technician;
+    private Technician technician;
 
     @Column(nullable = false)
     private String title;
@@ -33,10 +33,10 @@ public class MaintenanceLog {
     @Column(nullable = false, length = 2000)
     private String description;
 
+    @Column(nullable = false)
     private Double hoursSpent;
 
-    private Double cost;
-
+    @Column(nullable = false)
     private String partsUsed;
 
     @CreationTimestamp

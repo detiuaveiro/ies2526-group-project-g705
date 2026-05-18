@@ -37,9 +37,12 @@ export const ManagingView = () => {
     name: "",
     location: "",
     importanceLevel: 3,
+    status: "ACTIVE",
+    downtimeSum: 0,
+    suspicionFlag: false,
     vibrationSensor: false,
     temperatureSensor: false,
-    pressureSensor: false
+    pressureSensor: false,
   });
 
   const fetchMachines = () => {
@@ -67,15 +70,15 @@ export const ManagingView = () => {
     }
 
     const payload = {
-      name: newMachine.name,
-      location: newMachine.location,
-      importanceLevel: newMachine.importanceLevel,
-      status: "ACTIVE",
-      downtimeSum: 0,
-      suspicionFlag: false,
+      name: newMachine.name.trim(),
+      location: newMachine.location.trim(),
+      importanceLevel: Number(newMachine.importanceLevel),
+      status: newMachine.status,
+      downtimeSum: Number(newMachine.downtimeSum) || 0,
+      suspicionFlag: newMachine.suspicionFlag,
       vibrationSensor: newMachine.vibrationSensor,
       temperatureSensor: newMachine.temperatureSensor,
-      pressureSensor: newMachine.pressureSensor
+      pressureSensor: newMachine.pressureSensor,
     };
 
     fetch(`${API}/machines`, {
@@ -98,9 +101,12 @@ export const ManagingView = () => {
           name: "",
           location: "",
           importanceLevel: 3,
+          status: "ACTIVE",
+          downtimeSum: 0,
+          suspicionFlag: false,
           vibrationSensor: false,
           temperatureSensor: false,
-          pressureSensor: false
+          pressureSensor: false,
         });
       })
       .catch(() => toast.error("Failed to add machine"));
@@ -218,13 +224,50 @@ export const ManagingView = () => {
                 <Input
                   type="number"
                   min={1}
-                  max={10}
+                  max={5}
                   value={newMachine.importanceLevel}
                   onChange={(e) =>
                     setNewMachine({ ...newMachine, importanceLevel: Number(e.target.value) })
                   }
                 />
               </div>
+
+              <div>
+                <Label>Initial Status</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={newMachine.status}
+                  onChange={(e) => setNewMachine({ ...newMachine, status: e.target.value })}
+                >
+                  <option value="ACTIVE">Active</option>
+                  <option value="MAINTENANCE">Maintenance</option>
+                  <option value="ASSISTANCE_REQUESTED">Assistance Requested</option>
+                </select>
+              </div>
+
+              <div>
+                <Label>Downtime Sum (hours)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.1}
+                  value={newMachine.downtimeSum}
+                  onChange={(e) =>
+                    setNewMachine({ ...newMachine, downtimeSum: e.target.value })
+                  }
+                />
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newMachine.suspicionFlag}
+                  onChange={(e) =>
+                    setNewMachine({ ...newMachine, suspicionFlag: e.target.checked })
+                  }
+                />
+                <span>Mark as suspicious</span>
+              </label>
 
               {/* SENSORS */}
               <div>

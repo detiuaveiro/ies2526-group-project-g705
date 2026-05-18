@@ -177,7 +177,10 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
             </Button>
           )}
 
-          {user?.role !== "ADMIN" && user?.role !== "DIRECTOR" && (user?.role !== "TECHNICIAN" || machine.status === "MAINTENANCE") && (
+          {user?.role !== "ADMIN" && user?.role !== "DIRECTOR" && (
+            user?.role !== "TECHNICIAN" || 
+            (machine.status === "MAINTENANCE" && machine.activeMaintenanceTechnicianId === user.id)
+          ) && (
             <Button className="w-full mt-4" onClick={() => onRequestAssistance(machine)}>
               Request Assistance
             </Button>
@@ -273,16 +276,19 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
           ) : (
             <ul className="space-y-2">
               {logs.map((l) => (
-                <li key={l.id} className="border p-3 rounded">
-                  <p className="font-medium">Technician: {l.technicianName}</p>
-                  <p className="text-sm text-gray-500">
-                    Hours: {l.hoursSpent}h — Cost: {l.cost}€
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {l.createdAt
-                      ? new Date(l.createdAt).toLocaleString("pt-PT")
-                      : "-"}
-                  </p>
+                <li key={l.id} className="border p-4 rounded bg-gray-50 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <p className="font-bold text-blue-700">{l.title}</p>
+                    <span className="text-xs text-gray-400">
+                      {l.createdAt ? new Date(l.createdAt).toLocaleString("pt-PT") : "-"}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 italic">"{l.description}"</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                    <p><strong>Technician:</strong> {l.technicianName}</p>
+                    <p><strong>Hours Spent:</strong> {l.hoursSpent}h</p>
+                    <p><strong>Parts Used:</strong> {l.partsUsed || "None"}</p>
+                  </div>
                 </li>
               ))}
             </ul>
