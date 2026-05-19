@@ -58,7 +58,7 @@ public class MaintenanceLogService {
         dto.setHoursSpent(log.getHoursSpent());
         dto.setPartsUsed(log.getPartsUsed());
         dto.setTechnicianName(log.getTechnician().getName());
-        dto.setCreatedAt(log.getCreatedAt().toString());
+        dto.setCreatedAt(log.getCreatedAt() != null ? log.getCreatedAt().toString() : null);
         dto.setMaintenanceId(log.getMaintenance().getId());
         dto.setMachineId(log.getMaintenance().getMachine().getId());
         return dto;

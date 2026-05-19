@@ -64,7 +64,7 @@ public class MachineService {
         if (dto.getStatus() == MachineStatus.MAINTENANCE) {
             maintenanceRepository.findByMachineIdAndStatus(dto.getId(), MaintenanceStatus.IN_PROGRESS)
                     .stream()
-                    .filter(m -> m.getType() == MaintenanceType.ORIGINAL)
+                    .filter(m -> m.getType().isOriginal())
                     .findFirst()
                     .ifPresent(m -> dto.setActiveMaintenanceTechnicianId(m.getTechnician().getId()));
         }

@@ -2,5 +2,10 @@ package com.example.domain.enums;
 
 public enum MaintenanceType {
     ORIGINAL,
-    ASSISTANCE
+    NORMAL,
+    ASSISTANCE;
+
+    public boolean isOriginal() {
+        return this == ORIGINAL || this == NORMAL;
+    }
 }

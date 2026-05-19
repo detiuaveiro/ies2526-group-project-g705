@@ -75,7 +75,7 @@ public class AssistanceRequestService {
         if (machine.getStatus() == com.example.domain.enums.MachineStatus.MAINTENANCE) {
             var originalMaintenance = maintenanceRepository.findByMachineIdAndStatus(machine.getId(), MaintenanceStatus.IN_PROGRESS)
                     .stream()
-                    .filter(m -> m.getType() == MaintenanceType.ORIGINAL)
+                    .filter(m -> m.getType().isOriginal())
                     .findFirst();
 
             if (originalMaintenance.isPresent() && !originalMaintenance.get().getTechnician().getId().equals(requestedBy.getId())) {
