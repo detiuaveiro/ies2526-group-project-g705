@@ -10,6 +10,21 @@ import {
   SelectValue,
 } from "./ui/select";
 
+const matchesFilter = (machine, statusFilter) => {
+  if (statusFilter === "all") return true;
+  if (statusFilter === "NORMAL") {
+    return machine.status === "ACTIVE" && !machine.suspicionFlag;
+  }
+  if (statusFilter === "SUSPICIOUS") {
+    return (
+      machine.suspicionFlag &&
+      machine.status !== "MAINTENANCE" &&
+      machine.status !== "ARCHIVED"
+    );
+  }
+  return machine.status === statusFilter;
+};
+
 export const MachinesList = ({ machines, onMachineClick }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -20,10 +35,7 @@ export const MachinesList = ({ machines, onMachineClick }) => {
         machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         machine.location.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesStatus =
-        statusFilter === "all" || machine.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
+      return matchesSearch && matchesFilter(machine, statusFilter);
     })
     .sort((a, b) => a.importanceLevel - b.importanceLevel);
 
@@ -34,7 +46,6 @@ export const MachinesList = ({ machines, onMachineClick }) => {
         <p className="text-gray-600">Monitor and manage industrial machinery</p>
       </div>
 
-      {/* SEARCH + FILTER */}
       <div className="flex gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -48,24 +59,22 @@ export const MachinesList = ({ machines, onMachineClick }) => {
         </div>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-52">
             <Filter className="w-4 h-4 mr-2" />
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
 
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="ACTIVE">Active</SelectItem>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="NORMAL">Normal</SelectItem>
+            <SelectItem value="SUSPICIOUS">Suspicious</SelectItem>
             <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-            <SelectItem value="ASSISTANCE_REQUESTED">
-              Assistance Requested
-            </SelectItem>
+            <SelectItem value="ASSISTANCE_REQUESTED">Assistance Requested</SelectItem>
             <SelectItem value="ARCHIVED">Archived</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* MACHINE GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredMachines.map((machine) => (
           <MachineCard

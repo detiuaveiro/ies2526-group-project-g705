@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.domain.Machine;
 import com.example.domain.Technician;
 import com.example.domain.enums.MachineStatus;
+import com.example.dto.MachineDashboardStatsDTO;
 import com.example.dto.MachineDTO;
 import com.example.dto.MachineRankingDTO;
 import com.example.mapper.MachineMapper;
@@ -35,6 +36,7 @@ public class MachineService {
     private final MachineRepository machineRepository;
     private final TechnicianRepository technicianRepository;
     private final MaintenanceRepository maintenanceRepository;
+    private final MachineMetricsService machineMetricsService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -55,16 +57,28 @@ public class MachineService {
     public MachineDTO getMachineByIdDTO(Long id) {
         Machine m = machineRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
-        MachineDTO dto = MachineMapper.toDTO(m);
+        machineMetricsService.refreshMetrics(m);
+        Machine refreshed = machineRepository.findById(id).orElse(m);
+        MachineDTO dto = MachineMapper.toDTO(refreshed);
         populateActiveTechnician(dto);
         return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public MachineDashboardStatsDTO getDashboardStats() {
+        return MachineDashboardStatsDTO.builder()
+                .total(machineRepository.countNonArchived())
+                .maintenance(machineRepository.countInMaintenance())
+                .suspicious(machineRepository.countSuspiciousNotInMaintenance())
+                .normal(machineRepository.countNormalNotInMaintenance())
+                .build();
     }
 
     private void populateActiveTechnician(MachineDTO dto) {
         if (dto.getStatus() == MachineStatus.MAINTENANCE) {
             maintenanceRepository.findByMachineIdAndStatus(dto.getId(), MaintenanceStatus.IN_PROGRESS)
                     .stream()
-                    .filter(m -> m.getType() == MaintenanceType.ORIGINAL)
+                    .filter(m -> m.getType().isOriginal())
                     .findFirst()
                     .ifPresent(m -> dto.setActiveMaintenanceTechnicianId(m.getTechnician().getId()));
         }
@@ -245,7 +259,9 @@ public class MachineService {
                         m.getAssignedTechnicians().stream()
                                 .anyMatch(t -> t.getId().equals(technicianId)))
                 .map(m -> {
-                    MachineDTO dto = MachineMapper.toDTO(m);
+                    machineMetricsService.refreshMetrics(m);
+                    Machine refreshed = machineRepository.findById(m.getId()).orElse(m);
+                    MachineDTO dto = MachineMapper.toDTO(refreshed);
                     populateActiveTechnician(dto);
                     return dto;
                 })

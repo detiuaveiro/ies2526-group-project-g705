@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.example.dto.AssignRequest;
 import com.example.service.MachineService;
+import com.example.dto.MachineDashboardStatsDTO;
 import com.example.dto.MachineDTO;
 import com.example.dto.MachineRankingDTO;
 
@@ -39,6 +40,11 @@ public class MachineController {
     @GetMapping("/active")
     public ResponseEntity<List<MachineDTO>> getActiveMachines() {
         return ResponseEntity.ok(machineService.getActiveMachinesDTO());
+    }
+
+    @GetMapping("/stats/dashboard")
+    public ResponseEntity<MachineDashboardStatsDTO> getDashboardStats() {
+        return ResponseEntity.ok(machineService.getDashboardStats());
     }
 
     @PostMapping

@@ -13,8 +13,8 @@ export const TechnicianWorkList = () => {
   const { user } = useAuth();
 
   const [machines, setMachines] = useState([]);
-  const [selectedMachine, setSelectedMachine] = useState(null);
   const [assistanceDialogOpen, setAssistanceDialogOpen] = useState(false);
+  const [helpMachine, setHelpMachine] = useState(null);
 
   useEffect(() => {
     fetch(`${API_URL}/machines/assigned/${user.id}`, {
@@ -39,8 +39,8 @@ export const TechnicianWorkList = () => {
       .catch((e) => toast.error(e.message));
   };
 
-  const handleEndMaintenance = (machine) => {
-    setSelectedMachine(machine);
+  const handleRequestHelp = (machine) => {
+    setHelpMachine(machine);
     setAssistanceDialogOpen(true);
   };
 
@@ -72,7 +72,12 @@ export const TechnicianWorkList = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {machines.map((machine) => (
+            {machines.map((machine) => {
+              const isMaintenanceOwner =
+                machine.activeMaintenanceTechnicianId != null &&
+                Number(machine.activeMaintenanceTechnicianId) === Number(user.id);
+
+              return (
               <div
                 key={machine.id}
                 className="border rounded-lg p-4 bg-white shadow-sm"
@@ -100,40 +105,33 @@ export const TechnicianWorkList = () => {
                       </Button>
                     )}
 
-                    {machine.status === "MAINTENANCE" && (
+                    {machine.status === "MAINTENANCE" && isMaintenanceOwner && (
                       <Button
-                        className="bg-green-600"
-                        onClick={() => handleEndMaintenance(machine)}
+                        variant="outline"
+                        className="border-orange-500 text-orange-600"
+                        onClick={() => handleRequestHelp(machine)}
                       >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        End
+                        <HelpCircle className="w-4 h-4 mr-2" />
+                        Request Help
                       </Button>
                     )}
-
-                    <Button
-                      variant="outline"
-                      className="border-orange-500 text-orange-600"
-                      onClick={() => {
-                        setSelectedMachine(machine);
-                        setAssistanceDialogOpen(true);
-                      }}
-                    >
-                      <HelpCircle className="w-4 h-4 mr-2" />
-                      Request Help
-                    </Button>
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
 
-      {selectedMachine && (
+      {helpMachine && (
         <AssistanceRequestDialog
-          machine={selectedMachine}
+          machine={helpMachine}
           open={assistanceDialogOpen}
-          onOpenChange={setAssistanceDialogOpen}
+          onOpenChange={(open) => {
+            setAssistanceDialogOpen(open);
+            if (!open) setHelpMachine(null);
+          }}
         />
       )}
     </div>

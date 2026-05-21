@@ -1,34 +1,46 @@
-import { Wrench, AlertTriangle, CheckCircle, Archive } from "lucide-react";
+import { Wrench, AlertTriangle, CheckCircle, Archive, Eye } from "lucide-react";
 
 const statusConfig = {
   ACTIVE: {
-    label: "Active",
+    label: "Normal",
     color: "text-green-600",
     bg: "bg-green-100",
-    icon: CheckCircle
+    icon: CheckCircle,
   },
   MAINTENANCE: {
     label: "Maintenance",
     color: "text-yellow-600",
     bg: "bg-yellow-100",
-    icon: Wrench
+    icon: Wrench,
   },
   ASSISTANCE_REQUESTED: {
     label: "Assistance Requested",
     color: "text-orange-600",
     bg: "bg-orange-100",
-    icon: AlertTriangle
+    icon: AlertTriangle,
   },
   ARCHIVED: {
     label: "Archived",
     color: "text-gray-600",
     bg: "bg-gray-200",
-    icon: Archive
-  }
+    icon: Archive,
+  },
+};
+
+const suspiciousConfig = {
+  label: "Suspicious",
+  color: "text-red-600",
+  bg: "bg-red-100",
+  icon: Eye,
 };
 
 export const MachineCard = ({ machine, onClick }) => {
-  const config = statusConfig[machine.status] || statusConfig.ACTIVE;
+  const isSuspicious =
+    machine.suspicionFlag && machine.status !== "MAINTENANCE" && machine.status !== "ARCHIVED";
+
+  const config = isSuspicious
+    ? suspiciousConfig
+    : statusConfig[machine.status] || statusConfig.ACTIVE;
   const Icon = config.icon;
 
   return (

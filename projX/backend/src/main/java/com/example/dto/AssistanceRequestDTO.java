@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -15,6 +16,7 @@ public class AssistanceRequestDTO {
     private Long machineId;
     private String machineName;
     private String machineLocation;
+    private List<Long> machineAssignedTechnicianIds;
     private Long requestedById;
     private String requestedByName;
     private Long assignedTechnicianId;

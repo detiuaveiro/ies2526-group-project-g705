@@ -26,6 +26,7 @@ public class TechnicianMapper {
                 .tasksCompleted(t.getTasksCompleted())
                 .tasksPending(t.getTasksPending())
                 .numberOfFaultsFixed(t.getNumberOfFaultsFixed())
+                .assistedCounter(t.getAssistedCounter())
                 .averageRepairTime(t.getAverageRepairTime())
                 .skillSet(copySkillSet(t))
                 .build();

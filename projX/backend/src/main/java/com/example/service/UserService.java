@@ -89,9 +89,6 @@ public class UserService {
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
         user.setRole(dto.getRole());
-        user.setActive(true);
-        user.setOnline(false);
-        user.setPrivileged(false);
         user.setPhoneNumber(dto.getPhoneNumber());
         user.setAge(dto.getAge());
         user.setGender(dto.getGender());
@@ -135,18 +132,10 @@ public class UserService {
         return UserDTO.fromEntity(userRepository.save(user));
     }
 
-    public void deactivateUser(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        user.setActive(false);
-        userRepository.save(user);
-    }
-
     public UserDTO archiveUserDTO(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         user.setArchived(true);
-        user.setActive(false);
         return UserDTO.fromEntity(userRepository.save(user));
     }
 
@@ -155,7 +144,6 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         user.setArchived(false);
-        user.setActive(true);
         return UserDTO.fromEntity(userRepository.save(user));
     }
 

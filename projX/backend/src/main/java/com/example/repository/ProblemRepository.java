@@ -9,6 +9,7 @@ import java.util.List;
 @Repository
 public interface ProblemRepository extends JpaRepository<Problem, Long> {
     List<Problem> findByMachineId(Long machineId);
+    List<Problem> findByMachineIdAndResolvedFalse(Long machineId);
     List<Problem> findByResolved(boolean resolved);
     List<Problem> findByAssignedTechnicianId(Long technicianId);
     List<Problem> findByMachineIdAndDescriptionContainingAndResolvedFalse(Long machineId, String description);

@@ -22,11 +22,11 @@ export const DirectorTeamView = () => {
 
   useEffect(() => {
     loadTechnicians();
-    const interval = setInterval(loadTechnicians, 8000);
+    const interval = setInterval(loadTechnicians, 2000);
     return () => clearInterval(interval);
   }, [user]);
 
-  const totalRepairs = technicians.reduce((s, t) => s + (t.numberOfFaultsFixed || 0), 0);
+  const totalRepairs = technicians.reduce((s, t) => s + (t.assistedCounter || 0), 0);
   const avgRepairTime =
     technicians.length > 0
       ? technicians.reduce((s, t) => s + (t.averageRepairTime || 0), 0) / technicians.length

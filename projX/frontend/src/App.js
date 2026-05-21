@@ -44,6 +44,8 @@ const MainApp = () => {
         ? `${API_URL}/machines/assigned/${user.id}`
         : `${API_URL}/machines`;
 
+    const fetchMachines = () => {
+
     fetch(endpoint, {
       headers: {
         Authorization: `Bearer ${user.token}`,
@@ -52,6 +54,13 @@ const MainApp = () => {
       .then((res) => res.json())
       .then((data) => setAppMachines(Array.isArray(data) ? data : []))
       .catch(() => toast.error("Failed to load machines"));
+    };
+
+    fetchMachines();
+
+    const interval = setInterval(fetchMachines, 2000);
+  
+    return () => clearInterval(interval);
   }, [user]);
 
   if (!user) return <Login />;
