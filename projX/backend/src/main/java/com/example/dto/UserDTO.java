@@ -24,6 +24,7 @@ public class UserDTO {
     private Gender gender;
     private List<String> skillSet;
 
+
     public static UserDTO fromEntity(User u) {
         UserDTOBuilder builder = UserDTO.builder()
                 .id(u.getId())
@@ -43,6 +44,12 @@ public class UserDTO {
         u.setName(name);
         u.setEmail(email);
         u.setRole(role != null ? role : UserRole.TECHNICIAN);
+
+        // MISSING:
+        u.setPhoneNumber(phoneNumber);
+        u.setAge(age);
+        u.setGender(gender);
+
         return u;
-    }
+}
 }

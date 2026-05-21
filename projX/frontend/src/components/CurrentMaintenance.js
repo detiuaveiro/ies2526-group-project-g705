@@ -11,7 +11,6 @@ export default function CurrentMaintenance({ user }) {
   const API = "http://localhost:8080/api/v1/maintenances";
 
   const loadCurrentSession = () => {
-    setLoading(true);
     fetch(`${API}/current/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
@@ -29,6 +28,8 @@ export default function CurrentMaintenance({ user }) {
 
   useEffect(() => {
     loadCurrentSession();
+    const interval = setInterval(loadCurrentSession, 5000);
+    return () => clearInterval(interval);
   }, [user.id]);
 
   const handleEndMaintenance = (logData) => {

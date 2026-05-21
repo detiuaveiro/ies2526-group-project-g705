@@ -16,19 +16,24 @@ public class TechnicianMapper {
                 : (machineName != null ? "Working on " + machineName : "Busy");
 
         return TechnicianDTO.builder()
-                .id(t.getId())
-                .name(t.getName())
-                .email(t.getEmail())
-                .phoneNumber(t.getPhoneNumber())
-                .available(t.isAvailable())
-                .currentMachineName(machineName)
-                .currentActivity(activity)
-                .tasksCompleted(t.getTasksCompleted())
-                .tasksPending(t.getTasksPending())
-                .numberOfFaultsFixed(t.getNumberOfFaultsFixed())
-                .averageRepairTime(t.getAverageRepairTime())
-                .skillSet(copySkillSet(t))
-                .build();
+            .id(t.getId())
+            .name(t.getName())
+            .email(t.getEmail())
+            .phoneNumber(t.getPhoneNumber())
+
+            // ADD THESE
+            .age(t.getAge())
+            .gender(t.getGender())
+
+            .available(t.isAvailable())
+            .currentMachineName(machineName)
+            .currentActivity(activity)
+            .tasksCompleted(t.getTasksCompleted())
+            .tasksPending(t.getTasksPending())
+            .numberOfFaultsFixed(t.getNumberOfFaultsFixed())
+            .averageRepairTime(t.getAverageRepairTime())
+            .skillSet(copySkillSet(t))
+            .build();
     }
 
     private static String resolveMachineName(Machine assignment) {
