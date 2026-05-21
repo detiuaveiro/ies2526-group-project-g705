@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Plus, Trash2, Archive, RefreshCw, Settings } from "lucide-react";
+import { Plus, Trash2, Settings, Pencil } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "./ui/dialog";
 import { toast } from "sonner";
 import {
@@ -38,8 +38,6 @@ export const ManagingView = () => {
     location: "",
     importanceLevel: 3,
     status: "ACTIVE",
-    downtimeSum: 0,
-    suspicionFlag: false,
     vibrationSensor: false,
     temperatureSensor: false,
     pressureSensor: false,
@@ -60,8 +58,7 @@ export const ManagingView = () => {
     fetchMachines();
   }, [user]);
 
-  const activeMachines = machines.filter((m) => m.status !== "ARCHIVED");
-  const archivedMachines = machines.filter((m) => m.status === "ARCHIVED");
+  const visibleMachines = machines.filter((m) => m.status !== "ARCHIVED");
 
   const handleAddMachine = () => {
     if (!newMachine.name || !newMachine.location) {
@@ -74,8 +71,8 @@ export const ManagingView = () => {
       location: newMachine.location.trim(),
       importanceLevel: Number(newMachine.importanceLevel),
       status: newMachine.status,
-      downtimeSum: Number(newMachine.downtimeSum) || 0,
-      suspicionFlag: newMachine.suspicionFlag,
+      downtimeSum: 0,
+      suspicionFlag: false,
       vibrationSensor: newMachine.vibrationSensor,
       temperatureSensor: newMachine.temperatureSensor,
       pressureSensor: newMachine.pressureSensor,
@@ -102,40 +99,12 @@ export const ManagingView = () => {
           location: "",
           importanceLevel: 3,
           status: "ACTIVE",
-          downtimeSum: 0,
-          suspicionFlag: false,
           vibrationSensor: false,
           temperatureSensor: false,
           pressureSensor: false,
         });
       })
       .catch(() => toast.error("Failed to add machine"));
-  };
-
-  const handleArchiveMachine = (id) => {
-    fetch(`${API}/machines/${id}/archive`, {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${user.token}` }
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        fetchMachines();
-        toast.success("Machine archived");
-      })
-      .catch(() => toast.error("Failed to archive machine"));
-  };
-
-  const handleRestoreMachine = (id) => {
-    fetch(`${API}/machines/${id}/restore`, {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${user.token}` }
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        fetchMachines();
-        toast.success("Machine restored");
-      })
-      .catch(() => toast.error("Failed to restore machine"));
   };
 
   const handleDeleteMachine = () => {
@@ -167,15 +136,13 @@ export const ManagingView = () => {
   const statusColors = {
     ACTIVE: "bg-green-500 text-white",
     MAINTENANCE: "bg-yellow-500 text-white",
-    ASSISTANCE_REQUESTED: "bg-orange-500 text-white",
-    ARCHIVED: "bg-gray-500 text-white"
+    ASSISTANCE_REQUESTED: "bg-orange-500 text-white"
   };
 
   const statusLabels = {
     ACTIVE: "Active",
     MAINTENANCE: "Maintenance",
-    ASSISTANCE_REQUESTED: "Assistance Requested",
-    ARCHIVED: "Archived"
+    ASSISTANCE_REQUESTED: "Assistance Requested"
   };
 
   return (
@@ -245,30 +212,6 @@ export const ManagingView = () => {
                 </select>
               </div>
 
-              <div>
-                <Label>Downtime Sum (hours)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.1}
-                  value={newMachine.downtimeSum}
-                  onChange={(e) =>
-                    setNewMachine({ ...newMachine, downtimeSum: e.target.value })
-                  }
-                />
-              </div>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={newMachine.suspicionFlag}
-                  onChange={(e) =>
-                    setNewMachine({ ...newMachine, suspicionFlag: e.target.checked })
-                  }
-                />
-                <span>Mark as suspicious</span>
-              </label>
-
               {/* SENSORS */}
               <div>
                 <Label>Sensors</Label>
@@ -306,21 +249,21 @@ export const ManagingView = () => {
         </Dialog>
       </div>
 
-      {/* ACTIVE MACHINES */}
+      {/* MACHINES */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5" />
-            Active Machines
+            Machines
           </CardTitle>
           <CardDescription>
-            {loading ? "Loading..." : `${activeMachines.length} machines in operation`}
+            {loading ? "Loading..." : `${visibleMachines.length} machines in operation`}
           </CardDescription>
         </CardHeader>
 
         <CardContent>
           <div className="space-y-3">
-            {activeMachines.map((machine) => (
+            {visibleMachines.map((machine) => (
               <div
                 key={machine.id}
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
@@ -341,76 +284,30 @@ export const ManagingView = () => {
                   <div className="text-xs text-gray-500 mt-1">ID: {machine.id}</div>
                 </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleArchiveMachine(machine.id);
-                  }}
-                >
-                  <Archive className="w-4 h-4 mr-2" />
-                  Archive
-                </Button>
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedMachineId(machine.id)}
+                  >
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setMachineToDelete(machine.id);
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* ARCHIVED MACHINES */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Archive className="w-5 h-5" />
-            Archived Machines
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent>
-          {archivedMachines.length === 0 ? (
-            <div className="text-center py-12 text-gray-600">
-              No archived machines
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {archivedMachines.map((machine) => (
-                <div
-                  key={machine.id}
-                  className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 cursor-pointer"
-                  onClick={() => setSelectedMachineId(machine.id)}
-                >
-                  <div className="flex-1">
-                    <div className="font-semibold">{machine.name}</div>
-                    <div className="text-sm text-gray-600">{machine.location}</div>
-                  </div>
-
-                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRestoreMachine(machine.id)}
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Restore
-                    </Button>
-
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        setMachineToDelete(machine.id);
-                        setDeleteDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </CardContent>
       </Card>
 

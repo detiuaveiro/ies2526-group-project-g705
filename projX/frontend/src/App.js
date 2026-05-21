@@ -45,21 +45,20 @@ const MainApp = () => {
         : `${API_URL}/machines`;
 
     const fetchMachines = () => {
-
-    fetch(endpoint, {
-      headers: {
-        Authorization: `Bearer ${user.token}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => setAppMachines(Array.isArray(data) ? data : []))
-      .catch(() => toast.error("Failed to load machines"));
+      fetch(endpoint, {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => setAppMachines(Array.isArray(data) ? data : []))
+        .catch(() => toast.error("Failed to load machines"));
     };
 
     fetchMachines();
 
-    const interval = setInterval(fetchMachines, 2000);
-  
+    // Poll every 10s so newly assigned machines/sessions show up automatically
+    const interval = setInterval(fetchMachines, 10000);
     return () => clearInterval(interval);
   }, [user]);
 

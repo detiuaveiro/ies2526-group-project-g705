@@ -227,6 +227,6 @@ export const DirectorProfileView = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 };

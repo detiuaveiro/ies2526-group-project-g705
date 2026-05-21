@@ -43,6 +43,7 @@ public class MaintenanceLogService {
 
         MaintenanceLog saved = logRepository.save(log);
         machineMetricsService.refreshMetrics(saved.getMaintenance().getMachine().getId());
+        updateTechnicianAverageRepairTime(tech);
         return toDTO(saved);
     }
 
@@ -65,6 +66,16 @@ public class MaintenanceLogService {
         dto.setMaintenanceId(log.getMaintenance().getId());
         dto.setMachineId(log.getMaintenance().getMachine().getId());
         return dto;
+    }
+
+    private void updateTechnicianAverageRepairTime(Technician tech) {
+        List<MaintenanceLog> logs = logRepository.findByTechnicianId(tech.getId());
+        double average = logs.stream()
+                .mapToDouble(MaintenanceLog::getHoursSpent)
+                .average()
+                .orElse(0.0);
+        tech.setAverageRepairTime(average);
+        technicianRepository.save(tech);
     }
 
     @Transactional(readOnly = true)

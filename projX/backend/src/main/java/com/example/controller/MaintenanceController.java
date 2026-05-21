@@ -168,6 +168,7 @@ public class MaintenanceController {
         Machine machine = machineRepository.findById(machineId)
                 .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
 
+<<<<<<< HEAD
         if (machine.getAssignedTechnicians().stream().noneMatch(t -> t.getId().equals(technicianId))) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
         }
@@ -181,8 +182,22 @@ public class MaintenanceController {
             return ResponseEntity.ok(toDTO(activeOnMachine.get(0)));
         }
 
+=======
+        var machineSessions = sessionRepository.findByMachineIdAndActiveTrue(machineId);
+>>>>>>> ba3d2c51 (Broke machines in admin and cant delete Diogo)
         if (machine.getStatus() == MachineStatus.MAINTENANCE) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            if (!machineSessions.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            }
+
+            var openMaintenances = maintenanceRepository.findByMachineIdAndStatus(machineId, MaintenanceStatus.IN_PROGRESS);
+            for (var m : openMaintenances) {
+                m.setStatus(MaintenanceStatus.COMPLETED);
+                maintenanceRepository.save(m);
+            }
+
+            machine.setStatus(MachineStatus.ACTIVE);
+            machineRepository.save(machine);
         }
 
         var existingSessions = sessionRepository.findByTechnicianIdAndActiveTrue(technicianId);
@@ -194,7 +209,28 @@ public class MaintenanceController {
                 return ResponseEntity.ok(toDTO(existing));
             }
 
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            boolean staleSession = existing.getMachine().getStatus() != MachineStatus.MAINTENANCE;
+            if (existing.getMaintenanceRecord() != null
+                    && existing.getMaintenanceRecord().getStatus() != MaintenanceStatus.IN_PROGRESS) {
+                staleSession = true;
+            }
+
+            if (staleSession) {
+                for (MaintenanceSession stale : existingSessions) {
+                    stale.setActive(false);
+                    stale.setEndTime(LocalDateTime.now());
+
+                    Machine staleMachine = stale.getMachine();
+                    if (staleMachine.getStatus() == MachineStatus.MAINTENANCE) {
+                        staleMachine.setStatus(MachineStatus.ACTIVE);
+                        machineRepository.save(staleMachine);
+                    }
+
+                    sessionRepository.save(stale);
+                }
+            } else {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            }
         }
 
         if (!tech.isAvailable()) {

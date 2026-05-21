@@ -107,5 +107,14 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean archived = false;
 
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
+
+    @Column(name = "is_online", nullable = false)
+    private boolean isOnline = false;
+
+    @Column(name = "is_privileged", nullable = false)
+    private boolean isPrivileged = false;
+
 
 }
