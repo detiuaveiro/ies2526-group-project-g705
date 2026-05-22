@@ -1,6 +1,7 @@
 package com.example.config;
 
 import com.example.domain.User;
+import com.example.domain.enums.Gender;
 import com.example.domain.enums.MachineStatus;
 import com.example.domain.enums.UserRole;
 import com.example.dto.MachineDTO;
@@ -74,6 +75,10 @@ public class DataInitializer {
             log.info("\u2713 Mock users created!");
         }
 
+        ensureTechnicianProfile("João Neves", "joao.neves@example.com", "912345678", 29, Gender.MALE);
+        ensureTechnicianProfile("Ana Costa", "ana.costa@example.com", "913456789", 28, Gender.FEMALE);
+        ensureTechnicianProfile("Joana Mendes", null, "914567890", 30, Gender.FEMALE);
+
         // 2. Seed Machines if none exist
         if (machineRepository.count() > 0) {
             log.info("Machines already exist in database, skipping machine initialization");
@@ -128,6 +133,47 @@ public class DataInitializer {
         } catch (Exception e) {
             log.error("Error during data initialization", e);
             throw new RuntimeException("Data initialization failed", e);
+        }
+    }
+
+    private void ensureTechnicianProfile(String name, String email, String phoneNumber, Integer age, Gender gender) {
+        User user = null;
+
+        if (email != null) {
+            user = userRepository.findByEmail(email).orElse(null);
+        }
+
+        if (user == null) {
+            user = userRepository.findByRoleAndArchivedFalse(UserRole.TECHNICIAN).stream()
+                    .filter(u -> name.equalsIgnoreCase(u.getName()))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        if (user == null) {
+            return;
+        }
+
+        boolean changed = false;
+
+        if (user.getPhoneNumber() == null || user.getPhoneNumber().isBlank()) {
+            user.setPhoneNumber(phoneNumber);
+            changed = true;
+        }
+
+        if (user.getAge() == null) {
+            user.setAge(age);
+            changed = true;
+        }
+
+        if (user.getGender() == null) {
+            user.setGender(gender);
+            changed = true;
+        }
+
+        if (changed) {
+            userRepository.save(user);
+            log.info("Updated demo technician profile for {}", name);
         }
     }
 }

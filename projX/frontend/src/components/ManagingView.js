@@ -48,9 +48,20 @@ export const ManagingView = () => {
     fetch(`${API}/machines`, {
       headers: { Authorization: `Bearer ${user.token}` }
     })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+
+        if (!r.ok) {
+          throw new Error(data?.message || data?.error || "Failed to load machines");
+        }
+
+        return Array.isArray(data) ? data : Array.isArray(data?.content) ? data.content : [];
+      })
       .then(setMachines)
-      .catch(() => toast.error("Failed to load machines"))
+      .catch((error) => {
+        setMachines([]);
+        toast.error(error.message || "Failed to load machines");
+      })
       .finally(() => setLoading(false));
   };
 

@@ -1,7 +1,6 @@
 package com.example.service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,7 +19,6 @@ import com.example.repository.MachineRepository;
 import com.example.repository.TechnicianRepository;
 import com.example.repository.MaintenanceRepository;
 import com.example.domain.enums.MaintenanceStatus;
-import com.example.domain.enums.MaintenanceType;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -78,7 +76,8 @@ public class MachineService {
         if (dto.getStatus() == MachineStatus.MAINTENANCE) {
             maintenanceRepository.findByMachineIdAndStatus(dto.getId(), MaintenanceStatus.IN_PROGRESS)
                     .stream()
-                    .filter(m -> m.getType().isOriginal())
+                    .filter(m -> m.getType() != null && m.getType().isOriginal())
+                    .filter(m -> m.getTechnician() != null)
                     .findFirst()
                     .ifPresent(m -> dto.setActiveMaintenanceTechnicianId(m.getTechnician().getId()));
         }
@@ -173,6 +172,10 @@ public class MachineService {
 
         entityManager.createNativeQuery("DELETE FROM sensor_readings WHERE machine_id = :id")
                 .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery(
+                "DELETE FROM maintenance_sessions WHERE maintenance_record_id IN (SELECT id FROM maintenance_records WHERE machine_id = :id)")
+            .setParameter("id", id).executeUpdate();
 
         entityManager.createNativeQuery("DELETE FROM maintenance_sessions WHERE machine_id = :id")
                 .setParameter("id", id).executeUpdate();

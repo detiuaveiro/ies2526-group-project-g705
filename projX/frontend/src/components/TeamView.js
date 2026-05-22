@@ -167,14 +167,9 @@ export const TeamView = () => {
     }
   };
 
-  const openEditDialog = (member, roleOverride) => {
-    console.log("EDIT MEMBER:", member);
-
+  const openEditDialog = async (member, roleOverride) => {
     const resolvedRole = member.role || roleOverride || "TECHNICIAN";
-
-    setEditingUser({ ...member, role: resolvedRole });
-
-    setEditForm({
+    const baseForm = {
       ...emptyUserForm,
       name: member.name || "",
       email: member.email || "",
@@ -182,13 +177,45 @@ export const TeamView = () => {
       age: member.age != null ? String(member.age) : "",
       gender: member.gender || "",
       role: resolvedRole,
-      skillSet: Array.isArray(member.skillSet)
-        ? member.skillSet.join(", ")
-        : "",
+      skillSet: Array.isArray(member.skillSet) ? member.skillSet.join(", ") : "",
       password: "",
-    });
+    };
 
+    setEditingUser({ ...member, role: resolvedRole });
+    setEditForm(baseForm);
     setIsEditDialogOpen(true);
+
+    try {
+      const res = await fetch(`${API_URL}/users/${member.id}`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to load user details");
+      }
+
+      const data = await res.json();
+
+      setEditingUser((prev) => ({
+        ...prev,
+        ...data,
+        role: data.role || resolvedRole,
+      }));
+      setEditForm({
+        ...baseForm,
+        name: data.name || baseForm.name,
+        email: data.email || baseForm.email,
+        phoneNumber: data.phoneNumber || baseForm.phoneNumber,
+        age: data.age != null ? String(data.age) : baseForm.age,
+        gender: data.gender || baseForm.gender,
+        role: data.role || resolvedRole,
+        skillSet: Array.isArray(data.skillSet)
+          ? data.skillSet.join(", ")
+          : baseForm.skillSet,
+      });
+    } catch {
+      setEditForm(baseForm);
+    }
   };
 
   const handleUpdateUser = async () => {
