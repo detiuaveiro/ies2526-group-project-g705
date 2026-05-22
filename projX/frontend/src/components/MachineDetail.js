@@ -13,6 +13,7 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
   const { user } = useAuth();
 
   const [machine, setMachine] = useState(null);
+  const [machineError, setMachineError] = useState("");
   const [problems, setProblems] = useState([]);
   const [logs, setLogs] = useState([]);
   const [sensors, setSensors] = useState([]);
@@ -21,8 +22,20 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
     fetch(`${API}/machines/${machineId}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
-      .then((r) => r.json())
-      .then(setMachine);
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+
+        if (!r.ok) {
+          throw new Error(data?.error || data?.message || "Failed to load machine");
+        }
+
+        setMachineError("");
+        setMachine(data);
+      })
+      .catch((error) => {
+        setMachine(null);
+        setMachineError(error.message || "Failed to load machine");
+      });
   };
 
   const loadProblems = () => {
@@ -111,6 +124,23 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
       .catch((e) => toast.error(e.message));
   };
 
+  if (machineError) {
+    return (
+      <div className="space-y-6">
+        <Button variant="outline" className="flex items-center gap-2" onClick={onBack}>
+          <ArrowLeft className="w-4 h-4" />
+          Back to Machines
+        </Button>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-red-600 font-medium">{machineError}</p>
+            <p className="text-gray-500 mt-2">The machine may have been deleted or is no longer accessible.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!machine) return <p>Loading...</p>;
 
   return (
@@ -165,9 +195,9 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
           <div className="flex items-center justify-between">
             <span>Assigned Technicians</span>
             <span className="font-medium flex gap-2">
-              {machine.assignedTechnicians?.length === 0
+              {(machine.assignedTechnicians || []).length === 0
                 ? "None"
-                : machine.assignedTechnicians.map((t) => t.name).join(", ")}
+                : (machine.assignedTechnicians || []).map((t) => t.name).join(", ")}
             </span>
           </div>
 

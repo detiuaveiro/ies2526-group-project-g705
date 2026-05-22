@@ -166,12 +166,17 @@ public class UserService {
         // 2. IMPORTANT: delete sessions that depend on assistance_requests FIRST
         entityManager.createNativeQuery(
                 "DELETE FROM maintenance_sessions ms " +
-                "WHERE ms.assistance_request_id IN (" +
+            "WHERE ms.request_id IN (" +
                 "   SELECT ar.id FROM assistance_requests ar " +
                 "   WHERE ar.requested_by_id = :id OR ar.assigned_technician_id = :id" +
                 ")")
                 .setParameter("id", id)
                 .executeUpdate();
+
+        entityManager.createNativeQuery(
+            "DELETE FROM maintenance_sessions WHERE technician_id = :id")
+            .setParameter("id", id)
+            .executeUpdate();
 
         // 3. Now safe to delete assistance_requests
         entityManager.createNativeQuery(
