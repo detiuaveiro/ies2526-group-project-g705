@@ -85,15 +85,31 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
   const formatSensorData = () => {
     if (!sensors || sensors.length === 0) return [];
 
-    // Group by recordedAt
-    const grouped = sensors.reduce((acc, curr) => {
-      const time = new Date(curr.recordedAt).toLocaleTimeString("pt-PT", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const readings = sensors
+      .map((curr) => ({
+        ...curr,
+        recordedAtDate: new Date(curr.recordedAt),
+      }))
+      .filter((curr) => !Number.isNaN(curr.recordedAtDate.getTime()));
+
+    if (readings.length === 0) return [];
+
+    const latestTimestamp = Math.max(...readings.map((curr) => curr.recordedAtDate.getTime()));
+    const cutoffTimestamp = latestTimestamp - 12 * 60 * 60 * 1000; //12 horas
+
+    const filtered = readings.filter((curr) => curr.recordedAtDate.getTime() >= cutoffTimestamp);
+
+    const grouped = filtered.reduce((acc, curr) => {
+      const time = curr.recordedAtDate.toLocaleTimeString("pt-PT", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
       if (!acc[time]) acc[time] = { time };
       acc[time][curr.sensorType] = curr.value;
       return acc;
     }, {});
 
-    // Sort by time
     return Object.values(grouped).sort((a, b) => a.time.localeCompare(b.time));
   };
 
