@@ -69,7 +69,7 @@ export const ManagingView = () => {
     fetchMachines();
   }, [user]);
 
-  const visibleMachines = machines.filter((m) => m.status !== "ARCHIVED");
+  const visibleMachines = machines; // ARCHIVED removed from UI filtering
 
   const handleAddMachine = () => {
     if (!newMachine.name || !newMachine.location) {
@@ -147,13 +147,11 @@ export const ManagingView = () => {
   const statusColors = {
     ACTIVE: "bg-green-500 text-white",
     MAINTENANCE: "bg-yellow-500 text-white",
-    ASSISTANCE_REQUESTED: "bg-orange-500 text-white"
   };
 
   const statusLabels = {
     ACTIVE: "Active",
     MAINTENANCE: "Maintenance",
-    ASSISTANCE_REQUESTED: "Assistance Requested"
   };
 
   return (
@@ -219,7 +217,7 @@ export const ManagingView = () => {
                 >
                   <option value="ACTIVE">Active</option>
                   <option value="MAINTENANCE">Maintenance</option>
-                  <option value="ASSISTANCE_REQUESTED">Assistance Requested</option>
+                  {/* Assistance Requested removed */}
                 </select>
               </div>
 

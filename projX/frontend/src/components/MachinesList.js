@@ -18,8 +18,7 @@ const matchesFilter = (machine, statusFilter) => {
   if (statusFilter === "SUSPICIOUS") {
     return (
       machine.suspicionFlag &&
-      machine.status !== "MAINTENANCE" &&
-      machine.status !== "ARCHIVED"
+      machine.status !== "MAINTENANCE"
     );
   }
   return machine.status === statusFilter;
@@ -69,8 +68,7 @@ export const MachinesList = ({ machines, onMachineClick }) => {
             <SelectItem value="NORMAL">Normal</SelectItem>
             <SelectItem value="SUSPICIOUS">Suspicious</SelectItem>
             <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-            <SelectItem value="ASSISTANCE_REQUESTED">Assistance Requested</SelectItem>
-            <SelectItem value="ARCHIVED">Archived</SelectItem>
+            {/* Removed Assistance Requested and Archived - not used */}
           </SelectContent>
         </Select>
       </div>

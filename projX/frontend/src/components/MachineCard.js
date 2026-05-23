@@ -13,18 +13,7 @@ const statusConfig = {
     bg: "bg-yellow-100",
     icon: Wrench,
   },
-  ASSISTANCE_REQUESTED: {
-    label: "Assistance Requested",
-    color: "text-orange-600",
-    bg: "bg-orange-100",
-    icon: AlertTriangle,
-  },
-  ARCHIVED: {
-    label: "Archived",
-    color: "text-gray-600",
-    bg: "bg-gray-200",
-    icon: Archive,
-  },
+  // ASSISTANCE_REQUESTED and ARCHIVED removed from UI mapping
 };
 
 const suspiciousConfig = {
@@ -35,8 +24,7 @@ const suspiciousConfig = {
 };
 
 export const MachineCard = ({ machine, onClick }) => {
-  const isSuspicious =
-    machine.suspicionFlag && machine.status !== "MAINTENANCE" && machine.status !== "ARCHIVED";
+  const isSuspicious = machine.suspicionFlag && machine.status !== "MAINTENANCE";
 
   const config = isSuspicious
     ? suspiciousConfig

@@ -50,10 +50,7 @@ export const TechnicianWorkList = () => {
         return <Badge className="bg-green-600">Active</Badge>;
       case "MAINTENANCE":
         return <Badge className="bg-yellow-600">Maintenance</Badge>;
-      case "ASSISTANCE_REQUESTED":
-        return <Badge className="bg-orange-600">Help Requested</Badge>;
-      case "ARCHIVED":
-        return <Badge className="bg-gray-600">Archived</Badge>;
+      // ASSISTANCE_REQUESTED and ARCHIVED removed from badge options
       default:
         return <Badge>Unknown</Badge>;
     }
