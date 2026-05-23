@@ -6,7 +6,6 @@ import com.example.domain.Machine;
 import com.example.domain.Problem;
 import com.example.domain.User;
 import com.example.repository.AdminRepository;
-import com.example.repository.MaintenanceDirectorRepository;
 import com.example.repository.UserRepository;
 
 import java.util.HashMap;
