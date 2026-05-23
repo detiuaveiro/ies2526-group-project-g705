@@ -20,6 +20,7 @@ public class TechnicianDTO {
     private int tasksCompleted;
     private int tasksPending;
     private int numberOfFaultsFixed;
+    private int assistedCounter;
     private double averageRepairTime;
     private List<String> skillSet;
 }

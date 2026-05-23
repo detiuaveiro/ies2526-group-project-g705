@@ -22,6 +22,7 @@ public class MaintenanceLogService {
     private final MaintenanceLogRepository logRepository;
     private final MaintenanceRepository maintenanceRepository;
     private final TechnicianRepository technicianRepository;
+    private final MachineMetricsService machineMetricsService;
 
     public MaintenanceLogDTO createLog(String maintenanceId, MaintenanceLogCreateDTO dto) {
 
@@ -40,7 +41,9 @@ public class MaintenanceLogService {
                 .partsUsed(dto.getPartsUsed())
                 .build();
 
-        return toDTO(logRepository.save(log));
+        MaintenanceLog saved = logRepository.save(log);
+        machineMetricsService.refreshMetrics(saved.getMaintenance().getMachine().getId());
+        return toDTO(saved);
     }
 
     public List<MaintenanceLogDTO> getLogsByMaintenance(String maintenanceId) {

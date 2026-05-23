@@ -71,6 +71,7 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
   }, [machineId, user]);
 
   useEffect(() => {
+    if (!machineId) return;
     const interval = setInterval(() => {
       loadMachine();
       loadProblems();
@@ -79,7 +80,7 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [machineId, user?.token]);
 
   const formatSensorData = () => {
     if (!sensors || sensors.length === 0) return [];
@@ -113,6 +114,14 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
 
   if (!machine) return <p>Loading...</p>;
 
+  const isAssigned =
+    user?.role === "TECHNICIAN" &&
+    machine.assignedTechnicians?.some((t) => Number(t.id) === Number(user.id));
+
+  const isMaintenanceOwner =
+    machine.activeMaintenanceTechnicianId != null &&
+    Number(machine.activeMaintenanceTechnicianId) === Number(user.id);
+
   return (
     <div className="space-y-6">
       <Button variant="outline" className="flex items-center gap-2" onClick={onBack}>
@@ -140,7 +149,7 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
 
           <div className="flex items-center justify-between">
             <span>Downtime</span>
-            <span className="font-medium">{machine.downtimeSum}h</span>
+            <span className="font-medium">{(machine.downtimeSum ?? 0).toFixed(1)}h</span>
           </div>
 
           <div className="flex items-center justify-between">
@@ -171,19 +180,22 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
             </span>
           </div>
 
-          {user?.role === "TECHNICIAN" && machine.status !== "MAINTENANCE" && (
+          {isAssigned && machine.status !== "MAINTENANCE" && (
             <Button className="w-full mt-4 bg-blue-600 hover:bg-blue-700" onClick={handleStartMaintenance}>
               Start Maintenance
             </Button>
           )}
 
-          {user?.role !== "ADMIN" && user?.role !== "DIRECTOR" && (
-            user?.role !== "TECHNICIAN" || 
-            (machine.status === "MAINTENANCE" && machine.activeMaintenanceTechnicianId === user.id)
-          ) && (
+          {isAssigned && machine.status === "MAINTENANCE" && isMaintenanceOwner && (
             <Button className="w-full mt-4" onClick={() => onRequestAssistance(machine)}>
               Request Assistance
             </Button>
+          )}
+
+          {isAssigned && machine.status === "MAINTENANCE" && !isMaintenanceOwner && (
+            <p className="text-sm text-amber-700 mt-2">
+              Only {machine.assignedTechnicians?.find((t) => Number(t.id) === Number(machine.activeMaintenanceTechnicianId))?.name || "the technician who started maintenance"} can request assistance or end this maintenance.
+            </p>
           )}
         </CardContent>
       </Card>
