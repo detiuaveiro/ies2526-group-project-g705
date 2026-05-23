@@ -10,7 +10,6 @@ import com.example.dto.AssignRequest;
 import com.example.service.MachineService;
 import com.example.dto.MachineDashboardStatsDTO;
 import com.example.dto.MachineDTO;
-import com.example.dto.MachineRankingDTO;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -71,11 +70,6 @@ public class MachineController {
     public ResponseEntity<Void> deleteMachine(@PathVariable Long id) {
         machineService.deleteMachine(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/ranking")
-    public ResponseEntity<List<MachineRankingDTO>> getMachineRanking() {
-        return ResponseEntity.ok(machineService.getMachinesRanked());
     }
 
     @PostMapping("/{id}/assign")
