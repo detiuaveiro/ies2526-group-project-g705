@@ -72,12 +72,53 @@ const MainApp = () => {
     setAssistanceDialogOpen(true);
   };
 
-  const handleGoToMachine = (machineId) => {
-    const machine = appMachines.find((m) => m.id === machineId);
+  const handleGoToMachine = async (machineId) => {
+    const targetId = Number(machineId);
+    const machine = appMachines.find((m) => Number(m.id) === targetId);
     if (machine) {
       setSelectedMachine(machine);
       setActiveTab("machines");
-    } else {
+      return;
+    }
+
+    if (!user?.token) {
+      toast.error("Machine not found");
+      return;
+    }
+
+    try {
+      // First refresh the technician-assigned machine list to avoid stale local state.
+      if (user.role === "TECHNICIAN") {
+        const assignedRes = await fetch(`${API_URL}/machines/assigned/${user.id}`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+        if (assignedRes.ok) {
+          const assignedMachines = await assignedRes.json();
+          const assignedList = Array.isArray(assignedMachines) ? assignedMachines : [];
+          setAppMachines(assignedList);
+          const refreshedMatch = assignedList.find((m) => Number(m.id) === targetId);
+          if (refreshedMatch) {
+            setSelectedMachine(refreshedMatch);
+            setActiveTab("machines");
+            return;
+          }
+        }
+      }
+
+      const res = await fetch(`${API_URL}/machines/${targetId}`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      if (!res.ok) {
+        throw new Error();
+      }
+      const fetchedMachine = await res.json();
+      setAppMachines((prev) => {
+        const exists = prev.some((m) => Number(m.id) === targetId);
+        return exists ? prev : [...prev, fetchedMachine];
+      });
+      setSelectedMachine(fetchedMachine);
+      setActiveTab("machines");
+    } catch {
       toast.error("Machine not found");
     }
   };

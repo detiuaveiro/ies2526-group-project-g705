@@ -181,6 +181,11 @@ public class AssistanceRequestService {
                     "Cannot assign assistance to a technician already assigned to this machine. Choose an external technician.");
         }
 
+        // When a director assigns an assistance request to a new technician,
+        // persist that technician in the machine assignment list as well.
+        machine.getAssignedTechnicians().add(tech);
+        machineRepository.saveAndFlush(machine);
+
         request.setAssignedTechnician(tech);
         request.setStatus(AssistanceRequestStatus.ACCEPTED);
         request.setAcceptedAt(LocalDateTime.now());

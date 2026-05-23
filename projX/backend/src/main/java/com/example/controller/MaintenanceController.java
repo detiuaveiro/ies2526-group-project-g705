@@ -130,10 +130,18 @@ public class MaintenanceController {
         var sessions = sessionRepository.findByTechnicianIdAndActiveTrue(technicianId);
 
         if (sessions.isEmpty()) {
-            var assistance = assistanceRequestRepository.findByAssignedTechnicianIdAndStatus(
-                    technicianId, AssistanceRequestStatus.ACCEPTED);
-            if (!assistance.isEmpty()) {
-                return ResponseEntity.ok(assistanceToSessionDto(assistance.get(0)));
+            var acceptedAssistance = assistanceRequestRepository.findAllAssignedToTechnician(technicianId)
+                    .stream()
+                    .filter(r -> r.getStatus() == AssistanceRequestStatus.ACCEPTED)
+                    .sorted((a, b) -> {
+                        LocalDateTime aTime = a.getAcceptedAt() != null ? a.getAcceptedAt() : a.getCreatedAt();
+                        LocalDateTime bTime = b.getAcceptedAt() != null ? b.getAcceptedAt() : b.getCreatedAt();
+                        return bTime.compareTo(aTime);
+                    })
+                    .toList();
+
+            if (!acceptedAssistance.isEmpty()) {
+                return ResponseEntity.ok(assistanceToSessionDto(acceptedAssistance.get(0)));
             }
             return ResponseEntity.noContent().build();
         }
@@ -168,23 +176,7 @@ public class MaintenanceController {
         Machine machine = machineRepository.findById(machineId)
                 .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
 
-<<<<<<< HEAD
-        if (machine.getAssignedTechnicians().stream().noneMatch(t -> t.getId().equals(technicianId))) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
-        }
-
-        var activeOnMachine = sessionRepository.findByMachineIdAndActiveTrue(machineId);
-        if (!activeOnMachine.isEmpty()) {
-            Long ownerId = activeOnMachine.get(0).getTechnician().getId();
-            if (!ownerId.equals(technicianId)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
-            }
-            return ResponseEntity.ok(toDTO(activeOnMachine.get(0)));
-        }
-
-=======
         var machineSessions = sessionRepository.findByMachineIdAndActiveTrue(machineId);
->>>>>>> ba3d2c51 (Broke machines in admin and cant delete Diogo)
         if (machine.getStatus() == MachineStatus.MAINTENANCE) {
             if (!machineSessions.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
