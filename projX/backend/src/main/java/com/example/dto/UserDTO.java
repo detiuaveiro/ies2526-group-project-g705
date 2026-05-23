@@ -45,11 +45,10 @@ public class UserDTO {
         u.setEmail(email);
         u.setRole(role != null ? role : UserRole.TECHNICIAN);
 
-        // MISSING:
         u.setPhoneNumber(phoneNumber);
         u.setAge(age);
         u.setGender(gender);
 
         return u;
-}
+    }
 }
