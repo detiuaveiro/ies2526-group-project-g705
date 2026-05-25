@@ -57,6 +57,31 @@ public class MaintenanceController {
     private final TechnicianStatsService technicianStatsService;
     private final MachineMetricsService machineMetricsService;
 
+    @GetMapping
+    public ResponseEntity<List<MaintenanceDTO>> getAllMaintenance() {
+        return ResponseEntity.ok(maintenanceService.getAllMaintenanceDTO());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<MaintenanceDTO> getMaintenanceById(@PathVariable Long id) {
+        return ResponseEntity.ok(maintenanceService.getMaintenanceByIdDTO(id));
+    }
+
+    @GetMapping("/machine/{machineId}")
+    public ResponseEntity<List<MaintenanceDTO>> getByMachine(@PathVariable Long machineId) {
+        return ResponseEntity.ok(maintenanceService.getMaintenanceByMachineDTO(machineId));
+    }
+
+    @GetMapping("/technician/{technicianId}")
+    public ResponseEntity<List<MaintenanceDTO>> getByTechnician(@PathVariable Long technicianId) {
+        return ResponseEntity.ok(maintenanceService.getMaintenanceByTechnicianDTO(technicianId));
+    }
+
+    @PostMapping
+    public ResponseEntity<MaintenanceDTO> createMaintenance(@Valid @RequestBody MaintenanceDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(maintenanceService.createMaintenanceDTO(dto));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<MaintenanceDTO> updateMaintenance(@PathVariable Long id,
                                                             @Valid @RequestBody MaintenanceDTO dto) {

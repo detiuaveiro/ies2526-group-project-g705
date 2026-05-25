@@ -43,6 +43,19 @@ public class AssistanceRequestController {
         return assistanceRequestService.getAll();
     }
 
+    @PostMapping("/{id}/assign")
+    public ResponseEntity<?> assign(
+            @PathVariable Long id,
+            @RequestParam Long technicianId
+    ) {
+        try {
+            return ResponseEntity.ok(assistanceRequestService.assign(id, technicianId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+
     @PostMapping("/{id}/unassign")
     public ResponseEntity<?> unassign(@PathVariable Long id) {
         try {
