@@ -84,20 +84,8 @@ public class MachineService {
     }
 
     @Transactional(readOnly = true)
-    public List<MachineDTO> getArchivedMachinesDTO() {
-        return machineRepository.findByArchivedAtIsNotNull()
-                .stream()
-                .map(m -> {
-                    MachineDTO dto = MachineMapper.toDTO(m);
-                    populateActiveTechnician(dto);
-                    return dto;
-                })
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
     public List<MachineDTO> getActiveMachinesDTO() {
-        return machineRepository.findByArchivedAtIsNull()
+        return machineRepository.findAll()
                 .stream()
                 .map(m -> {
                     MachineDTO dto = MachineMapper.toDTO(m);
@@ -149,14 +137,6 @@ public class MachineService {
             machine.setAssignedTechnicians(techs);
         }
 
-        return MachineMapper.toDTO(machineRepository.save(machine));
-    }
-
-    public MachineDTO restoreMachineDTO(Long id) {
-        Machine machine = machineRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
-        machine.setStatus(MachineStatus.ACTIVE);
-        machine.setArchivedAt(null);
         return MachineMapper.toDTO(machineRepository.save(machine));
     }
 
@@ -213,14 +193,6 @@ public class MachineService {
         double downtime = m.getDowntimeSum() != null ? m.getDowntimeSum() : 0;
 
         return importance * 0.5 + downtime * 0.4;
-    }
-
-    public MachineDTO archiveMachineDTO(Long id) {
-        Machine machine = machineRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
-        machine.setStatus(MachineStatus.ARCHIVED);
-        machine.setArchivedAt(LocalDateTime.now());
-        return MachineMapper.toDTO(machineRepository.save(machine));
     }
 
     public MachineDTO assignTechnicianDTO(Long machineId, Long technicianId) {
