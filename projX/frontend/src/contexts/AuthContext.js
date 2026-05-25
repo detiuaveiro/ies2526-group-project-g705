@@ -1,9 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { mockUsers } from "../data/mockData";
 
 const AuthContext = createContext(undefined);
-
-const USE_DEMO = false;
 
 const API_URL = "http://localhost:8080/api/v1/auth/login";
 
@@ -17,20 +14,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const mockLogin = (usernameOrEmail, password) => {
-    const foundUser = mockUsers.find(
-      (u) => (u.username === usernameOrEmail || u.email === usernameOrEmail) && u.password === password
-    );
-
-    if (foundUser) {
-      setUser(foundUser);
-      localStorage.setItem("smartSensesUser", JSON.stringify(foundUser));
-      return true;
-    }
-    return false;
-  };
-
-  const realLogin = async (emailOrUsername, password) => {
+  const login = async (emailOrUsername, password) => {
     try {
       const response = await fetch(API_URL, {
         method: "POST",
@@ -57,7 +41,6 @@ export const AuthProvider = ({ children }) => {
         token: data.token,
       };
 
-
       setUser(userData);
       localStorage.setItem("smartSensesUser", JSON.stringify(userData));
       localStorage.setItem("token", data.token);
@@ -67,17 +50,6 @@ export const AuthProvider = ({ children }) => {
       console.error("Backend login error:", err);
       return false;
     }
-  };
-
-  const login = async (usernameOrEmail, password) => {
-    if (USE_DEMO) {
-      return mockLogin(usernameOrEmail, password);
-    }
-
-    const backendSuccess = await realLogin(usernameOrEmail, password);
-    if (backendSuccess) return true;
-
-    return mockLogin(usernameOrEmail, password);
   };
 
   const logout = () => {

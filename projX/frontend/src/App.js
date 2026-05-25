@@ -31,6 +31,16 @@ const MainApp = () => {
   );
   const [selectedMachine, setSelectedMachine] = useState(null);
 
+  useEffect(() => {
+    setSelectedMachine(null);
+
+    if (user?.role === "DIRECTOR" || user?.role === "ADMIN") {
+      setActiveTab("dashboard");
+    } else {
+      setActiveTab("machines");
+    }
+  }, [user]);
+
   const [selectedMachineForAssistance, setSelectedMachineForAssistance] = useState(null);
   const [assistanceDialogOpen, setAssistanceDialogOpen] = useState(false);
 
@@ -44,14 +54,21 @@ const MainApp = () => {
         ? `${API_URL}/machines/assigned/${user.id}`
         : `${API_URL}/machines`;
 
-    fetch(endpoint, {
-      headers: {
-        Authorization: `Bearer ${user.token}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => setAppMachines(Array.isArray(data) ? data : []))
-      .catch(() => toast.error("Failed to load machines"));
+    const fetchMachines = () => {
+      fetch(endpoint, {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => setAppMachines(Array.isArray(data) ? data : []))
+        .catch(() => toast.error("Failed to load machines"));
+    };
+
+    fetchMachines();
+
+    const interval = setInterval(fetchMachines, 2000);
+    return () => clearInterval(interval);
   }, [user]);
 
   if (!user) return <Login />;
@@ -64,12 +81,52 @@ const MainApp = () => {
     setAssistanceDialogOpen(true);
   };
 
-  const handleGoToMachine = (machineId) => {
-    const machine = appMachines.find((m) => m.id === machineId);
+  const handleGoToMachine = async (machineId) => {
+    const targetId = Number(machineId);
+    const machine = appMachines.find((m) => Number(m.id) === targetId);
     if (machine) {
       setSelectedMachine(machine);
       setActiveTab("machines");
-    } else {
+      return;
+    }
+
+    if (!user?.token) {
+      toast.error("Machine not found");
+      return;
+    }
+
+    try {
+      if (user.role === "TECHNICIAN") {
+        const assignedRes = await fetch(`${API_URL}/machines/assigned/${user.id}`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+        if (assignedRes.ok) {
+          const assignedMachines = await assignedRes.json();
+          const assignedList = Array.isArray(assignedMachines) ? assignedMachines : [];
+          setAppMachines(assignedList);
+          const refreshedMatch = assignedList.find((m) => Number(m.id) === targetId);
+          if (refreshedMatch) {
+            setSelectedMachine(refreshedMatch);
+            setActiveTab("machines");
+            return;
+          }
+        }
+      }
+
+      const res = await fetch(`${API_URL}/machines/${targetId}`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      if (!res.ok) {
+        throw new Error();
+      }
+      const fetchedMachine = await res.json();
+      setAppMachines((prev) => {
+        const exists = prev.some((m) => Number(m.id) === targetId);
+        return exists ? prev : [...prev, fetchedMachine];
+      });
+      setSelectedMachine(fetchedMachine);
+      setActiveTab("machines");
+    } catch {
       toast.error("Machine not found");
     }
   };

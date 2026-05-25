@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -65,23 +64,8 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private UserRole role;
 
-    @Column(nullable = false)
-    private boolean isActive = true;
-
-    @Column(nullable = false)
-    private boolean isOnline = false;
-
-    @Column(nullable = false)
-    private boolean isPrivileged = false;
-
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
-
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-    private LocalDateTime lastLogin;
 
 
     @Override
@@ -117,11 +101,20 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return isActive;
+        return true;
     }
 
     @Column(nullable = false)
     private boolean archived = false;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
+
+    @Column(name = "is_online", nullable = false)
+    private boolean isOnline = false;
+
+    @Column(name = "is_privileged", nullable = false)
+    private boolean isPrivileged = false;
 
 
 }

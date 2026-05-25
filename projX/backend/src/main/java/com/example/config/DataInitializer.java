@@ -1,6 +1,11 @@
 package com.example.config;
 
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
+
 import com.example.domain.User;
+import com.example.domain.enums.Gender;
 import com.example.domain.enums.MachineStatus;
 import com.example.domain.enums.UserRole;
 import com.example.dto.MachineDTO;
@@ -9,17 +14,10 @@ import com.example.repository.MachineRepository;
 import com.example.repository.UserRepository;
 import com.example.service.MachineService;
 import com.example.service.UserService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
 
-/**
- * Automatically initializes the database with test machines on application startup.
- * Creates 100 machines for testing. Sensor readings are provided by sensor_publisher.py.
- * This data is ephemeral and will be deleted when containers are stopped.
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -36,7 +34,6 @@ public class DataInitializer {
     public void initializeData() {
         log.info("Starting data initialization...");
 
-        // 1. Seed Users if none exist
         if (userRepository.count() == 0) {
             log.info("Creating mock users...");
             
@@ -73,19 +70,21 @@ public class DataInitializer {
             
             log.info("\u2713 Mock users created!");
         }
+        ensureUserProfile("Manuel Gomes", "manuel.gomes@example.com", "915678901", 45, Gender.MALE);
+        ensureUserProfile("Sara Lopes", "sara.lopes@example.com", "916789012", 35, Gender.FEMALE);
+        ensureTechnicianProfile("João Neves", "joao.neves@example.com", "912345678", 29, Gender.MALE);
+        ensureTechnicianProfile("Ana Costa", "ana.costa@example.com", "913456789", 28, Gender.FEMALE);
+        ensureTechnicianProfile("Joana Mendes", null, "914567890", 30, Gender.FEMALE);
 
-        // 2. Seed Machines if none exist
         if (machineRepository.count() > 0) {
             log.info("Machines already exist in database, skipping machine initialization");
             return;
         }
 
         try {
-            // Create machines
             log.info("Creating {} machines...", TOTAL_MACHINES);
             long startTime = System.currentTimeMillis();
 
-            // Find João Neves to assign some machines
             User joao = userRepository.findByEmail("joao.neves@example.com").orElse(null);
 
             String[] realisticNames = {
@@ -111,7 +110,6 @@ public class DataInitializer {
 
                 MachineDTO created = machineService.createMachineDTO(machineDTO);
 
-                // Assign first 10 machines to Jo\u00E3o Neves if he exists
                 if (joao != null && i <= 10) {
                     machineService.assignTechnicianDTO(created.getId(), joao.getId());
                 }
@@ -128,6 +126,72 @@ public class DataInitializer {
         } catch (Exception e) {
             log.error("Error during data initialization", e);
             throw new RuntimeException("Data initialization failed", e);
+        }
+    }
+    private void ensureUserProfile(String name, String email, String phoneNumber, Integer age, Gender gender) {
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) return;
+
+        boolean changed = false;
+
+        if (user.getPhoneNumber() == null || user.getPhoneNumber().isBlank()) {
+            user.setPhoneNumber(phoneNumber);
+            changed = true;
+        }
+
+        if (user.getAge() == null) {
+            user.setAge(age);
+            changed = true;
+        }
+
+        if (user.getGender() == null) {
+            user.setGender(gender);
+            changed = true;
+        }
+
+        if (changed) {
+            userRepository.save(user);
+        }
+    }
+    private void ensureTechnicianProfile(String name, String email, String phoneNumber, Integer age, Gender gender) {
+        User user = null;
+
+        if (email != null) {
+            user = userRepository.findByEmail(email).orElse(null);
+        }
+
+        if (user == null) {
+            user = userRepository.findByRoleAndArchivedFalse(UserRole.TECHNICIAN).stream()
+                    .filter(u -> name.equalsIgnoreCase(u.getName()))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        if (user == null) {
+            return;
+        }
+
+        boolean changed = false;
+
+        if (user.getPhoneNumber() == null || user.getPhoneNumber().isBlank()) {
+            user.setPhoneNumber(phoneNumber);
+            changed = true;
+        }
+
+        if (user.getAge() == null) {
+            user.setAge(age);
+            changed = true;
+        }
+
+        if (user.getGender() == null) {
+            user.setGender(gender);
+            changed = true;
+        }
+
+        if (changed) {
+            userRepository.save(user);
+            log.info("Updated demo technician profile for {}", name);
         }
     }
 }

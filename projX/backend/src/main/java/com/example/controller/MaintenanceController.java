@@ -1,32 +1,46 @@
 package com.example.controller;
 
-import com.example.dto.MaintenanceDTO;
-import com.example.dto.MaintenanceSessionDTO;
-import com.example.dto.MaintenanceStatsDTO;
-import com.example.domain.MaintenanceSession;
-import com.example.domain.Technician;
-import com.example.service.MaintenanceService;
-import com.example.repository.MaintenanceSessionRepository;
-import com.example.repository.TechnicianRepository;
-import com.example.repository.MachineRepository;
-import com.example.domain.enums.MachineStatus;
-import com.example.domain.enums.MaintenanceStatus;
-import com.example.domain.enums.MaintenanceType;
-import com.example.domain.Machine;
-import com.example.domain.Maintenance;
-import com.example.repository.MaintenanceRepository;
-import com.example.repository.AssistanceRequestRepository;
-import com.example.domain.enums.AssistanceRequestStatus;
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import com.example.domain.Machine;
+import com.example.domain.Maintenance;
+import com.example.domain.MaintenanceSession;
+import com.example.domain.Technician;
+import com.example.domain.enums.AssistanceRequestStatus;
+import com.example.domain.enums.MachineStatus;
+import com.example.domain.enums.MaintenanceStatus;
+import com.example.domain.enums.MaintenanceType;
+import com.example.dto.MaintenanceDTO;
+import com.example.dto.MaintenanceSessionDTO;
+import com.example.dto.MaintenanceStatsDTO;
+import com.example.repository.AssistanceRequestRepository;
+import com.example.repository.MachineRepository;
+import com.example.repository.MaintenanceLogRepository;
+import com.example.repository.MaintenanceRepository;
+import com.example.repository.MaintenanceSessionRepository;
+import com.example.repository.TechnicianRepository;
+import com.example.service.MachineMetricsService;
+import com.example.service.MaintenanceService;
+import com.example.service.TechnicianStatsService;
+
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/maintenances")
@@ -39,6 +53,9 @@ public class MaintenanceController {
     private final MachineRepository machineRepository;
     private final MaintenanceRepository maintenanceRepository;
     private final AssistanceRequestRepository assistanceRequestRepository;
+    private final MaintenanceLogRepository maintenanceLogRepository;
+    private final TechnicianStatsService technicianStatsService;
+    private final MachineMetricsService machineMetricsService;
 
     @GetMapping
     public ResponseEntity<List<MaintenanceDTO>> getAllMaintenance() {
@@ -90,6 +107,20 @@ public class MaintenanceController {
         if (s.getMaintenanceRecord() != null) {
             dto.setMaintenanceRecordId(s.getMaintenanceRecord().getId());
         }
+        dto.setSessionType("MAINTENANCE");
+        return dto;
+    }
+
+    private MaintenanceSessionDTO assistanceToSessionDto(com.example.domain.AssistanceRequest request) {
+        MaintenanceSessionDTO dto = new MaintenanceSessionDTO();
+        dto.setAssistanceRequestId(request.getId());
+        dto.setSessionType("ASSISTANCE");
+        dto.setMachineId(request.getProblem().getMachine().getId());
+        dto.setMachineName(request.getProblem().getMachine().getName());
+        dto.setTechnicianId(request.getAssignedTechnician().getId());
+        dto.setTechnicianName(request.getAssignedTechnician().getName());
+        dto.setStartTime(request.getAcceptedAt() != null ? request.getAcceptedAt() : request.getCreatedAt());
+        dto.setActive(true);
         return dto;
     }
 
@@ -99,6 +130,19 @@ public class MaintenanceController {
         var sessions = sessionRepository.findByTechnicianIdAndActiveTrue(technicianId);
 
         if (sessions.isEmpty()) {
+            var acceptedAssistance = assistanceRequestRepository.findAllAssignedToTechnician(technicianId)
+                    .stream()
+                    .filter(r -> r.getStatus() == AssistanceRequestStatus.ACCEPTED)
+                    .sorted((a, b) -> {
+                        LocalDateTime aTime = a.getAcceptedAt() != null ? a.getAcceptedAt() : a.getCreatedAt();
+                        LocalDateTime bTime = b.getAcceptedAt() != null ? b.getAcceptedAt() : b.getCreatedAt();
+                        return bTime.compareTo(aTime);
+                    })
+                    .toList();
+
+            if (!acceptedAssistance.isEmpty()) {
+                return ResponseEntity.ok(assistanceToSessionDto(acceptedAssistance.get(0)));
+            }
             return ResponseEntity.noContent().build();
         }
 
@@ -132,8 +176,20 @@ public class MaintenanceController {
         Machine machine = machineRepository.findById(machineId)
                 .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
 
+        var machineSessions = sessionRepository.findByMachineIdAndActiveTrue(machineId);
         if (machine.getStatus() == MachineStatus.MAINTENANCE) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            if (!machineSessions.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            }
+
+            var openMaintenances = maintenanceRepository.findByMachineIdAndStatus(machineId, MaintenanceStatus.IN_PROGRESS);
+            for (var m : openMaintenances) {
+                m.setStatus(MaintenanceStatus.COMPLETED);
+                maintenanceRepository.save(m);
+            }
+
+            machine.setStatus(MachineStatus.ACTIVE);
+            machineRepository.save(machine);
         }
 
         var existingSessions = sessionRepository.findByTechnicianIdAndActiveTrue(technicianId);
@@ -145,7 +201,28 @@ public class MaintenanceController {
                 return ResponseEntity.ok(toDTO(existing));
             }
 
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            boolean staleSession = existing.getMachine().getStatus() != MachineStatus.MAINTENANCE;
+            if (existing.getMaintenanceRecord() != null
+                    && existing.getMaintenanceRecord().getStatus() != MaintenanceStatus.IN_PROGRESS) {
+                staleSession = true;
+            }
+
+            if (staleSession) {
+                for (MaintenanceSession stale : existingSessions) {
+                    stale.setActive(false);
+                    stale.setEndTime(LocalDateTime.now());
+
+                    Machine staleMachine = stale.getMachine();
+                    if (staleMachine.getStatus() == MachineStatus.MAINTENANCE) {
+                        staleMachine.setStatus(MachineStatus.ACTIVE);
+                        machineRepository.save(staleMachine);
+                    }
+
+                    sessionRepository.save(stale);
+                }
+            } else {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            }
         }
 
         if (!tech.isAvailable()) {
@@ -170,7 +247,7 @@ public class MaintenanceController {
 
         session = sessionRepository.save(session);
 
-        tech.setAvailable(false);
+        technicianStatsService.markBusy(tech, machine);
         technicianRepository.save(tech);
 
         machine.setStatus(MachineStatus.MAINTENANCE);
@@ -203,9 +280,7 @@ public class MaintenanceController {
         var tech = session.getTechnician();
         var machine = session.getMachine();
 
-        tech.setAvailable(true);
-        tech.setTasksCompleted(tech.getTasksCompleted() + 1);
-        tech.setCurrentAssignment(null);
+        technicianStatsService.markAvailable(tech);
         technicianRepository.save(tech);
 
         var otherSessions = sessionRepository.findByMachineIdAndActiveTrue(machine.getId());
@@ -221,9 +296,7 @@ public class MaintenanceController {
             
             var otherTech = other.getTechnician();
             if (!otherTech.getId().equals(tech.getId())) {
-                otherTech.setAvailable(true);
-                otherTech.setTasksCompleted(otherTech.getTasksCompleted() + 1);
-                otherTech.setCurrentAssignment(null);
+                technicianStatsService.markAvailable(otherTech);
                 technicianRepository.save(otherTech);
             }
             
@@ -240,6 +313,14 @@ public class MaintenanceController {
             var problem = req.getProblem();
             if (problem != null) {
                 problem.setResolved(true);
+                problem.setSolvedProblemDate(LocalDateTime.now());
+            }
+            if (req.getAssignedTechnician() != null) {
+                var assistant = req.getAssignedTechnician();
+                if (!assistant.getId().equals(tech.getId())) {
+                    technicianStatsService.markAvailable(assistant);
+                    technicianRepository.save(assistant);
+                }
             }
             assistanceRequestRepository.save(req);
         }
@@ -251,8 +332,12 @@ public class MaintenanceController {
         }
 
         machine.setStatus(MachineStatus.ACTIVE);
-        machine.setActionRequiredCount(0);
+
+        machine.setMaintenanceFinishedAt(LocalDateTime.now());
+        machine.setSuspicionFlag(false);
+
         machineRepository.save(machine);
+        machineMetricsService.refreshMetrics(machine.getId());
 
         return ResponseEntity.ok(toDTO(session));
     }
@@ -272,5 +357,19 @@ public class MaintenanceController {
                 .build();
 
         return ResponseEntity.ok(dto);
+    }
+
+    private double resolveSessionHours(MaintenanceSession session) {
+        if (session.getMaintenanceRecord() != null) {
+            var logs = maintenanceLogRepository.findByMaintenanceIdOrderByCreatedAtDesc(
+                    session.getMaintenanceRecord().getId());
+            if (!logs.isEmpty() && logs.get(0).getHoursSpent() != null) {
+                return logs.get(0).getHoursSpent();
+            }
+        }
+        if (session.getStartTime() != null) {
+            return Math.max(0.1, ChronoUnit.MINUTES.between(session.getStartTime(), LocalDateTime.now()) / 60.0);
+        }
+        return 0.1;
     }
 }

@@ -13,6 +13,7 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
   const { user } = useAuth();
 
   const [machine, setMachine] = useState(null);
+  const [machineError, setMachineError] = useState("");
   const [problems, setProblems] = useState([]);
   const [logs, setLogs] = useState([]);
   const [sensors, setSensors] = useState([]);
@@ -21,8 +22,20 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
     fetch(`${API}/machines/${machineId}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
-      .then((r) => r.json())
-      .then(setMachine);
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+
+        if (!r.ok) {
+          throw new Error(data?.error || data?.message || "Failed to load machine");
+        }
+
+        setMachineError("");
+        setMachine(data);
+      })
+      .catch((error) => {
+        setMachine(null);
+        setMachineError(error.message || "Failed to load machine");
+      });
   };
 
   const loadProblems = () => {
@@ -71,6 +84,7 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
   }, [machineId, user]);
 
   useEffect(() => {
+    if (!machineId) return;
     const interval = setInterval(() => {
       loadMachine();
       loadProblems();
@@ -79,20 +93,36 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [machineId, user?.token]);
 
   const formatSensorData = () => {
     if (!sensors || sensors.length === 0) return [];
 
-    // Group by recordedAt
-    const grouped = sensors.reduce((acc, curr) => {
-      const time = new Date(curr.recordedAt).toLocaleTimeString("pt-PT", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const readings = sensors
+      .map((curr) => ({
+        ...curr,
+        recordedAtDate: new Date(curr.recordedAt),
+      }))
+      .filter((curr) => !Number.isNaN(curr.recordedAtDate.getTime()));
+
+    if (readings.length === 0) return [];
+
+    const latestTimestamp = Math.max(...readings.map((curr) => curr.recordedAtDate.getTime()));
+    const cutoffTimestamp = latestTimestamp - 12 * 60 * 60 * 1000; //12 horas
+
+    const filtered = readings.filter((curr) => curr.recordedAtDate.getTime() >= cutoffTimestamp);
+
+    const grouped = filtered.reduce((acc, curr) => {
+      const time = curr.recordedAtDate.toLocaleTimeString("pt-PT", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
       if (!acc[time]) acc[time] = { time };
       acc[time][curr.sensorType] = curr.value;
       return acc;
     }, {});
 
-    // Sort by time
     return Object.values(grouped).sort((a, b) => a.time.localeCompare(b.time));
   };
 
@@ -111,7 +141,32 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
       .catch((e) => toast.error(e.message));
   };
 
+  if (machineError) {
+    return (
+      <div className="space-y-6">
+        <Button variant="outline" className="flex items-center gap-2" onClick={onBack}>
+          <ArrowLeft className="w-4 h-4" />
+          Back to Machines
+        </Button>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-red-600 font-medium">{machineError}</p>
+            <p className="text-gray-500 mt-2">The machine may have been deleted or is no longer accessible.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!machine) return <p>Loading...</p>;
+
+  const isAssigned =
+    user?.role === "TECHNICIAN" &&
+    machine.assignedTechnicians?.some((t) => Number(t.id) === Number(user.id));
+
+  const isMaintenanceOwner =
+    machine.activeMaintenanceTechnicianId != null &&
+    Number(machine.activeMaintenanceTechnicianId) === Number(user.id);
 
   return (
     <div className="space-y-6">
@@ -140,7 +195,7 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
 
           <div className="flex items-center justify-between">
             <span>Downtime</span>
-            <span className="font-medium">{machine.downtimeSum}h</span>
+            <span className="font-medium">{(machine.downtimeSum ?? 0).toFixed(1)}h</span>
           </div>
 
           <div className="flex items-center justify-between">
@@ -165,25 +220,28 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
           <div className="flex items-center justify-between">
             <span>Assigned Technicians</span>
             <span className="font-medium flex gap-2">
-              {machine.assignedTechnicians?.length === 0
+              {(machine.assignedTechnicians || []).length === 0
                 ? "None"
-                : machine.assignedTechnicians.map((t) => t.name).join(", ")}
+                : (machine.assignedTechnicians || []).map((t) => t.name).join(", ")}
             </span>
           </div>
 
-          {user?.role === "TECHNICIAN" && machine.status !== "MAINTENANCE" && (
+          {isAssigned && machine.status !== "MAINTENANCE" && (
             <Button className="w-full mt-4 bg-blue-600 hover:bg-blue-700" onClick={handleStartMaintenance}>
               Start Maintenance
             </Button>
           )}
 
-          {user?.role !== "ADMIN" && user?.role !== "DIRECTOR" && (
-            user?.role !== "TECHNICIAN" || 
-            (machine.status === "MAINTENANCE" && machine.activeMaintenanceTechnicianId === user.id)
-          ) && (
+          {isAssigned && machine.status === "MAINTENANCE" && isMaintenanceOwner && (
             <Button className="w-full mt-4" onClick={() => onRequestAssistance(machine)}>
               Request Assistance
             </Button>
+          )}
+
+          {isAssigned && machine.status === "MAINTENANCE" && !isMaintenanceOwner && (
+            <p className="text-sm text-amber-700 mt-2">
+              Only {machine.assignedTechnicians?.find((t) => Number(t.id) === Number(machine.activeMaintenanceTechnicianId))?.name || "the technician who started maintenance"} can request assistance or end this maintenance.
+            </p>
           )}
         </CardContent>
       </Card>

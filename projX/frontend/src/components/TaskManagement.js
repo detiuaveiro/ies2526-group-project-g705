@@ -29,6 +29,7 @@ export const TaskManagement = ({ machines, onAssignTechnician, onMachineClick })
   const [assignments, setAssignments] = useState({});
   const [technicians, setTechnicians] = useState([]);
   const [breakdowns, setBreakdowns] = useState([]);
+  const [sensorValues, setSensorValues] = useState({});
 
   useEffect(() => {
     fetch(`${API_URL}/users/technicians`, {
@@ -38,6 +39,41 @@ export const TaskManagement = ({ machines, onAssignTechnician, onMachineClick })
       .then(data => setTechnicians(data))
       .catch(() => toast.error("Failed to load technicians"));
   }, [user]);
+
+  useEffect(() => {
+    if (!machines || machines.length === 0) {
+      setSensorValues({});
+      return;
+    }
+
+    const loadSensorValues = async () => {
+      const values = {};
+
+      await Promise.all(
+        machines.map(async (machine) => {
+          try {
+            const response = await fetch(`${API_URL}/sensors/${machine.id}`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            });
+            if (!response.ok) return;
+            const readings = await response.json();
+            values[machine.id] = readings.reduce((acc, reading) => {
+              if (reading?.sensorType && reading?.value != null) {
+                acc[reading.sensorType] = reading.value;
+              }
+              return acc;
+            }, {});
+          } catch (error) {
+            // ignore per-machine sensor fetch failures
+          }
+        })
+      );
+
+      setSensorValues(values);
+    };
+
+    loadSensorValues();
+  }, [machines, user]);
 
   useEffect(() => {
     fetch(`${API_URL}/problems`, {
@@ -159,44 +195,63 @@ export const TaskManagement = ({ machines, onAssignTechnician, onMachineClick })
                           )}
 
                           <div className="grid grid-cols-3 gap-4 text-sm">
-                            <div>
-                              <span className="text-gray-500">Vibration:</span>
-                              <span className={`ml-2 font-medium ${
-                                machine.vibration > 80
-                                  ? "text-red-600"
-                                  : machine.vibration > 60
-                                  ? "text-yellow-600"
-                                  : "text-green-600"
-                              }`}>
-                                {machine.vibration} Hz
-                              </span>
-                            </div>
+                            {(() => {
+                              const latest = sensorValues[machine.id] || {};
+                              const vibration = machine.vibration ?? latest.VIBRATION;
+                              const pressure = machine.pressure ?? latest.PRESSURE;
+                              const temperature = machine.temperature ?? latest.TEMPERATURE;
 
-                            <div>
-                              <span className="text-gray-500">Pressure:</span>
-                              <span className={`ml-2 font-medium ${
-                                machine.pressure > 110
-                                  ? "text-red-600"
-                                  : machine.pressure > 90
-                                  ? "text-yellow-600"
-                                  : "text-green-600"
-                              }`}>
-                                {machine.pressure} bar
-                              </span>
-                            </div>
+                              const vibrationText = vibration != null ? `${vibration} Hz` : "N/A";
+                              const pressureText = pressure != null ? `${pressure} bar` : "N/A";
+                              const temperatureText = temperature != null ? `${temperature}°C` : "N/A";
 
-                            <div>
-                              <span className="text-gray-500">Temperature:</span>
-                              <span className={`ml-2 font-medium ${
-                                machine.temperature > 90
+                              const vibrationClass = vibration != null
+                                ? vibration > 80
                                   ? "text-red-600"
-                                  : machine.temperature > 70
+                                  : vibration > 60
                                   ? "text-yellow-600"
                                   : "text-green-600"
-                              }`}>
-                                {machine.temperature}°C
-                              </span>
-                            </div>
+                                : "text-gray-500";
+                              const pressureClass = pressure != null
+                                ? pressure > 110
+                                  ? "text-red-600"
+                                  : pressure > 90
+                                  ? "text-yellow-600"
+                                  : "text-green-600"
+                                : "text-gray-500";
+                              const temperatureClass = temperature != null
+                                ? temperature > 90
+                                  ? "text-red-600"
+                                  : temperature > 70
+                                  ? "text-yellow-600"
+                                  : "text-green-600"
+                                : "text-gray-500";
+
+                              return (
+                                <>
+                                  <div>
+                                    <span className="text-gray-500">Vibration:</span>
+                                    <span className={`ml-2 font-medium ${vibrationClass}`}>
+                                      {vibrationText}
+                                    </span>
+                                  </div>
+
+                                  <div>
+                                    <span className="text-gray-500">Pressure:</span>
+                                    <span className={`ml-2 font-medium ${pressureClass}`}>
+                                      {pressureText}
+                                    </span>
+                                  </div>
+
+                                  <div>
+                                    <span className="text-gray-500">Temperature:</span>
+                                    <span className={`ml-2 font-medium ${temperatureClass}`}>
+                                      {temperatureText}
+                                    </span>
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
 

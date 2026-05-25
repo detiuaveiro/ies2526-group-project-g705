@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
-import { AlertCircle, Clock, MapPin, UserPlus } from "lucide-react";
+import { AlertCircle, Clock, MapPin, UserMinus, UserPlus } from "lucide-react";
 
 const API = "http://localhost:8080/api/v1";
 
@@ -75,13 +75,36 @@ export const AssistanceRequestsView = () => {
 
   useEffect(() => {
     loadRequests();
-    const interval = setInterval(loadRequests, 5000);
+    const interval = setInterval(loadRequests, 2000);
     return () => clearInterval(interval);
   }, [user]);
+
+  const handleUnassign = async (request) => {
+    try {
+      const res = await fetch(`${API}/assistance-requests/${request.id}/unassign`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to unassign");
+      }
+      toast.success("Technician removed from request");
+      setSelectedTechByRequest((prev) => ({ ...prev, [request.id]: undefined }));
+      loadRequests();
+    } catch (e) {
+      toast.error(e.message || "Failed to remove assignment");
+    }
+  };
 
   const handleAssign = async (request) => {
     const technicianId =
       selectedTechByRequest[request.id] ?? request.assignedTechnicianId;
+
+    if (request.assignedTechnicianId) {
+      toast.error("Remove the current assignment before assigning another technician");
+      return;
+    }
 
     if (!technicianId) {
       toast.error("Select a technician to assign");
@@ -137,9 +160,11 @@ export const AssistanceRequestsView = () => {
   };
 
   const eligibleTechnicians = (request) =>
-    technicians.filter(
-      (t) => Number(t.id) !== Number(request.requestedById)
-    );
+    technicians.filter((t) => {
+      if (Number(t.id) === Number(request.requestedById)) return false;
+      const assignedOnMachine = request.machineAssignedTechnicianIds || [];
+      return !assignedOnMachine.map(Number).includes(Number(t.id));
+    });
 
   return (
     <div className="space-y-6">
@@ -243,39 +268,50 @@ export const AssistanceRequestsView = () => {
 
                     {isActiveStatus(request.status) && (
                       <div className="flex flex-col gap-2 min-w-[220px]">
-                        <select
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          value={selectValue}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setSelectedTechByRequest({
-                              ...selectedTechByRequest,
-                              [request.id]: v ? Number(v) : undefined,
-                            });
-                          }}
-                        >
-                          <option value="">Choose technician</option>
-                          {eligible.length === 0 && (
-                            <option value="" disabled>
-                              No other technician available
-                            </option>
-                          )}
-                          {eligible.map((tech) => (
-                            <option key={tech.id} value={String(tech.id)}>
-                              {tech.name}
-                            </option>
-                          ))}
-                        </select>
-                        <Button
-                          onClick={() => handleAssign(request)}
-                          className="w-full"
-                          disabled={eligible.length === 0}
-                        >
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          {request.assignedTechnicianId
-                            ? "Resend to another technician"
-                            : "Send to technician"}
-                        </Button>
+                        {!request.assignedTechnicianId ? (
+                          <>
+                            <select
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                              value={selectValue}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                setSelectedTechByRequest({
+                                  ...selectedTechByRequest,
+                                  [request.id]: v ? Number(v) : undefined,
+                                });
+                              }}
+                            >
+                              <option value="">Choose technician</option>
+                              {eligible.length === 0 && (
+                                <option value="" disabled>
+                                  No other technician available
+                                </option>
+                              )}
+                              {eligible.map((tech) => (
+                                <option key={tech.id} value={String(tech.id)}>
+                                  {tech.name}
+                                </option>
+                              ))}
+                            </select>
+                            <Button
+                              onClick={() => handleAssign(request)}
+                              className="w-full"
+                              disabled={eligible.length === 0}
+                            >
+                              <UserPlus className="w-4 h-4 mr-2" />
+                              Send to technician
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleUnassign(request)}
+                            className="w-full text-red-700 border-red-200 hover:bg-red-50"
+                          >
+                            <UserMinus className="w-4 h-4 mr-2" />
+                            Remove assigned technician
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>

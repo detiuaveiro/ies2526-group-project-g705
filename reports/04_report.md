@@ -697,6 +697,8 @@ Status:
 
 # 7. Controllers & API Endpoints
 
+- [API Documentation](../projX/docs/api-documentation/API_Documentation.pdf)
+
 ## AuthController
 - POST `/auth/login`  
 - POST `/auth/register`  

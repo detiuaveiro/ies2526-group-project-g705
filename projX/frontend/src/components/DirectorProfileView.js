@@ -19,11 +19,6 @@ const API_URL = "http://localhost:8080/api/v1";
 
 const GENDERS = ["MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"];
 
-const formatDate = (value) => {
-  if (!value) return "—";
-  return new Date(value).toLocaleString("pt-PT");
-};
-
 export const DirectorProfileView = () => {
   const { user, updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
@@ -76,9 +71,6 @@ export const DirectorProfileView = () => {
       name: form.name.trim(),
       email: form.email.trim(),
       role: profile?.role || user.role,
-      active: profile?.active ?? true,
-      online: profile?.online ?? false,
-      privileged: profile?.privileged ?? false,
       phoneNumber: form.phoneNumber || null,
       age: form.age ? Number(form.age) : null,
       gender: form.gender || null,
@@ -158,18 +150,6 @@ export const DirectorProfileView = () => {
               <dt className="text-sm text-gray-500">Gender</dt>
               <dd className="font-medium">{profile.gender || "—"}</dd>
             </div>
-            <div>
-              <dt className="text-sm text-gray-500">Status</dt>
-              <dd className="font-medium">{profile.active ? "Active" : "Inactive"}</dd>
-            </div>
-            <div>
-              <dt className="text-sm text-gray-500">Member since</dt>
-              <dd className="font-medium">{formatDate(profile.createdAt)}</dd>
-            </div>
-            <div>
-              <dt className="text-sm text-gray-500">Last login</dt>
-              <dd className="font-medium">{formatDate(profile.lastLogin)}</dd>
-            </div>
           </dl>
         </CardContent>
       </Card>
@@ -247,6 +227,6 @@ export const DirectorProfileView = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 };

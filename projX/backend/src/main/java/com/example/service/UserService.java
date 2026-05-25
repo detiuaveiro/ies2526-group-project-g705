@@ -89,9 +89,6 @@ public class UserService {
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
         user.setRole(dto.getRole());
-        user.setActive(true);
-        user.setOnline(false);
-        user.setPrivileged(false);
         user.setPhoneNumber(dto.getPhoneNumber());
         user.setAge(dto.getAge());
         user.setGender(dto.getGender());
@@ -135,18 +132,10 @@ public class UserService {
         return UserDTO.fromEntity(userRepository.save(user));
     }
 
-    public void deactivateUser(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        user.setActive(false);
-        userRepository.save(user);
-    }
-
     public UserDTO archiveUserDTO(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         user.setArchived(true);
-        user.setActive(false);
         return UserDTO.fromEntity(userRepository.save(user));
     }
 
@@ -155,36 +144,64 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         user.setArchived(false);
-        user.setActive(true);
         return UserDTO.fromEntity(userRepository.save(user));
     }
 
     public void deleteUser(Long id) {
+
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        entityManager.createNativeQuery("UPDATE problems SET assigned_technician_id = NULL WHERE assigned_technician_id = :id")
-                .setParameter("id", id).executeUpdate();
+        // 1. Remove direct references to technician
+        entityManager.createNativeQuery(
+                "UPDATE problems SET assigned_technician_id = NULL WHERE assigned_technician_id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
 
-        entityManager.createNativeQuery("UPDATE maintenance_records SET technician_id = NULL WHERE technician_id = :id")
-                .setParameter("id", id).executeUpdate();
+        entityManager.createNativeQuery(
+                "UPDATE maintenance_records SET technician_id = NULL WHERE technician_id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
 
-        entityManager.createNativeQuery("DELETE FROM maintenance_sessions WHERE technician_id = :id")
-                .setParameter("id", id).executeUpdate();
+        // 2. IMPORTANT: delete sessions that depend on assistance_requests FIRST
+        entityManager.createNativeQuery(
+                "DELETE FROM maintenance_sessions ms " +
+            "WHERE ms.request_id IN (" +
+                "   SELECT ar.id FROM assistance_requests ar " +
+                "   WHERE ar.requested_by_id = :id OR ar.assigned_technician_id = :id" +
+                ")")
+                .setParameter("id", id)
+                .executeUpdate();
 
-        entityManager.createNativeQuery("DELETE FROM maintenance_logs WHERE technician_id = :id")
-                .setParameter("id", id).executeUpdate();
+        entityManager.createNativeQuery(
+            "DELETE FROM maintenance_sessions WHERE technician_id = :id")
+            .setParameter("id", id)
+            .executeUpdate();
 
-        entityManager.createNativeQuery("DELETE FROM assistance_requests WHERE requested_by_id = :id OR assigned_technician_id = :id")
-                .setParameter("id", id).executeUpdate();
+        // 3. Now safe to delete assistance_requests
+        entityManager.createNativeQuery(
+                "DELETE FROM assistance_requests " +
+                "WHERE requested_by_id = :id OR assigned_technician_id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
 
-        entityManager.createNativeQuery("DELETE FROM machine_technician WHERE technician_id = :id")
-                .setParameter("id", id).executeUpdate();
+        // 4. Other dependent tables
+        entityManager.createNativeQuery(
+                "DELETE FROM maintenance_logs WHERE technician_id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
 
-        entityManager.createNativeQuery("DELETE FROM technician_skills WHERE technician_id = :id")
-                .setParameter("id", id).executeUpdate();
+        entityManager.createNativeQuery(
+                "DELETE FROM machine_technician WHERE technician_id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
 
+        entityManager.createNativeQuery(
+                "DELETE FROM technician_skills WHERE technician_id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
+
+        // 5. Finally delete user
         userRepository.delete(user);
     }
-
 }

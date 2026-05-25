@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.example.dto.AssignRequest;
 import com.example.service.MachineService;
+import com.example.dto.MachineDashboardStatsDTO;
 import com.example.dto.MachineDTO;
-import com.example.dto.MachineRankingDTO;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +41,11 @@ public class MachineController {
         return ResponseEntity.ok(machineService.getActiveMachinesDTO());
     }
 
+    @GetMapping("/stats/dashboard")
+    public ResponseEntity<MachineDashboardStatsDTO> getDashboardStats() {
+        return ResponseEntity.ok(machineService.getDashboardStats());
+    }
+
     @PostMapping
     public ResponseEntity<MachineDTO> createMachine(@Valid @RequestBody MachineDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(machineService.createMachineDTO(dto));
@@ -65,11 +70,6 @@ public class MachineController {
     public ResponseEntity<Void> deleteMachine(@PathVariable Long id) {
         machineService.deleteMachine(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/ranking")
-    public ResponseEntity<List<MachineRankingDTO>> getMachineRanking() {
-        return ResponseEntity.ok(machineService.getMachinesRanked());
     }
 
     @PostMapping("/{id}/assign")

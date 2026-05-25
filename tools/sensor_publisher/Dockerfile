@@ -6,7 +6,7 @@ WORKDIR /app
 RUN pip install --no-cache-dir requests pika
 
 # Copia o script
-COPY populate_all_machines.py .
+COPY sensor_publisher.py .
 
 # Executa o script
-CMD ["python", "-u", "populate_all_machines.py"]
+CMD ["python", "-u", "sensor_publisher.py"]
