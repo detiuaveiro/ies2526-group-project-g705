@@ -12,8 +12,11 @@ enable predictive maintenance of machinery.
 4. **Daniel Martins - 115868 - DevOps Master**
 
 
+## UML Diagram:
+<img src="./projX/docs/images/uml/UML.png" alt="UML" width="1500" height="600">
+
 ## Architecture Diagram:
-<img src="./projX/docs/images/uml/UML.png" alt="Description" width="800" height="1000">
+<img src="./projX/docs/images/architecture/architecture.png" alt="Architecture" width="800" height="1000">
 
 ## Project Bookmarks:
 1. **[Repository link](https://github.com/detiuaveiro/ies2526-group-project-g705)**
