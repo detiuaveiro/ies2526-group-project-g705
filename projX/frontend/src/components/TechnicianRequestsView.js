@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
 import { EndMaintenanceDialog } from "./EndMaintenanceDialog";
+import { Button } from "./ui/button"  
 
 const API = "http://localhost:8080/api/v1/assistance-requests";
 
@@ -91,29 +92,28 @@ export const TechnicianRequestsView = ({ onGoToMachine }) => {
                 <p className="text-xs text-gray-500 mt-2">
                   Requested by {req.requestedByName} · Status: {status}
                 </p>
-
-                <div className="mt-3 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    className="text-blue-600 underline text-sm"
-                    onClick={() => onGoToMachine(req.machineId)}
-                  >
-                    Go to the Machine
-                  </button>
-
-                  {status === "ACCEPTED" && (
-                    <button
-                      type="button"
-                      className="text-purple-600 underline text-sm font-medium"
-                      onClick={() => {
-                        setSelectedRequest(req);
-                        setDialogOpen(true);
-                      }}
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    <Button
+                      variant="outline"
+                      className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                      onClick={() => onGoToMachine(req.machineId)}
                     >
-                      Complete Assistance
-                    </button>
-                  )}
-                </div>
+                      Go to Machine
+                    </Button>
+
+                    {status === "ACCEPTED" && (
+                      <Button
+                        variant="default"
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                        onClick={() => {
+                          setSelectedRequest(req);
+                          setDialogOpen(true);
+                        }}
+                      >
+                        Complete Assistance
+                      </Button>
+                    )}
+                  </div>
               </li>
             );
           })}

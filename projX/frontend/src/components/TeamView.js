@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Users, Plus, Trash2, Pencil, User as UserIcon } from "lucide-react";
+import { Users, Plus, Trash2, Pencil, User as UserIcon, Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ export const TeamView = () => {
 
   const [technicians, setTechnicians] = useState([]);
   const [directors, setDirectors] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -286,12 +287,35 @@ export const TeamView = () => {
     ? directors.some((d) => d.id !== editingUser.id)
     : directors.length > 0;
 
+  const filteredTechnicians = technicians.filter(
+    (tech) =>
+      tech.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tech.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredDirectors = directors.filter(
+    (director) =>
+      director.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      director.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );  
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold mb-2">Team Management</h1>
           <p className="text-gray-600">Manage technicians and directors</p>
+        </div>
+
+        <div className="flex-1 max-w-md relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+
+          <Input
+            type="text"
+            placeholder="Search team members..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
 
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -452,11 +476,11 @@ export const TeamView = () => {
           <CardTitle>Directors</CardTitle>
         </CardHeader>
         <CardContent>
-          {directors.length === 0 ? (
+          {filteredDirectors.length === 0 ? (
             <p className="text-gray-500 text-center py-6">No director registered</p>
           ) : (
             <div className="space-y-3">
-              {directors.map((director) => (
+              {filteredDirectors.map((director) => (
                 <div
                   key={director.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
@@ -496,11 +520,11 @@ export const TeamView = () => {
           <CardTitle>Technicians</CardTitle>
         </CardHeader>
         <CardContent>
-          {technicians.length === 0 ? (
+          {filteredTechnicians.length === 0 ? (
             <p className="text-gray-500 text-center py-6">No technicians registered</p>
           ) : (
             <div className="space-y-3">
-              {technicians.map((tech) => (
+              {filteredTechnicians.map((tech) => (
                 <div
                   key={tech.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"

@@ -31,6 +31,16 @@ const MainApp = () => {
   );
   const [selectedMachine, setSelectedMachine] = useState(null);
 
+  useEffect(() => {
+    setSelectedMachine(null);
+
+    if (user?.role === "DIRECTOR" || user?.role === "ADMIN") {
+      setActiveTab("dashboard");
+    } else {
+      setActiveTab("machines");
+    }
+  }, [user]);
+
   const [selectedMachineForAssistance, setSelectedMachineForAssistance] = useState(null);
   const [assistanceDialogOpen, setAssistanceDialogOpen] = useState(false);
 
@@ -57,8 +67,7 @@ const MainApp = () => {
 
     fetchMachines();
 
-    // Poll every 10s so newly assigned machines/sessions show up automatically
-    const interval = setInterval(fetchMachines, 10000);
+    const interval = setInterval(fetchMachines, 2000);
     return () => clearInterval(interval);
   }, [user]);
 
@@ -87,7 +96,6 @@ const MainApp = () => {
     }
 
     try {
-      // First refresh the technician-assigned machine list to avoid stale local state.
       if (user.role === "TECHNICIAN") {
         const assignedRes = await fetch(`${API_URL}/machines/assigned/${user.id}`, {
           headers: { Authorization: `Bearer ${user.token}` },

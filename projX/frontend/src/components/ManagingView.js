@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Plus, Trash2, Settings, Pencil } from "lucide-react";
+import { Plus, Trash2, Settings, Pencil, Search, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "./ui/dialog";
 import { toast } from "sonner";
 import {
@@ -26,12 +26,27 @@ export const ManagingView = () => {
 
   const [machines, setMachines] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [machineToDelete, setMachineToDelete] = useState(null);
 
   const [selectedMachineId, setSelectedMachineId] = useState(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const emptyEditMachine = {
+    id: null,
+    name: "",
+    location: "",
+    importanceLevel: 3,
+    status: "ACTIVE",
+    vibrationSensor: false,
+    temperatureSensor: false,
+    pressureSensor: false,
+  };
+
+  const [editMachine, setEditMachine] = useState(emptyEditMachine);
 
   const [newMachine, setNewMachine] = useState({
     name: "",
@@ -69,8 +84,72 @@ export const ManagingView = () => {
     fetchMachines();
   }, [user]);
 
-  const visibleMachines = machines; // ARCHIVED removed from UI filtering
+    const visibleMachines = machines.filter(
+      (machine) =>
+        (machine.name || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
 
+        (machine.location || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
+    );
+
+      const openEditDialog = (machine) => {
+      setEditMachine({
+        id: machine.id,
+        name: machine.name || "",
+        location: machine.location || "",
+        importanceLevel: machine.importanceLevel || 3,
+        status: machine.status || "ACTIVE",
+        vibrationSensor: machine.vibrationSensor || false,
+        temperatureSensor: machine.temperatureSensor || false,
+        pressureSensor: machine.pressureSensor || false,
+      });
+
+      setIsEditDialogOpen(true);
+    };
+  const handleUpdateMachine = () => {
+    if (!editMachine.name || !editMachine.location) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    const payload = {
+      name: editMachine.name.trim(),
+      location: editMachine.location.trim(),
+      importanceLevel: Number(editMachine.importanceLevel),
+      status: editMachine.status,
+      vibrationSensor: editMachine.vibrationSensor,
+      temperatureSensor: editMachine.temperatureSensor,
+      pressureSensor: editMachine.pressureSensor,
+    };
+
+    fetch(`${API}/machines/${editMachine.id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error();
+        }
+
+        return res.json();
+      })
+      .then(() => {
+        toast.success("Machine updated successfully");
+        setIsEditDialogOpen(false);
+        setEditMachine(emptyEditMachine);
+        fetchMachines();
+      })
+      .catch(() => {
+        toast.error("Failed to update machine");
+      });
+  };
   const handleAddMachine = () => {
     if (!newMachine.name || !newMachine.location) {
       toast.error("Please fill all required fields");
@@ -157,10 +236,24 @@ export const ManagingView = () => {
   return (
     <div className="space-y-6">
       {/* HEADER */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold mb-2">Machine Management</h1>
-          <p className="text-gray-600">Add, remove, and manage industrial equipment</p>
+          <p className="text-gray-600">
+            Add, remove, and manage industrial equipment
+          </p>
+        </div>
+
+        <div className="flex-1 max-w-md relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+
+          <Input
+            type="text"
+            placeholder="Search machines..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
 
         {/* ADD MACHINE */}
@@ -276,7 +369,6 @@ export const ManagingView = () => {
               <div
                 key={machine.id}
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                onClick={() => setSelectedMachineId(machine.id)}
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -295,9 +387,17 @@ export const ManagingView = () => {
 
                 <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                   <Button
+                    size="sm"
+                    className="bg-blue-600/90 hover:bg-blue-600 text-white shadow-sm"
+                    onClick={() => setSelectedMachineId(machine.id)}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    View
+                  </Button>
+                  <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setSelectedMachineId(machine.id)}
+                    onClick={() => openEditDialog(machine)}
                   >
                     <Pencil className="w-4 h-4 mr-2" />
                     Edit
@@ -319,7 +419,115 @@ export const ManagingView = () => {
           </div>
         </CardContent>
       </Card>
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Machine</DialogTitle>
+            <DialogDescription>
+              Update machine information
+            </DialogDescription>
+          </DialogHeader>
 
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label>Machine Name *</Label>
+              <Input
+                value={editMachine.name}
+                onChange={(e) =>
+                  setEditMachine({ ...editMachine, name: e.target.value })
+                }
+              />
+            </div>
+
+            <div>
+              <Label>Location *</Label>
+              <Input
+                value={editMachine.location}
+                onChange={(e) =>
+                  setEditMachine({ ...editMachine, location: e.target.value })
+                }
+              />
+            </div>
+
+            <div>
+              <Label>Importance Level</Label>
+              <Input
+                type="number"
+                min={1}
+                max={5}
+                value={editMachine.importanceLevel}
+                onChange={(e) =>
+                  setEditMachine({
+                    ...editMachine,
+                    importanceLevel: Number(e.target.value),
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <Label>Status</Label>
+
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={editMachine.status}
+                onChange={(e) =>
+                  setEditMachine({
+                    ...editMachine,
+                    status: e.target.value,
+                  })
+                }
+              >
+                <option value="ACTIVE">Active</option>
+                <option value="MAINTENANCE">Maintenance</option>
+              </select>
+            </div>
+
+            <div>
+              <Label>Sensors</Label>
+
+              <div className="space-y-2 mt-2">
+                {[
+                  { key: "vibrationSensor", label: "Vibration Sensor" },
+                  { key: "temperatureSensor", label: "Temperature Sensor" },
+                  { key: "pressureSensor", label: "Pressure Sensor" },
+                ].map(({ key, label }) => (
+                  <label
+                    key={key}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={editMachine[key]}
+                      onChange={(e) =>
+                        setEditMachine({
+                          ...editMachine,
+                          [key]: e.target.checked,
+                        })
+                      }
+                    />
+
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+
+            <Button onClick={handleUpdateMachine}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* DELETE CONFIRMATION */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

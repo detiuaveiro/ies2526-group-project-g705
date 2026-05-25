@@ -30,11 +30,15 @@ public class SensorService {
     private final ProblemRepository problemRepository;
 
     @Transactional
-    public SensorReading createReading(SensorReadingDTO dto) {
+    public void createReading(SensorReadingDTO dto) {
 
         Machine machine = machineRepository.findById(dto.getMachineId())
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Machine not found with id: " + dto.getMachineId()));
+
+        if (!isSensorEnabled(machine, dto.getSensorType())) {
+            return;
+        }
 
         SensorReading reading = SensorReading.builder()
                 .machine(machine)
@@ -44,9 +48,8 @@ public class SensorService {
                 .build();
 
         SensorReading saved = sensorReadingRepository.save(reading);
-        classifyReading(saved);
 
-        return saved;
+        classifyReading(saved);
     }
 
     private void classifyReading(SensorReading reading) {
@@ -108,11 +111,36 @@ public class SensorService {
     @Transactional(readOnly = true)
     public List<SensorReading> getLatestState(Long machineId) {
 
+        Machine machine = machineRepository.findById(machineId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Machine not found with id: " + machineId));
+
         List<SensorReading> result = new ArrayList<>();
 
-        for (SensorType type : SensorType.values()) {
+        if (machine.isTemperatureSensor()) {
             sensorReadingRepository
-                    .findTopByMachine_IdAndSensorTypeOrderByRecordedAtDesc(machineId, type)
+                    .findTopByMachine_IdAndSensorTypeOrderByRecordedAtDesc(
+                            machineId,
+                            SensorType.TEMPERATURE
+                    )
+                    .ifPresent(result::add);
+        }
+
+        if (machine.isPressureSensor()) {
+            sensorReadingRepository
+                    .findTopByMachine_IdAndSensorTypeOrderByRecordedAtDesc(
+                            machineId,
+                            SensorType.PRESSURE
+                    )
+                    .ifPresent(result::add);
+        }
+
+        if (machine.isVibrationSensor()) {
+            sensorReadingRepository
+                    .findTopByMachine_IdAndSensorTypeOrderByRecordedAtDesc(
+                            machineId,
+                            SensorType.VIBRATION
+                    )
                     .ifPresent(result::add);
         }
 
@@ -122,5 +150,13 @@ public class SensorService {
     @Transactional(readOnly = true)
     public List<SensorReading> getReadingsByMachine(Long machineId) {
         return sensorReadingRepository.findByMachine_IdOrderByRecordedAtDesc(machineId);
+    }
+
+    private boolean isSensorEnabled(Machine machine, SensorType type) {
+        return switch (type) {
+            case TEMPERATURE -> machine.isTemperatureSensor();
+            case PRESSURE -> machine.isPressureSensor();
+            case VIBRATION -> machine.isVibrationSensor();
+        };
     }
 }

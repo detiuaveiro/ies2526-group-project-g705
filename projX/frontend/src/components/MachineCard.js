@@ -13,7 +13,6 @@ const statusConfig = {
     bg: "bg-yellow-100",
     icon: Wrench,
   },
-  // ASSISTANCE_REQUESTED and ARCHIVED removed from UI mapping
 };
 
 const suspiciousConfig = {

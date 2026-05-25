@@ -30,7 +30,7 @@ export default function CurrentMaintenance({ user }) {
 
   useEffect(() => {
     loadCurrentSession(true);
-    const interval = setInterval(() => loadCurrentSession(false), 5000);
+    const interval = setInterval(() => loadCurrentSession(false), 2000);
     return () => clearInterval(interval);
   }, [user.id]);
 
