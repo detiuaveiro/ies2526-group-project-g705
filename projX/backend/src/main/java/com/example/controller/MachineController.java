@@ -31,11 +31,6 @@ public class MachineController {
         return ResponseEntity.ok(machineService.getMachineByIdDTO(id));
     }
 
-    @GetMapping("/active")
-    public ResponseEntity<List<MachineDTO>> getActiveMachines() {
-        return ResponseEntity.ok(machineService.getActiveMachinesDTO());
-    }
-
     @GetMapping("/stats/dashboard")
     public ResponseEntity<MachineDashboardStatsDTO> getDashboardStats() {
         return ResponseEntity.ok(machineService.getDashboardStats());

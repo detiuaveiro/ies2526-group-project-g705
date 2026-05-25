@@ -24,11 +24,6 @@ public class ProblemController {
         return ResponseEntity.ok(problemService.getAllProblemsDTO());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ProblemDTO> getProblemById(@PathVariable Long id) {
-        return ResponseEntity.ok(problemService.getProblemByIdDTO(id));
-    }
-
     @GetMapping("/machine/{machineId}")
     public ResponseEntity<List<ProblemDTO>> getProblemsByMachine(@PathVariable Long machineId) {
         return ResponseEntity.ok(problemService.getProblemsByMachineDTO(machineId));
@@ -42,11 +37,6 @@ public class ProblemController {
     @PutMapping("/{id}")
     public ResponseEntity<ProblemDTO> updateProblem(@PathVariable Long id, @Valid @RequestBody ProblemDTO dto) {
         return ResponseEntity.ok(problemService.updateProblemDTO(id, dto));
-    }
-
-    @PatchMapping("/{id}/resolve")
-    public ResponseEntity<ProblemDTO> resolveProblem(@PathVariable Long id) {
-        return ResponseEntity.ok(problemService.resolveProblemDTO(id));
     }
 
     @DeleteMapping("/{id}")
