@@ -1,0 +1,4804 @@
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\Main.java
+================================================================================
+
+package com.example;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
+
+@SpringBootApplication
+@ComponentScan(basePackages = {"com.example"}) // Garante que varre todos os pacotes
+public class Main {
+    public static void main(String[] args) {
+        SpringApplication.run(Main.class, args);
+    }
+}
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\config\CorsConfig.java
+================================================================================
+
+package com.example.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class CorsConfig {
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/**")
+                        .allowedOrigins("http://localhost:3000")
+                        .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                        .allowedHeaders("Authorization","Content-Type")                        
+                        .allowCredentials(true);
+            }
+        };
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\config\DataInitializer.java
+================================================================================
+
+package com.example.config;
+
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
+
+import com.example.domain.User;
+import com.example.domain.enums.Gender;
+import com.example.domain.enums.MachineStatus;
+import com.example.domain.enums.UserRole;
+import com.example.dto.MachineDTO;
+import com.example.dto.UserDTO;
+import com.example.repository.MachineRepository;
+import com.example.repository.UserRepository;
+import com.example.service.MachineService;
+import com.example.service.UserService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class DataInitializer {
+
+    private final MachineService machineService;
+    private final MachineRepository machineRepository;
+    private final UserService userService;
+    private final UserRepository userRepository;
+
+    private static final int TOTAL_MACHINES = 100;
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void initializeData() {
+        log.info("Starting data initialization...");
+
+        if (userRepository.count() == 0) {
+            log.info("Creating mock users...");
+            
+            // Create Maintenance Technicians
+            userService.createUserDTO(UserDTO.builder()
+                    .name("Jo\u00E3o Neves")
+                    .email("joao.neves@example.com")
+                    .role(UserRole.TECHNICIAN)
+                    .password("password")
+                    .build());
+            
+            userService.createUserDTO(UserDTO.builder()
+                    .name("Ana Costa")
+                    .email("ana.costa@example.com")
+                    .role(UserRole.TECHNICIAN)
+                    .password("password")
+                    .build());
+
+            // Create Maintenance Director
+            userService.createUserDTO(UserDTO.builder()
+                    .name("Manuel Gomes")
+                    .email("manuel.gomes@example.com")
+                    .role(UserRole.DIRECTOR)
+                    .password("password")
+                    .build());
+
+            // Create Administrator (Sara Lopes)
+            userService.createUserDTO(UserDTO.builder()
+                    .name("Sara Lopes")
+                    .email("sara.lopes@example.com")
+                    .role(UserRole.ADMIN)
+                    .password("password")
+                    .build());
+            
+            log.info("\u2713 Mock users created!");
+        }
+        ensureUserProfile("Manuel Gomes", "manuel.gomes@example.com", "915678901", 45, Gender.MALE);
+        ensureUserProfile("Sara Lopes", "sara.lopes@example.com", "916789012", 35, Gender.FEMALE);
+        ensureTechnicianProfile("João Neves", "joao.neves@example.com", "912345678", 29, Gender.MALE);
+        ensureTechnicianProfile("Ana Costa", "ana.costa@example.com", "913456789", 28, Gender.FEMALE);
+        ensureTechnicianProfile("Joana Mendes", null, "914567890", 30, Gender.FEMALE);
+
+        if (machineRepository.count() > 0) {
+            log.info("Machines already exist in database, skipping machine initialization");
+            return;
+        }
+
+        try {
+            log.info("Creating {} machines...", TOTAL_MACHINES);
+            long startTime = System.currentTimeMillis();
+
+            User joao = userRepository.findByEmail("joao.neves@example.com").orElse(null);
+
+            String[] realisticNames = {
+                "Compressor Unit A1", "Hydraulic Press B2", "CNC Machine C3", 
+                "Conveyor System D1", "Cooling Tower E2", "Turbine F1",
+                "Industrial Oven G1", "Packaging Robot H2", "Generator Unit I1", "Mixer Tank J3"
+            };
+
+            for (int i = 1; i <= TOTAL_MACHINES; i++) {
+                String name = (i <= realisticNames.length) ? realisticNames[i-1] : "Machine " + i;
+                
+                MachineDTO machineDTO = MachineDTO.builder()
+                        .name(name)
+                        .location("Production Floor - Section " + ((i - 1) / 10 + 1))
+                        .importanceLevel((i % 5) + 1)
+                        .status(MachineStatus.ACTIVE)
+                        .downtimeSum(0.0)
+                        .suspicionFlag(false)
+                        .vibrationSensor(true)
+                        .temperatureSensor(true)
+                        .pressureSensor(true)
+                        .build();
+
+                MachineDTO created = machineService.createMachineDTO(machineDTO);
+
+                if (joao != null && i <= 10) {
+                    machineService.assignTechnicianDTO(created.getId(), joao.getId());
+                }
+
+                if (i % 20 == 0) {
+                    log.debug("Created {} machines so far...", i);
+                }
+            }
+
+            long machineCreationTime = System.currentTimeMillis() - startTime;
+            log.info("\u2713 Created {} machines in {}ms", TOTAL_MACHINES, machineCreationTime);
+            log.info("\u2713 Data initialization complete! Machines ready for sensor data from sensor_publisher.py");
+
+        } catch (Exception e) {
+            log.error("Error during data initialization", e);
+            throw new RuntimeException("Data initialization failed", e);
+        }
+    }
+    private void ensureUserProfile(String name, String email, String phoneNumber, Integer age, Gender gender) {
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) return;
+
+        boolean changed = false;
+
+        if (user.getPhoneNumber() == null || user.getPhoneNumber().isBlank()) {
+            user.setPhoneNumber(phoneNumber);
+            changed = true;
+        }
+
+        if (user.getAge() == null) {
+            user.setAge(age);
+            changed = true;
+        }
+
+        if (user.getGender() == null) {
+            user.setGender(gender);
+            changed = true;
+        }
+
+        if (changed) {
+            userRepository.save(user);
+        }
+    }
+    private void ensureTechnicianProfile(String name, String email, String phoneNumber, Integer age, Gender gender) {
+        User user = null;
+
+        if (email != null) {
+            user = userRepository.findByEmail(email).orElse(null);
+        }
+
+        if (user == null) {
+            user = userRepository.findByRoleAndArchivedFalse(UserRole.TECHNICIAN).stream()
+                    .filter(u -> name.equalsIgnoreCase(u.getName()))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        if (user == null) {
+            return;
+        }
+
+        boolean changed = false;
+
+        if (user.getPhoneNumber() == null || user.getPhoneNumber().isBlank()) {
+            user.setPhoneNumber(phoneNumber);
+            changed = true;
+        }
+
+        if (user.getAge() == null) {
+            user.setAge(age);
+            changed = true;
+        }
+
+        if (user.getGender() == null) {
+            user.setGender(gender);
+            changed = true;
+        }
+
+        if (changed) {
+            userRepository.save(user);
+            log.info("Updated demo technician profile for {}", name);
+        }
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\config\JwtFilter.java
+================================================================================
+
+package com.example.config;
+
+import java.io.IOException;
+
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.example.service.JwtService;
+import com.example.service.UserDetailsServiceImpl;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import lombok.RequiredArgsConstructor;
+
+@Component
+@RequiredArgsConstructor
+public class JwtFilter extends OncePerRequestFilter {
+
+    private final JwtService jwtService;
+    private final UserDetailsServiceImpl userDetailsService;
+
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
+
+        String path = request.getServletPath();
+
+        if (path.equals("/api/v1/auth/login")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        final String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null ||
+            !authHeader.startsWith("Bearer ")) {
+
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        final String jwt = authHeader.substring(7);
+
+        final String userEmail;
+
+        try {
+            userEmail = jwtService.extractUsername(jwt);
+
+        } catch (Exception e) {
+
+            SecurityContextHolder.clearContext();
+
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        if (userEmail != null &&
+            SecurityContextHolder.getContext()
+                    .getAuthentication() == null) {
+
+            try {
+
+                UserDetails userDetails =
+                        userDetailsService
+                                .loadUserByUsername(userEmail);
+
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+
+                    var authToken =
+                            jwtService
+                                    .getAuthenticationToken(userDetails);
+
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource()
+                                    .buildDetails(request)
+                    );
+
+                    SecurityContextHolder.getContext()
+                            .setAuthentication(authToken);
+                }
+
+            } catch (Exception e) {
+
+                SecurityContextHolder.clearContext();
+            }
+        }
+
+        filterChain.doFilter(request, response);
+    }
+}
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\config\OpenApiConfig.java
+================================================================================
+
+package com.example.config;
+
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class OpenApiConfig {
+
+    @Bean
+    public OpenAPI maintenanceSystemOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Maintenance Management System API")
+                        .description("REST API for managing machines, technicians, problems, maintenance tasks, assistance requests and sensor readings.")
+                        .version("1.0.0")
+                        .contact(new Contact()
+                                .name("Group G705")
+                                .email("g705@ua.pt")));
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\config\RabbitMQConfig.java
+================================================================================
+
+package com.example.config;
+
+import org.springframework.amqp.core.Queue;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class RabbitMQConfig {
+
+    public static final String SENSOR_READINGS_QUEUE = "my.queue";
+
+    /**
+     * Declare a durable queue named "my.queue" so it persists in RabbitMQ.
+     */
+    @Bean
+    public Queue myQueue() {
+        return new Queue(SENSOR_READINGS_QUEUE, true);
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\config\SecurityConfig.java
+================================================================================
+
+package com.example.config;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import org.springframework.http.HttpMethod;
+
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+
+import org.springframework.security.config.http.SessionCreationPolicy;
+
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity
+@RequiredArgsConstructor
+public class SecurityConfig {
+
+    private final JwtFilter jwtFilter;
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+        http
+            .cors(cors -> {})
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(sess ->
+                sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+
+            .authorizeHttpRequests(auth -> auth
+
+                // Public endpoints
+                .requestMatchers("/api/v1/auth/login").permitAll()
+                .requestMatchers("/api/v1/auth/register").permitAll()
+                .requestMatchers("/").permitAll()
+
+                // Users — create/delete only ADMIN
+                .requestMatchers(HttpMethod.POST, "/api/v1/users").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/users/**").hasRole("ADMIN")
+
+                // Users — PUT allowed for ADMIN, DIRECTOR and TECHNICIAN (own profile)
+                .requestMatchers(HttpMethod.PUT, "/api/v1/users/**").hasAnyRole("ADMIN", "DIRECTOR", "TECHNICIAN")
+
+                // Users — GET allowed for all authenticated roles
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/**").hasAnyRole("ADMIN", "DIRECTOR", "TECHNICIAN")
+
+                // Machines — write only ADMIN and DIRECTOR
+                .requestMatchers(HttpMethod.POST, "/api/v1/machines/**").hasAnyRole("ADMIN", "DIRECTOR")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/machines/**").hasAnyRole("ADMIN", "DIRECTOR")
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/machines/**").hasAnyRole("ADMIN", "DIRECTOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/machines/**").hasAnyRole("ADMIN", "DIRECTOR")
+
+                // Machines — read for everyone
+                .requestMatchers(HttpMethod.GET, "/api/v1/machines/**").hasAnyRole("ADMIN", "DIRECTOR", "TECHNICIAN")
+
+                // Problems, Maintenances, Assistance Requests, Sensors — all roles
+                .requestMatchers("/api/v1/problems/**").hasAnyRole("ADMIN", "DIRECTOR", "TECHNICIAN")
+                .requestMatchers("/api/v1/maintenances/**").hasAnyRole("ADMIN", "DIRECTOR", "TECHNICIAN")
+                .requestMatchers("/api/v1/maintenance/**").hasAnyRole("ADMIN", "DIRECTOR", "TECHNICIAN")
+                .requestMatchers("/api/v1/assistance-requests/**").hasAnyRole("ADMIN", "DIRECTOR", "TECHNICIAN")
+                .requestMatchers("/api/v1/sensors/**").authenticated()
+                .requestMatchers("/api/v1/technician/**").hasAnyRole("ADMIN", "DIRECTOR", "TECHNICIAN")
+
+                .anyRequest().authenticated()
+            )
+
+            .addFilterBefore(
+                jwtFilter,
+                UsernamePasswordAuthenticationFilter.class
+            );
+
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(
+        AuthenticationConfiguration config
+    ) throws Exception {
+        return config.getAuthenticationManager();
+    }
+}
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\controller\AssistanceRequestController.java
+================================================================================
+
+package com.example.controller;
+
+import com.example.dto.AssistanceRequestCompleteDTO;
+import com.example.dto.AssistanceRequestCreateDTO;
+import com.example.dto.AssistanceRequestDTO;
+import com.example.service.AssistanceRequestService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/v1/assistance-requests")
+@RequiredArgsConstructor
+public class AssistanceRequestController {
+
+    private final AssistanceRequestService assistanceRequestService;
+
+    @PostMapping
+    public ResponseEntity<?> create(@RequestBody AssistanceRequestCreateDTO dto) {
+        try {
+            return ResponseEntity.ok(assistanceRequestService.create(dto));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/machine/{machineId}/active")
+    public List<AssistanceRequestDTO> getActiveForMachine(@PathVariable Long machineId) {
+        return assistanceRequestService.getActiveForMachine(machineId);
+    }
+
+    @GetMapping
+    public List<AssistanceRequestDTO> getAll(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) Long userId
+    ) {
+        if (role != null) {
+            return assistanceRequestService.getForRole(role, userId);
+        }
+        return assistanceRequestService.getAll();
+    }
+
+    @PostMapping("/{id}/assign")
+    public ResponseEntity<?> assign(
+            @PathVariable Long id,
+            @RequestParam Long technicianId
+    ) {
+        try {
+            return ResponseEntity.ok(assistanceRequestService.assign(id, technicianId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+
+    @PostMapping("/{id}/unassign")
+    public ResponseEntity<?> unassign(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(assistanceRequestService.unassign(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/complete")
+    public ResponseEntity<?> complete(
+            @PathVariable Long id,
+            @RequestBody(required = false) AssistanceRequestCompleteDTO dto
+    ) {
+        try {
+            return ResponseEntity.ok(assistanceRequestService.complete(id, dto));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\controller\AuthController.java
+================================================================================
+
+package com.example.controller;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.dto.LoginRequest;
+import com.example.dto.LoginResponse;
+import com.example.dto.UserDTO;
+import com.example.service.AuthenticationService;
+import com.example.service.UserService;
+
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final AuthenticationService authService;
+    private final UserService userService;
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest req) {
+        return ResponseEntity.ok(authService.login(req.getEmail(), req.getPassword()));
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody UserDTO dto) {
+        return ResponseEntity.ok(userService.createUserDTO(dto));
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\controller\HomeController.java
+================================================================================
+
+package com.example.controller;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class HomeController {
+
+    @GetMapping("/")
+    public String home() {
+        return "API online";
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\controller\MachineController.java
+================================================================================
+
+package com.example.controller;
+
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.example.dto.AssignRequest;
+import com.example.service.MachineService;
+import com.example.dto.MachineDashboardStatsDTO;
+import com.example.dto.MachineDTO;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping("/api/v1/machines")
+@RequiredArgsConstructor
+public class MachineController {
+
+    private final MachineService machineService;
+
+    @GetMapping
+    public ResponseEntity<List<MachineDTO>> getAllMachines() {
+        return ResponseEntity.ok(machineService.getAllMachinesDTO());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<MachineDTO> getMachineById(@PathVariable Long id) {
+        return ResponseEntity.ok(machineService.getMachineByIdDTO(id));
+    }
+
+    @GetMapping("/archived")
+    public ResponseEntity<List<MachineDTO>> getArchivedMachines() {
+        return ResponseEntity.ok(machineService.getArchivedMachinesDTO());
+    }
+
+    @GetMapping("/active")
+    public ResponseEntity<List<MachineDTO>> getActiveMachines() {
+        return ResponseEntity.ok(machineService.getActiveMachinesDTO());
+    }
+
+    @GetMapping("/stats/dashboard")
+    public ResponseEntity<MachineDashboardStatsDTO> getDashboardStats() {
+        return ResponseEntity.ok(machineService.getDashboardStats());
+    }
+
+    @PostMapping
+    public ResponseEntity<MachineDTO> createMachine(@Valid @RequestBody MachineDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(machineService.createMachineDTO(dto));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<MachineDTO> updateMachine(@PathVariable Long id, @Valid @RequestBody MachineDTO dto) {
+        return ResponseEntity.ok(machineService.updateMachineDTO(id, dto));
+    }
+
+    @PatchMapping("/{id}/archive")
+    public ResponseEntity<MachineDTO> archiveMachine(@PathVariable Long id) {
+        return ResponseEntity.ok(machineService.archiveMachineDTO(id));
+    }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<MachineDTO> restoreMachine(@PathVariable Long id) {
+        return ResponseEntity.ok(machineService.restoreMachineDTO(id));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteMachine(@PathVariable Long id) {
+        machineService.deleteMachine(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/assign")
+    public ResponseEntity<MachineDTO> assignTechnician(
+            @PathVariable Long id,
+            @RequestBody AssignRequest request
+    ) {
+        if (request.getTechnicianIds() != null) {
+            return ResponseEntity.ok(machineService.assignTechniciansDTO(id, request.getTechnicianIds()));
+        }
+        if (request.getTechnicianId() != null) {
+            return ResponseEntity.ok(machineService.assignTechnicianDTO(id, request.getTechnicianId()));
+        }
+        return ResponseEntity.ok(machineService.assignTechniciansDTO(id, List.of()));
+    }
+
+    @GetMapping("/assigned/{technicianId}")
+    public ResponseEntity<List<MachineDTO>> getMachinesAssignedToTechnician(@PathVariable Long technicianId) {
+        return ResponseEntity.ok(machineService.getMachinesAssignedToTechnicianDTO(technicianId));
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\controller\MaintenanceController.java
+================================================================================
+
+package com.example.controller;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.domain.Machine;
+import com.example.domain.Maintenance;
+import com.example.domain.MaintenanceSession;
+import com.example.domain.Technician;
+import com.example.domain.enums.AssistanceRequestStatus;
+import com.example.domain.enums.MachineStatus;
+import com.example.domain.enums.MaintenanceStatus;
+import com.example.domain.enums.MaintenanceType;
+import com.example.dto.MaintenanceDTO;
+import com.example.dto.MaintenanceSessionDTO;
+import com.example.dto.MaintenanceStatsDTO;
+import com.example.repository.AssistanceRequestRepository;
+import com.example.repository.MachineRepository;
+import com.example.repository.MaintenanceLogRepository;
+import com.example.repository.MaintenanceRepository;
+import com.example.repository.MaintenanceSessionRepository;
+import com.example.repository.TechnicianRepository;
+import com.example.service.MachineMetricsService;
+import com.example.service.MaintenanceService;
+import com.example.service.TechnicianStatsService;
+
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping("/api/v1/maintenances")
+@RequiredArgsConstructor
+public class MaintenanceController {
+
+    private final MaintenanceService maintenanceService;
+    private final MaintenanceSessionRepository sessionRepository;
+    private final TechnicianRepository technicianRepository;
+    private final MachineRepository machineRepository;
+    private final MaintenanceRepository maintenanceRepository;
+    private final AssistanceRequestRepository assistanceRequestRepository;
+    private final MaintenanceLogRepository maintenanceLogRepository;
+    private final TechnicianStatsService technicianStatsService;
+    private final MachineMetricsService machineMetricsService;
+
+    @GetMapping
+    public ResponseEntity<List<MaintenanceDTO>> getAllMaintenance() {
+        return ResponseEntity.ok(maintenanceService.getAllMaintenanceDTO());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<MaintenanceDTO> getMaintenanceById(@PathVariable Long id) {
+        return ResponseEntity.ok(maintenanceService.getMaintenanceByIdDTO(id));
+    }
+
+    @GetMapping("/machine/{machineId}")
+    public ResponseEntity<List<MaintenanceDTO>> getByMachine(@PathVariable Long machineId) {
+        return ResponseEntity.ok(maintenanceService.getMaintenanceByMachineDTO(machineId));
+    }
+
+    @GetMapping("/technician/{technicianId}")
+    public ResponseEntity<List<MaintenanceDTO>> getByTechnician(@PathVariable Long technicianId) {
+        return ResponseEntity.ok(maintenanceService.getMaintenanceByTechnicianDTO(technicianId));
+    }
+
+    @PostMapping
+    public ResponseEntity<MaintenanceDTO> createMaintenance(@Valid @RequestBody MaintenanceDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(maintenanceService.createMaintenanceDTO(dto));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<MaintenanceDTO> updateMaintenance(@PathVariable Long id,
+                                                            @Valid @RequestBody MaintenanceDTO dto) {
+        return ResponseEntity.ok(maintenanceService.updateMaintenanceDTO(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteMaintenance(@PathVariable Long id) {
+        maintenanceService.deleteMaintenance(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    private MaintenanceSessionDTO toDTO(MaintenanceSession s) {
+        MaintenanceSessionDTO dto = new MaintenanceSessionDTO();
+        dto.setId(s.getId());
+        dto.setTechnicianId(s.getTechnician().getId());
+        dto.setTechnicianName(s.getTechnician().getName());
+        dto.setMachineId(s.getMachine().getId());
+        dto.setMachineName(s.getMachine().getName());
+        dto.setStartTime(s.getStartTime());
+        dto.setEndTime(s.getEndTime());
+        dto.setActive(s.isActive());
+        if (s.getMaintenanceRecord() != null) {
+            dto.setMaintenanceRecordId(s.getMaintenanceRecord().getId());
+        }
+        dto.setSessionType("MAINTENANCE");
+        return dto;
+    }
+
+    private MaintenanceSessionDTO assistanceToSessionDto(com.example.domain.AssistanceRequest request) {
+        MaintenanceSessionDTO dto = new MaintenanceSessionDTO();
+        dto.setAssistanceRequestId(request.getId());
+        dto.setSessionType("ASSISTANCE");
+        dto.setMachineId(request.getProblem().getMachine().getId());
+        dto.setMachineName(request.getProblem().getMachine().getName());
+        dto.setTechnicianId(request.getAssignedTechnician().getId());
+        dto.setTechnicianName(request.getAssignedTechnician().getName());
+        dto.setStartTime(request.getAcceptedAt() != null ? request.getAcceptedAt() : request.getCreatedAt());
+        dto.setActive(true);
+        return dto;
+    }
+
+    @Transactional
+    @GetMapping("/current/{technicianId}")
+    public ResponseEntity<MaintenanceSessionDTO> getCurrent(@PathVariable Long technicianId) {
+        var sessions = sessionRepository.findByTechnicianIdAndActiveTrue(technicianId);
+
+        if (sessions.isEmpty()) {
+            var acceptedAssistance = assistanceRequestRepository.findAllAssignedToTechnician(technicianId)
+                    .stream()
+                    .filter(r -> r.getStatus() == AssistanceRequestStatus.ACCEPTED)
+                    .sorted((a, b) -> {
+                        LocalDateTime aTime = a.getAcceptedAt() != null ? a.getAcceptedAt() : a.getCreatedAt();
+                        LocalDateTime bTime = b.getAcceptedAt() != null ? b.getAcceptedAt() : b.getCreatedAt();
+                        return bTime.compareTo(aTime);
+                    })
+                    .toList();
+
+            if (!acceptedAssistance.isEmpty()) {
+                return ResponseEntity.ok(assistanceToSessionDto(acceptedAssistance.get(0)));
+            }
+            return ResponseEntity.noContent().build();
+        }
+
+        sessions.sort((a, b) -> b.getStartTime().compareTo(a.getStartTime()));
+        MaintenanceSession active = sessions.get(0);
+
+        for (int i = 1; i < sessions.size(); i++) {
+            MaintenanceSession old = sessions.get(i);
+            old.setActive(false);
+            old.setEndTime(LocalDateTime.now());
+            
+            Machine oldMachine = old.getMachine();
+            oldMachine.setStatus(MachineStatus.ACTIVE);
+            machineRepository.save(oldMachine);
+            
+            sessionRepository.save(old);
+        }
+
+        return ResponseEntity.ok(toDTO(active));
+    }
+
+    @Transactional
+    @PostMapping("/start")
+    public ResponseEntity<MaintenanceSessionDTO> startMaintenance(
+            @RequestParam Long technicianId,
+            @RequestParam Long machineId) {
+
+        Technician tech = technicianRepository.findById(technicianId)
+                .orElseThrow(() -> new EntityNotFoundException("Technician not found"));
+
+        Machine machine = machineRepository.findById(machineId)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
+
+        var machineSessions = sessionRepository.findByMachineIdAndActiveTrue(machineId);
+        if (machine.getStatus() == MachineStatus.MAINTENANCE) {
+            if (!machineSessions.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            }
+
+            var openMaintenances = maintenanceRepository.findByMachineIdAndStatus(machineId, MaintenanceStatus.IN_PROGRESS);
+            for (var m : openMaintenances) {
+                m.setStatus(MaintenanceStatus.COMPLETED);
+                maintenanceRepository.save(m);
+            }
+
+            machine.setStatus(MachineStatus.ACTIVE);
+            machineRepository.save(machine);
+        }
+
+        var existingSessions = sessionRepository.findByTechnicianIdAndActiveTrue(technicianId);
+        if (!existingSessions.isEmpty()) {
+            existingSessions.sort((a, b) -> b.getStartTime().compareTo(a.getStartTime()));
+            MaintenanceSession existing = existingSessions.get(0);
+
+            if (existing.getMachine().getId().equals(machineId)) {
+                return ResponseEntity.ok(toDTO(existing));
+            }
+
+            boolean staleSession = existing.getMachine().getStatus() != MachineStatus.MAINTENANCE;
+            if (existing.getMaintenanceRecord() != null
+                    && existing.getMaintenanceRecord().getStatus() != MaintenanceStatus.IN_PROGRESS) {
+                staleSession = true;
+            }
+
+            if (staleSession) {
+                for (MaintenanceSession stale : existingSessions) {
+                    stale.setActive(false);
+                    stale.setEndTime(LocalDateTime.now());
+
+                    Machine staleMachine = stale.getMachine();
+                    if (staleMachine.getStatus() == MachineStatus.MAINTENANCE) {
+                        staleMachine.setStatus(MachineStatus.ACTIVE);
+                        machineRepository.save(staleMachine);
+                    }
+
+                    sessionRepository.save(stale);
+                }
+            } else {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            }
+        }
+
+        if (!tech.isAvailable()) {
+            tech.setAvailable(true);
+        }
+
+        Maintenance record = Maintenance.builder()
+                .machine(machine)
+                .technician(tech)
+                .status(MaintenanceStatus.IN_PROGRESS)
+                .type(MaintenanceType.ORIGINAL)
+                .build();
+        record = maintenanceRepository.save(record);
+
+        MaintenanceSession session = MaintenanceSession.builder()
+                .technician(tech)
+                .machine(machine)
+                .startTime(LocalDateTime.now())
+                .maintenanceRecord(record)
+                .active(true)
+                .build();
+
+        session = sessionRepository.save(session);
+
+        technicianStatsService.markBusy(tech, machine);
+        technicianRepository.save(tech);
+
+        machine.setStatus(MachineStatus.MAINTENANCE);
+        machineRepository.save(machine);
+
+        return ResponseEntity.ok(toDTO(session));
+    }
+
+    @Transactional
+    @PutMapping("/finish/{sessionId}")
+    public ResponseEntity<MaintenanceSessionDTO> finish(@PathVariable Long sessionId) {
+        MaintenanceSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Session not found"));
+
+        if (!session.isActive()) {
+            return ResponseEntity.ok(toDTO(session));
+        }
+
+        session.setActive(false);
+        session.setEndTime(LocalDateTime.now());
+        
+        if (session.getMaintenanceRecord() != null) {
+            Maintenance record = session.getMaintenanceRecord();
+            record.setStatus(MaintenanceStatus.COMPLETED);
+            maintenanceRepository.save(record);
+        }
+
+        session = sessionRepository.save(session);
+
+        var tech = session.getTechnician();
+        var machine = session.getMachine();
+
+        technicianStatsService.markAvailable(tech);
+        technicianRepository.save(tech);
+
+        var otherSessions = sessionRepository.findByMachineIdAndActiveTrue(machine.getId());
+        for (MaintenanceSession other : otherSessions) {
+            other.setActive(false);
+            other.setEndTime(LocalDateTime.now());
+            
+            if (other.getMaintenanceRecord() != null) {
+                Maintenance record = other.getMaintenanceRecord();
+                record.setStatus(MaintenanceStatus.COMPLETED);
+                maintenanceRepository.save(record);
+            }
+            
+            var otherTech = other.getTechnician();
+            if (!otherTech.getId().equals(tech.getId())) {
+                technicianStatsService.markAvailable(otherTech);
+                technicianRepository.save(otherTech);
+            }
+            
+            sessionRepository.save(other);
+        }
+
+        var assistanceRequests = assistanceRequestRepository.findByProblemMachineIdAndStatusIn(
+                machine.getId(), 
+                List.of(AssistanceRequestStatus.PENDING, AssistanceRequestStatus.ACCEPTED)
+        );
+        for (var req : assistanceRequests) {
+            req.setStatus(AssistanceRequestStatus.COMPLETED);
+            req.setCompletedAt(LocalDateTime.now());
+            var problem = req.getProblem();
+            if (problem != null) {
+                problem.setResolved(true);
+                problem.setSolvedProblemDate(LocalDateTime.now());
+            }
+            if (req.getAssignedTechnician() != null) {
+                var assistant = req.getAssignedTechnician();
+                if (!assistant.getId().equals(tech.getId())) {
+                    technicianStatsService.markAvailable(assistant);
+                    technicianRepository.save(assistant);
+                }
+            }
+            assistanceRequestRepository.save(req);
+        }
+
+        var openMaintenances = maintenanceRepository.findByMachineIdAndStatus(machine.getId(), MaintenanceStatus.IN_PROGRESS);
+        for (var m : openMaintenances) {
+            m.setStatus(MaintenanceStatus.COMPLETED);
+            maintenanceRepository.save(m);
+        }
+
+        machine.setStatus(MachineStatus.ACTIVE);
+
+        machine.setMaintenanceFinishedAt(LocalDateTime.now());
+        machine.setSuspicionFlag(false);
+
+        machineRepository.save(machine);
+        machineMetricsService.refreshMetrics(machine.getId());
+
+        return ResponseEntity.ok(toDTO(session));
+    }
+
+    @GetMapping("/stats/{techId}")
+    public ResponseEntity<MaintenanceStatsDTO> getStats(@PathVariable Long techId) {
+        Technician t = technicianRepository.findById(techId)
+                .orElseThrow(() -> new EntityNotFoundException("Technician not found"));
+
+        MaintenanceStatsDTO dto = MaintenanceStatsDTO.builder()
+                .tasksCompleted(t.getTasksCompleted())
+                .tasksPending(t.getTasksPending())
+                .averageRepairTime(t.getAverageRepairTime())
+                .assistedOthers(t.getAssistedCounter())
+                .wasAssisted(t.getWasAssistedCounter())
+                .available(t.isAvailable())
+                .build();
+
+        return ResponseEntity.ok(dto);
+    }
+
+    private double resolveSessionHours(MaintenanceSession session) {
+        if (session.getMaintenanceRecord() != null) {
+            var logs = maintenanceLogRepository.findByMaintenanceIdOrderByCreatedAtDesc(
+                    session.getMaintenanceRecord().getId());
+            if (!logs.isEmpty() && logs.get(0).getHoursSpent() != null) {
+                return logs.get(0).getHoursSpent();
+            }
+        }
+        if (session.getStartTime() != null) {
+            return Math.max(0.1, ChronoUnit.MINUTES.between(session.getStartTime(), LocalDateTime.now()) / 60.0);
+        }
+        return 0.1;
+    }
+}
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\controller\MaintenanceLogController.java
+================================================================================
+
+package com.example.controller;
+
+import com.example.dto.MaintenanceLogCreateDTO;
+import com.example.dto.MaintenanceLogDTO;
+import com.example.service.MaintenanceLogService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/maintenance")
+@RequiredArgsConstructor
+public class MaintenanceLogController {
+
+    private final MaintenanceLogService logService;
+
+    @PostMapping("/{maintenanceId}/log")
+    public MaintenanceLogDTO createLog(
+            @PathVariable String maintenanceId,
+            @Valid @RequestBody MaintenanceLogCreateDTO dto
+    ) {
+        return logService.createLog(maintenanceId, dto);
+    }
+
+    @GetMapping("/{maintenanceId}/logs")
+    public List<MaintenanceLogDTO> getLogs(@PathVariable String maintenanceId) {
+        return logService.getLogsByMaintenance(maintenanceId);
+    }
+
+    @GetMapping("/logs/all")
+    public List<MaintenanceLogDTO> getAllLogs() {
+        return logService.getAllLogs();
+    }
+
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\controller\ProblemController.java
+================================================================================
+
+package com.example.controller;
+
+import com.example.domain.Problem;
+import com.example.dto.ProblemDTO;
+import com.example.dto.ProblemHistoryDTO;
+import com.example.service.ProblemService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/problems")
+@RequiredArgsConstructor
+public class ProblemController {
+
+    private final ProblemService problemService;
+
+    @GetMapping
+    public ResponseEntity<List<ProblemDTO>> getAllProblems() {
+        return ResponseEntity.ok(problemService.getAllProblemsDTO());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ProblemDTO> getProblemById(@PathVariable Long id) {
+        return ResponseEntity.ok(problemService.getProblemByIdDTO(id));
+    }
+
+    @GetMapping("/machine/{machineId}")
+    public ResponseEntity<List<ProblemDTO>> getProblemsByMachine(@PathVariable Long machineId) {
+        return ResponseEntity.ok(problemService.getProblemsByMachineDTO(machineId));
+    }
+
+    @PostMapping
+    public ResponseEntity<ProblemDTO> createProblem(@Valid @RequestBody ProblemDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(problemService.createProblemDTO(dto));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ProblemDTO> updateProblem(@PathVariable Long id, @Valid @RequestBody ProblemDTO dto) {
+        return ResponseEntity.ok(problemService.updateProblemDTO(id, dto));
+    }
+
+    @PatchMapping("/{id}/resolve")
+    public ResponseEntity<ProblemDTO> resolveProblem(@PathVariable Long id) {
+        return ResponseEntity.ok(problemService.resolveProblemDTO(id));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteProblem(@PathVariable Long id) {
+        problemService.deleteProblem(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/history")
+    public List<ProblemHistoryDTO> getHistory() {
+        return problemService.getHistory();
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\controller\SensorController.java
+================================================================================
+
+package com.example.controller;
+
+import com.example.domain.SensorReading;
+import com.example.service.SensorService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * GET /api/v1/sensors/{machineId}
+ *   → Returns the most recent reading for each sensor type (TEMPERATURE, PRESSURE, VIBRATION).
+ *     Always at most 3 entries — one per type — for the given machine.
+ *
+ * GET /api/v1/sensors/{machineId}/history
+ *   → Returns the full history of all readings for the machine, newest first.
+ *     Use this endpoint to build graphs/charts.
+ */
+@RestController
+@RequestMapping("/api/v1/sensors")
+@RequiredArgsConstructor
+public class SensorController {
+
+    private final SensorService sensorService;
+
+    /**
+     * Latest state: one reading per sensor type (max 3 entries).
+     * Every new batch from the generator replaces what's shown here.
+     */
+    @GetMapping("/{machineId}")
+    public ResponseEntity<List<SensorReading>> getLatestState(@PathVariable Long machineId) {
+        return ResponseEntity.ok(sensorService.getLatestState(machineId));
+    }
+
+    /**
+     * Full history: all readings ever stored for this machine, newest first.
+     * Use for graphing previous values over time.
+     */
+    @GetMapping("/{machineId}/history")
+    public ResponseEntity<List<SensorReading>> getFullHistory(@PathVariable Long machineId) {
+        return ResponseEntity.ok(sensorService.getReadingsByMachine(machineId));
+    }
+}
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\controller\UserController.java
+================================================================================
+
+package com.example.controller;
+
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.dto.UserDTO;
+import com.example.dto.TechnicianDTO;
+import com.example.service.UserService;
+
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping("/api/v1/users")
+@RequiredArgsConstructor
+public class UserController {
+
+    private final UserService userService;
+
+    @GetMapping
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsersDTO());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserByIdDTO(id));
+    }
+
+    @GetMapping("/technicians")
+    public ResponseEntity<List<TechnicianDTO>> getAllTechnicians() {
+        return ResponseEntity.ok(userService.getAllTechniciansDTO());
+    }
+
+    @GetMapping("/technicians/archived")
+    public ResponseEntity<List<TechnicianDTO>> getArchivedTechnicians() {
+        return ResponseEntity.ok(userService.getArchivedTechniciansDTO());
+    }
+
+    @GetMapping("/directors")
+    public ResponseEntity<List<UserDTO>> getAllDirectors() {
+        return ResponseEntity.ok(userService.getAllDirectorsDTO());
+    }
+
+    @PostMapping
+    public ResponseEntity<UserDTO> createUser(@Valid @RequestBody UserDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUserDTO(dto));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UserDTO> updateUser(@PathVariable Long id, @Valid @RequestBody UserDTO dto) {
+        return ResponseEntity.ok(userService.updateUserDTO(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
+
+    @PutMapping("/{id}/archive")
+    public ResponseEntity<UserDTO> archiveUser(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.archiveUserDTO(id));
+    }
+
+    @PutMapping("/{id}/restore")
+    public ResponseEntity<UserDTO> restoreUser(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.restoreUserDTO(id));
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\AssistanceRequest.java
+================================================================================
+
+package com.example.domain;
+
+import com.example.domain.enums.AssistanceRequestStatus;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "assistance_requests")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class AssistanceRequest {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "problem_id", nullable = false)
+    private Problem problem;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "requested_by_id", nullable = false)
+    private Technician requestedBy;
+
+    @Column(nullable = false)
+    private String reason;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private AssistanceRequestStatus status = AssistanceRequestStatus.PENDING;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_technician_id")
+    private Technician assignedTechnician;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    private LocalDateTime acceptedAt;
+
+    private LocalDateTime completedAt;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\Machine.java
+================================================================================
+
+package com.example.domain;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import com.example.domain.enums.MachineStatus;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Table(name = "machines")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Machine {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String name;
+
+    private String location;
+
+    private Integer importanceLevel;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private MachineStatus status = MachineStatus.ACTIVE;
+
+    private LocalDateTime lastDownDate;
+
+    @Builder.Default
+    private Double downtimeSum = 0.0;
+
+    @Builder.Default
+    private boolean suspicionFlag = false;
+
+    @Builder.Default
+    private boolean vibrationSensor = false;
+
+    @Builder.Default
+    private boolean temperatureSensor = false;
+
+    @Builder.Default
+    private boolean pressureSensor = false;
+
+    @Builder.Default
+    private Integer actionRequiredCount = 0;
+
+    @Builder.Default
+    private Integer assistanceRequestedCount = 0;
+
+    @ManyToMany
+    @JoinTable(
+            name = "machine_technician",
+            joinColumns = @JoinColumn(name = "machine_id"),
+            inverseJoinColumns = @JoinColumn(name = "technician_id")
+    )
+    @Builder.Default
+    private List<Technician> assignedTechnicians = new ArrayList<>();
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
+    private LocalDateTime archivedAt;
+
+    @Builder.Default
+    private LocalDateTime maintenanceFinishedAt = null;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\Maintenance.java
+================================================================================
+
+package com.example.domain;
+
+import com.example.domain.enums.MaintenanceStatus;
+import com.example.domain.enums.MaintenanceType;
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "maintenance_records")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Maintenance {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "machine_id", nullable = false)
+    private Machine machine;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "technician_id")
+    private Technician technician;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private MaintenanceType type = MaintenanceType.NORMAL;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private MaintenanceStatus status = MaintenanceStatus.PENDING;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\MaintenanceLog.java
+================================================================================
+
+package com.example.domain;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "maintenance_logs")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MaintenanceLog {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "maintenance_id", nullable = false)
+    private Maintenance maintenance;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "technician_id", nullable = false)
+    private Technician technician;
+
+    @Column(nullable = false)
+    private String title;
+
+    @Column(nullable = false, length = 2000)
+    private String description;
+
+    @Column(nullable = false)
+    private Double hoursSpent;
+
+    @Column(nullable = false)
+    private String partsUsed;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\MaintenanceSession.java
+================================================================================
+
+package com.example.domain;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "maintenance_sessions")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MaintenanceSession {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "technician_id", nullable = false)
+    private Technician technician;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "machine_id", nullable = false)
+    private Machine machine;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "request_id", nullable = true)
+    private AssistanceRequest request;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "maintenance_record_id", nullable = true)
+    private Maintenance maintenanceRecord;
+
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+
+    @Builder.Default
+    private boolean active = true;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\Problem.java
+================================================================================
+
+package com.example.domain;
+
+import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "problems")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Problem {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "machine_id", nullable = false)
+    private Machine machine;
+
+    @Column(nullable = false)
+    private String description;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime detectedAt;
+
+    private Double priority;
+
+    @Builder.Default
+    private boolean resolved = false;
+
+    private LocalDateTime startProblemDate;
+
+    private LocalDateTime solvedProblemDate;
+
+    private String faultSeverity;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_technician_id")
+    private Technician assignedTechnician;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\SensorReading.java
+================================================================================
+
+package com.example.domain;
+
+import com.example.domain.enums.SensorType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "sensor_readings")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class SensorReading {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /**
+     * The full Machine entity is excluded from serialization to avoid circular references.
+     * The machineId is exposed separately via the @JsonProperty getter below.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
+    @JoinColumn(name = "machine_id", nullable = false)
+    private Machine machine;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SensorType sensorType;
+
+    @Column(nullable = false)
+    private Double value;
+
+    @Column(nullable = false)
+    private LocalDateTime recordedAt;
+
+    /**
+     * Expose machineId in JSON response without loading the full Machine object.
+     * e.g.: { "id": 1, "machineId": 5, "sensorType": "TEMPERATURE", "value": 72.3, "recordedAt": "..." }
+     */
+    @JsonProperty("machineId")
+    public Long getMachineId() {
+        return machine != null ? machine.getId() : null;
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\Technician.java
+================================================================================
+
+package com.example.domain;
+
+import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "technicians")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@DiscriminatorValue("TECHNICIAN")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Technician extends User {
+
+    private int numberOfFaultsFixed = 0;
+    private int assistedCounter = 0;
+    private int wasAssistedCounter = 0;
+    private double averageRepairTime = 0.0;
+    private int tasksCompleted = 0;
+    private int tasksPending = 0;
+    private boolean isAvailable = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "current_machine_id")
+    private Machine currentAssignment;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "technician_skills", joinColumns = @JoinColumn(name = "technician_id"))
+    @Column(name = "skill")
+    private List<String> skillSet = new ArrayList<>();
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\User.java
+================================================================================
+
+package com.example.domain;
+
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import com.example.domain.enums.Gender;
+import com.example.domain.enums.UserRole;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.DiscriminatorType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Table(name = "users")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@Inheritance(strategy = InheritanceType.JOINED)
+@DiscriminatorColumn(name = "dtype", discriminatorType = DiscriminatorType.STRING)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class User implements UserDetails {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(nullable = false)
+    private String passwordHash;
+
+    private String phoneNumber;
+
+    private Integer age;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(() -> "ROLE_" + role.name());
+    }
+
+
+    @Override
+    public String getPassword() {
+        return passwordHash;
+    }
+
+    @Override
+    public String getUsername() {
+        return email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
+    @Column(nullable = false)
+    private boolean archived = false;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
+
+    @Column(name = "is_online", nullable = false)
+    private boolean isOnline = false;
+
+    @Column(name = "is_privileged", nullable = false)
+    private boolean isPrivileged = false;
+
+
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\enums\AssistanceRequestStatus.java
+================================================================================
+
+package com.example.domain.enums;
+
+public enum AssistanceRequestStatus {
+    PENDING,
+    ACCEPTED,
+    COMPLETED
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\enums\Gender.java
+================================================================================
+
+package com.example.domain.enums;
+
+public enum Gender {
+    MALE,
+    FEMALE,
+    OTHER,
+    PREFER_NOT_TO_SAY
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\enums\MachineStatus.java
+================================================================================
+
+package com.example.domain.enums;
+
+public enum MachineStatus {
+    ACTIVE,
+    ASSISTANCE_REQUESTED,
+    MAINTENANCE,
+    ARCHIVED
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\enums\MaintenanceStatus.java
+================================================================================
+
+package com.example.domain.enums;
+
+public enum MaintenanceStatus {
+    PENDING,
+    IN_PROGRESS,
+    COMPLETED
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\enums\MaintenanceType.java
+================================================================================
+
+package com.example.domain.enums;
+
+public enum MaintenanceType {
+    ORIGINAL,
+    NORMAL,
+    SPECIAL,
+    ASSISTANCE;
+
+    public boolean isOriginal() {
+        return this == ORIGINAL || this == NORMAL || this == SPECIAL;
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\enums\SensorType.java
+================================================================================
+
+package com.example.domain.enums;
+
+public enum SensorType {
+    TEMPERATURE,
+    PRESSURE,
+    VIBRATION
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\domain\enums\UserRole.java
+================================================================================
+
+package com.example.domain.enums;
+
+public enum UserRole {
+    ADMIN,
+    DIRECTOR,
+    TECHNICIAN
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\AssignRequest.java
+================================================================================
+
+package com.example.dto;
+
+import lombok.Getter;
+import lombok.Setter;
+import java.util.List;
+
+
+@Getter
+@Setter
+public class AssignRequest {
+    private Long technicianId;
+    private List<Long> technicianIds;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\AssistanceRequestCompleteDTO.java
+================================================================================
+
+package com.example.dto;
+
+import lombok.Data;
+
+@Data
+public class AssistanceRequestCompleteDTO {
+    private String title;
+    private String description;
+    private Double hoursSpent;
+    private String partsUsed;
+    private String technicianId;
+
+    public boolean hasLogData() {
+        return title != null && !title.isBlank()
+                && description != null && !description.isBlank()
+                && hoursSpent != null && hoursSpent > 0
+                && partsUsed != null && !partsUsed.isBlank();
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\AssistanceRequestCreateDTO.java
+================================================================================
+
+package com.example.dto;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class AssistanceRequestCreateDTO {
+    private Long machineId;
+    private Long problemId;
+    private Long requestedById;
+    private String reason;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\AssistanceRequestDTO.java
+================================================================================
+
+package com.example.dto;
+
+import com.example.domain.enums.AssistanceRequestStatus;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Getter
+@Setter
+public class AssistanceRequestDTO {
+    private Long id;
+    private Long problemId;
+    private String problemDescription;
+    private Long machineId;
+    private String machineName;
+    private String machineLocation;
+    private List<Long> machineAssignedTechnicianIds;
+    private Long requestedById;
+    private String requestedByName;
+    private Long assignedTechnicianId;
+    private String assignedTechnicianName;
+    private String reason;
+    private AssistanceRequestStatus status;
+    private LocalDateTime createdAt;
+    private LocalDateTime acceptedAt;
+    private LocalDateTime completedAt;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\LoginRequest.java
+================================================================================
+
+package com.example.dto;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class LoginRequest {
+    private String email;
+    private String password;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\LoginResponse.java
+================================================================================
+
+package com.example.dto;
+
+public record LoginResponse(
+        String token,
+        String role,
+        String name,
+        Long id
+) {}
+
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\MachineDashboardStatsDTO.java
+================================================================================
+
+package com.example.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MachineDashboardStatsDTO {
+    private long total;
+    private long normal;
+    private long suspicious;
+    private long maintenance;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\MachineDTO.java
+================================================================================
+
+package com.example.dto;
+
+import com.example.domain.enums.MachineStatus;
+import lombok.*;
+import java.util.List;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MachineDTO {
+
+    private Long id;
+
+    private String name;
+    private String location;
+    private Integer importanceLevel;
+    private MachineStatus status;
+
+    private Double downtimeSum;
+    private boolean suspicionFlag;
+
+    private boolean vibrationSensor;
+    private boolean temperatureSensor;
+    private boolean pressureSensor;
+
+    private int actionRequiredCount;
+    private int assistanceRequestedCount;
+
+    private List<TechnicianDTO> assignedTechnicians;
+    private Long activeMaintenanceTechnicianId;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\MachineRankingDTO.java
+================================================================================
+
+package com.example.dto;
+
+import com.example.domain.Machine;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+@Data
+@AllArgsConstructor
+public class MachineRankingDTO {
+    private Long id;
+    private String name;
+    private String location;
+    private double priority;
+
+    public static MachineRankingDTO from(Machine m, double priority) {
+        return new MachineRankingDTO(
+                m.getId(),
+                m.getName(),
+                m.getLocation(),
+                priority
+        );
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\MaintenanceDTO.java
+================================================================================
+
+package com.example.dto;
+
+import com.example.domain.enums.MaintenanceStatus;
+import com.example.domain.enums.MaintenanceType;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MaintenanceDTO {
+
+    private Long id;
+
+    @NotNull
+    private Long machineId;
+
+    private Long technicianId;
+
+    @NotNull
+    private MaintenanceType type;
+
+    @NotNull
+    private MaintenanceStatus status;
+
+    private String notes;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\MaintenanceLogCreateDTO.java
+================================================================================
+
+package com.example.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class MaintenanceLogCreateDTO {
+    @NotBlank
+    private String title;
+    
+    @NotBlank
+    private String description;
+    
+    @NotNull
+    private Double hoursSpent;
+    
+    @NotBlank
+    private String partsUsed;
+    
+    @NotBlank
+    private String technicianId;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\MaintenanceLogDTO.java
+================================================================================
+
+package com.example.dto;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class MaintenanceLogDTO {
+    private Long id;
+    private String title;
+    private String description;
+    private Double hoursSpent;
+    private String partsUsed;
+    private String technicianName;
+    private String createdAt;
+    private Long maintenanceId;
+    private Long machineId;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\MaintenanceSessionDTO.java
+================================================================================
+
+package com.example.dto;
+
+import lombok.Data;
+import java.time.LocalDateTime;
+
+@Data
+public class MaintenanceSessionDTO {
+    private Long id;
+    private Long technicianId;
+    private String technicianName;
+    private Long machineId;
+    private String machineName;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private boolean active;
+    private Long maintenanceRecordId;
+    private Long assistanceRequestId;
+    private String sessionType;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\MaintenanceStatsDTO.java
+================================================================================
+
+package com.example.dto;
+
+import lombok.*;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MaintenanceStatsDTO {
+    private int tasksCompleted;
+    private int tasksPending;
+    private double averageRepairTime;
+    private int assistedOthers;
+    private int wasAssisted;
+    private boolean available;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\ProblemDTO.java
+================================================================================
+
+package com.example.dto;
+
+import lombok.*;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ProblemDTO {
+
+    private Long id;
+    private Long machineId;
+    private String description;
+    private boolean resolved;
+    private String startProblemDate;
+    private String solvedProblemDate;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\ProblemHistoryDTO.java
+================================================================================
+
+package com.example.dto;
+
+import lombok.*;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ProblemHistoryDTO {
+    private Long problemId;
+    private String machineName;
+    private String description;
+    private boolean resolved;
+    private String startProblemDate;
+    private String solvedProblemDate;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\SensorReadingDTO.java
+================================================================================
+
+package com.example.dto;
+
+import com.example.domain.enums.SensorType;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class SensorReadingDTO {
+
+    private Long id;
+
+    @NotNull
+    private Long machineId;
+
+    @NotNull
+    private SensorType sensorType;
+
+    @NotNull
+    private Double value;
+
+    @NotNull
+    private LocalDateTime recordedAt;
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\TechnicianDTO.java
+================================================================================
+
+package com.example.dto;
+
+import com.example.domain.enums.Gender;
+import lombok.*;
+
+import java.util.List;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class TechnicianDTO {
+
+    private Long id;
+    private String name;
+    private String email;
+    private String phoneNumber;
+
+    // ADD THESE
+    private Integer age;
+    private Gender gender;
+
+    private boolean available;
+    private String currentMachineName;
+    private String currentActivity;
+    private int tasksCompleted;
+    private int tasksPending;
+    private int numberOfFaultsFixed;
+    private int assistedCounter;
+    private double averageRepairTime;
+    private List<String> skillSet;
+}
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\dto\UserDTO.java
+================================================================================
+
+package com.example.dto;
+
+import com.example.domain.User;
+import com.example.domain.enums.Gender;
+import com.example.domain.enums.UserRole;
+import lombok.*;
+
+import java.util.List;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class UserDTO {
+
+    private Long id;
+    private String name;
+    private String email;
+    private UserRole role;
+    private String password;
+    private String phoneNumber;
+    private Integer age;
+    private Gender gender;
+    private List<String> skillSet;
+
+
+    public static UserDTO fromEntity(User u) {
+        UserDTOBuilder builder = UserDTO.builder()
+                .id(u.getId())
+                .name(u.getName())
+                .email(u.getEmail())
+                .role(u.getRole())
+                .phoneNumber(u.getPhoneNumber())
+                .age(u.getAge())
+                .gender(u.getGender());
+
+        return builder.build();
+    }
+
+    public User toEntity() {
+        User u = new User();
+        u.setId(id);
+        u.setName(name);
+        u.setEmail(email);
+        u.setRole(role != null ? role : UserRole.TECHNICIAN);
+
+        u.setPhoneNumber(phoneNumber);
+        u.setAge(age);
+        u.setGender(gender);
+
+        return u;
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\exception\GlobalExceptionHandler.java
+================================================================================
+
+package com.example.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException e) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", e.getMessage());
+        
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        if (e.getMessage().contains("Invalid credentials")) {
+            status = HttpStatus.UNAUTHORIZED;
+        }
+        
+        return new ResponseEntity<>(response, status);
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\mapper\MachineMapper.java
+================================================================================
+
+package com.example.mapper;
+
+import java.util.List;
+import java.util.Optional;
+
+import com.example.domain.Machine;
+import com.example.dto.MachineDTO;
+import com.example.dto.TechnicianDTO;
+
+import java.util.stream.Collectors;
+
+public class MachineMapper {
+
+    public static MachineDTO toDTO(Machine m) {
+
+        List<TechnicianDTO> technicians =
+                Optional.ofNullable(m.getAssignedTechnicians())
+                        .orElse(List.of())
+                        .stream()
+                        .filter(t -> t.getId() != null)
+                        .collect(Collectors.toMap(
+                                com.example.domain.Technician::getId,
+                                TechnicianMapper::toDTO,
+                                (a, b) -> a
+                        ))
+                        .values()
+                        .stream()
+                        .toList();
+
+        return MachineDTO.builder()
+                .id(m.getId())
+                .name(m.getName())
+                .location(m.getLocation())
+                .importanceLevel(m.getImportanceLevel())
+                .status(m.getStatus())
+                .downtimeSum(m.getDowntimeSum())
+                .suspicionFlag(m.isSuspicionFlag())
+                .vibrationSensor(m.isVibrationSensor())
+                .temperatureSensor(m.isTemperatureSensor())
+                .pressureSensor(m.isPressureSensor())
+                .actionRequiredCount(m.getActionRequiredCount())
+                .assistanceRequestedCount(m.getAssistanceRequestedCount())
+                .assignedTechnicians(technicians)
+                .build();
+    }
+
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\mapper\MaintenanceMapper.java
+================================================================================
+
+package com.example.mapper;
+
+import com.example.domain.Maintenance;
+import com.example.dto.MaintenanceDTO;
+import com.example.repository.MachineRepository;
+import com.example.repository.TechnicianRepository;
+
+public class MaintenanceMapper {
+
+    public static MaintenanceDTO toDTO(Maintenance m) {
+        return MaintenanceDTO.builder()
+                .id(m.getId())
+                .machineId(m.getMachine().getId())
+                .technicianId(m.getTechnician() != null ? m.getTechnician().getId() : null)
+                .type(m.getType())
+                .status(m.getStatus())
+                .notes(m.getNotes())
+                .build();
+    }
+
+    public static Maintenance toEntity(
+            MaintenanceDTO dto,
+            MachineRepository machineRepo,
+            TechnicianRepository techRepo
+    ) {
+        return Maintenance.builder()
+                .id(dto.getId())
+                .machine(machineRepo.findById(dto.getMachineId())
+                        .orElseThrow(() -> new RuntimeException("Machine not found")))
+                .technician(dto.getTechnicianId() != null
+                        ? techRepo.findById(dto.getTechnicianId())
+                            .orElseThrow(() -> new RuntimeException("Technician not found"))
+                        : null)
+                .type(dto.getType())
+                .status(dto.getStatus())
+                .notes(dto.getNotes())
+                .build();
+    }
+
+    public static void updateEntity(
+            Maintenance entity,
+            MaintenanceDTO dto,
+            MachineRepository machineRepo,
+            TechnicianRepository techRepo
+    ) {
+        entity.setMachine(machineRepo.findById(dto.getMachineId())
+                .orElseThrow(() -> new RuntimeException("Machine not found")));
+
+        if (dto.getTechnicianId() != null) {
+            entity.setTechnician(techRepo.findById(dto.getTechnicianId())
+                    .orElseThrow(() -> new RuntimeException("Technician not found")));
+        }
+
+        entity.setType(dto.getType());
+        entity.setStatus(dto.getStatus());
+        entity.setNotes(dto.getNotes());
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\mapper\ProblemMapper.java
+================================================================================
+
+package com.example.mapper;
+
+import com.example.domain.Problem;
+import com.example.dto.ProblemDTO;
+import com.example.dto.ProblemHistoryDTO;
+
+public class ProblemMapper {
+
+    public static ProblemDTO toDTO(Problem p) {
+        return ProblemDTO.builder()
+                .id(p.getId())
+                .machineId(p.getMachine().getId())
+                .description(p.getDescription())
+                .resolved(p.isResolved())
+                .startProblemDate(
+                        p.getStartProblemDate() != null
+                                ? p.getStartProblemDate().toString()
+                                : null
+                )
+                .solvedProblemDate(
+                        p.getSolvedProblemDate() != null
+                                ? p.getSolvedProblemDate().toString()
+                                : null
+                )
+                .build();
+    }
+
+    public static ProblemHistoryDTO toHistoryDTO(Problem p) {
+        return ProblemHistoryDTO.builder()
+                .problemId(p.getId())
+                .machineName(p.getMachine().getName())
+                .description(p.getDescription())
+                .resolved(p.isResolved())
+                .startProblemDate(
+                        p.getStartProblemDate() != null
+                                ? p.getStartProblemDate().toString()
+                                : null
+                )
+                .solvedProblemDate(
+                        p.getSolvedProblemDate() != null
+                                ? p.getSolvedProblemDate().toString()
+                                : null
+                )
+                .build();
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\mapper\TechnicianMapper.java
+================================================================================
+
+package com.example.mapper;
+
+import com.example.domain.Machine;
+import com.example.domain.Technician;
+import com.example.dto.TechnicianDTO;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class TechnicianMapper {
+
+    public static TechnicianDTO toDTO(Technician t) {
+        String machineName = resolveMachineName(t.getCurrentAssignment());
+        String activity = t.isAvailable()
+                ? "Available"
+                : (machineName != null ? "Working on " + machineName : "Busy");
+
+        return TechnicianDTO.builder()
+            .id(t.getId())
+            .name(t.getName())
+            .email(t.getEmail())
+            .phoneNumber(t.getPhoneNumber())
+            .age(t.getAge())
+            .gender(t.getGender())
+            .available(t.isAvailable())
+            .currentMachineName(machineName)
+            .currentActivity(activity)
+            .tasksCompleted(t.getTasksCompleted())
+            .tasksPending(t.getTasksPending())
+            .numberOfFaultsFixed(t.getNumberOfFaultsFixed())
+            .assistedCounter(t.getAssistedCounter())
+            .averageRepairTime(t.getAverageRepairTime())
+            .skillSet(copySkillSet(t))
+            .build();
+    }
+
+    private static String resolveMachineName(Machine assignment) {
+        if (assignment == null) {
+            return null;
+        }
+        try {
+            return assignment.getName();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static List<String> copySkillSet(Technician t) {
+        try {
+            if (t.getSkillSet() == null || t.getSkillSet().isEmpty()) {
+                return List.of();
+            }
+            return new ArrayList<>(t.getSkillSet());
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\messaging\RabbitConsumer.java
+================================================================================
+
+package com.example.messaging;
+
+import com.example.config.RabbitMQConfig;
+import com.example.dto.SensorReadingDTO;
+import com.example.service.SensorService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Component
+public class RabbitConsumer {
+
+    private final SensorService sensorService;
+    private final ObjectMapper objectMapper;
+
+    @Autowired
+    public RabbitConsumer(SensorService sensorService, ObjectMapper objectMapper) {
+        this.sensorService = sensorService;
+        this.objectMapper = objectMapper;
+        System.out.println(">>>>>> RABBIT CONSUMER FOI CARREGADO COM SUCESSO <<<<<<");
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.SENSOR_READINGS_QUEUE)
+    public void handle(String message) {
+        System.out.println("DEBUG: Mensagem recebida do RabbitMQ -> " + message);
+        
+        try {
+            SensorReadingDTO dto = objectMapper.readValue(message, SensorReadingDTO.class);
+            sensorService.createReading(dto);
+            System.out.println("[RabbitConsumer] Stored reading for machine: " + dto.getMachineId());
+        } catch (Exception exception) {
+            System.err.println("[RabbitConsumer] Erro ao processar: " + exception.getMessage());
+            exception.printStackTrace();
+        }
+    }
+}
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\repository\AssistanceRequestRepository.java
+================================================================================
+
+package com.example.repository;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.Optional;
+
+import com.example.domain.AssistanceRequest;
+import com.example.domain.enums.AssistanceRequestStatus;
+
+public interface AssistanceRequestRepository extends JpaRepository<AssistanceRequest, Long> {
+
+    @Query("""
+            SELECT ar FROM AssistanceRequest ar
+            JOIN FETCH ar.problem p
+            JOIN FETCH p.machine
+            JOIN FETCH ar.requestedBy
+            LEFT JOIN FETCH ar.assignedTechnician
+            """)
+    List<AssistanceRequest> findAllWithDetails();
+
+    @Query("""
+            SELECT ar FROM AssistanceRequest ar
+            JOIN FETCH ar.problem p
+            JOIN FETCH p.machine
+            JOIN FETCH ar.requestedBy
+            LEFT JOIN FETCH ar.assignedTechnician
+            WHERE ar.id = :id
+            """)
+    Optional<AssistanceRequest> findByIdWithDetails(@Param("id") Long id);
+
+    List<AssistanceRequest> findByStatus(AssistanceRequestStatus status);
+    List<AssistanceRequest> findByRequestedById(Long technicianId);
+
+    @Query("""
+            SELECT ar FROM AssistanceRequest ar
+            JOIN FETCH ar.problem p
+            JOIN FETCH p.machine
+            JOIN FETCH ar.requestedBy
+            JOIN FETCH ar.assignedTechnician
+            WHERE ar.assignedTechnician.id = :technicianId
+            """)
+    List<AssistanceRequest> findAllAssignedToTechnician(@Param("technicianId") Long technicianId);
+    List<AssistanceRequest> findByProblemMachineIdAndStatusIn(
+            Long machineId,
+            List<AssistanceRequestStatus> statuses
+    );
+
+    List<AssistanceRequest> findByAssignedTechnicianIdAndStatus(
+            Long technicianId,
+            AssistanceRequestStatus status
+    );
+
+    boolean existsByProblemMachineIdAndStatusIn(
+            Long machineId,
+            List<AssistanceRequestStatus> statuses
+    );
+
+    long countByProblemMachineIdAndStatusIn(
+            Long machineId,
+            List<AssistanceRequestStatus> statuses
+    );
+
+    @Query("""
+            SELECT ar FROM AssistanceRequest ar
+            JOIN FETCH ar.problem p
+            JOIN FETCH p.machine
+            JOIN FETCH ar.requestedBy
+            LEFT JOIN FETCH ar.assignedTechnician
+            WHERE p.machine.id = :machineId AND ar.status IN :statuses
+            """)
+    List<AssistanceRequest> findActiveForMachineWithDetails(
+            @Param("machineId") Long machineId,
+            @Param("statuses") List<AssistanceRequestStatus> statuses
+    );
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\repository\MachineRepository.java
+================================================================================
+
+package com.example.repository;
+
+import com.example.domain.Machine;
+import com.example.domain.enums.MachineStatus;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface MachineRepository extends JpaRepository<Machine, Long> {
+    List<Machine> findByStatus(MachineStatus status);
+    List<Machine> findByArchivedAtIsNotNull();
+    List<Machine> findByArchivedAtIsNull();
+
+    @Query("SELECT COUNT(m) FROM Machine m WHERE m.archivedAt IS NULL")
+    long countNonArchived();
+
+    @Query("""
+            SELECT COUNT(m) FROM Machine m
+            WHERE m.archivedAt IS NULL
+              AND m.status = com.example.domain.enums.MachineStatus.MAINTENANCE
+            """)
+    long countInMaintenance();
+
+    @Query("""
+            SELECT COUNT(m) FROM Machine m
+            WHERE m.archivedAt IS NULL
+              AND m.suspicionFlag = true
+              AND m.status <> com.example.domain.enums.MachineStatus.MAINTENANCE
+            """)
+    long countSuspiciousNotInMaintenance();
+
+    @Query("""
+            SELECT COUNT(m) FROM Machine m
+            WHERE m.archivedAt IS NULL
+              AND m.suspicionFlag = false
+              AND m.status <> com.example.domain.enums.MachineStatus.MAINTENANCE
+            """)
+    long countNormalNotInMaintenance();
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\repository\MaintenanceLogRepository.java
+================================================================================
+
+package com.example.repository;
+
+import com.example.domain.MaintenanceLog;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+
+public interface MaintenanceLogRepository extends JpaRepository<MaintenanceLog, Long> {
+
+    @Query("SELECT COALESCE(SUM(l.hoursSpent), 0) FROM MaintenanceLog l WHERE l.maintenance.machine.id = :machineId")
+    Double sumHoursSpentByMachineId(@Param("machineId") Long machineId);
+
+    List<MaintenanceLog> findByMaintenanceIdOrderByCreatedAtDesc(Long maintenanceId);
+
+    List<MaintenanceLog> findByTechnicianId(Long technicianId);
+
+    List<MaintenanceLog> findByMaintenanceMachineIdOrderByCreatedAtDesc(Long machineId);
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\repository\MaintenanceRepository.java
+================================================================================
+
+package com.example.repository;
+
+import com.example.domain.Maintenance;
+import com.example.domain.enums.MaintenanceStatus;
+import com.example.domain.enums.MaintenanceType;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface MaintenanceRepository extends JpaRepository<Maintenance, Long> {
+    List<Maintenance> findByMachineId(Long machineId);
+    List<Maintenance> findByMachineIdAndStatus(Long machineId, MaintenanceStatus status);
+    List<Maintenance> findByTechnicianId(Long technicianId);
+    List<Maintenance> findByStatus(MaintenanceStatus status);
+    List<Maintenance> findByMachineIdAndTypeNot(Long machineId, MaintenanceType type);
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\repository\MaintenanceSessionRepository.java
+================================================================================
+
+package com.example.repository;
+
+import java.util.List;
+
+import com.example.domain.MaintenanceSession;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface MaintenanceSessionRepository extends JpaRepository<MaintenanceSession, Long> {
+
+    List<MaintenanceSession> findByTechnicianIdAndActiveTrue(Long technicianId);
+    List<MaintenanceSession> findByMachineIdAndActiveTrue(Long machineId);
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\repository\ProblemRepository.java
+================================================================================
+
+package com.example.repository;
+
+import com.example.domain.Problem;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface ProblemRepository extends JpaRepository<Problem, Long> {
+    List<Problem> findByMachineId(Long machineId);
+    List<Problem> findByMachineIdAndResolvedFalse(Long machineId);
+    List<Problem> findByResolved(boolean resolved);
+    List<Problem> findByAssignedTechnicianId(Long technicianId);
+    List<Problem> findByMachineIdAndDescriptionContainingAndResolvedFalse(Long machineId, String description);
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\repository\SensorReadingRepository.java
+================================================================================
+
+package com.example.repository;
+
+import com.example.domain.SensorReading;
+import com.example.domain.enums.SensorType;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface SensorReadingRepository extends JpaRepository<SensorReading, Long> {
+
+    /**
+     * Returns the single most recent reading for a given machine + sensor type.
+     * Used by GET /api/v1/sensors/{machineId} to get the "current" value per type.
+     */
+    Optional<SensorReading> findTopByMachine_IdAndSensorTypeOrderByRecordedAtDesc(
+            Long machineId, SensorType sensorType);
+
+    /**
+     * Returns ALL readings for a machine, newest first.
+     * Used by GET /api/v1/sensors/{machineId}/history for graphing.
+     */
+    List<SensorReading> findByMachine_IdOrderByRecordedAtDesc(Long machineId);
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\repository\TechnicianRepository.java
+================================================================================
+
+package com.example.repository;
+
+import com.example.domain.Technician;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface TechnicianRepository extends JpaRepository<Technician, Long> {
+    List<Technician> findByIsAvailable(boolean isAvailable);
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\repository\UserRepository.java
+================================================================================
+
+package com.example.repository;
+
+import com.example.domain.User;
+import com.example.domain.enums.UserRole;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+    Optional<User> findByEmail(String email);
+    List<User> findByRole(UserRole role);
+    boolean existsByEmail(String email);
+    List<User> findByArchivedFalse();
+    List<User> findByArchivedTrue();
+    List<User> findByRoleAndArchivedFalse(UserRole role);
+    List<User> findByRoleAndArchivedTrue(UserRole role);
+
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\service\AssistanceRequestService.java
+================================================================================
+
+package com.example.service;
+
+import com.example.domain.AssistanceRequest;
+import com.example.domain.Maintenance;
+import com.example.domain.MaintenanceLog;
+import com.example.domain.MaintenanceSession;
+import com.example.domain.Problem;
+import com.example.domain.Technician;
+import com.example.domain.enums.AssistanceRequestStatus;
+import com.example.domain.enums.MaintenanceStatus;
+import com.example.dto.AssistanceRequestCompleteDTO;
+import com.example.dto.AssistanceRequestCreateDTO;
+import com.example.dto.AssistanceRequestDTO;
+import com.example.repository.AssistanceRequestRepository;
+import com.example.repository.MaintenanceLogRepository;
+import com.example.repository.MaintenanceRepository;
+import com.example.repository.MaintenanceSessionRepository;
+import com.example.repository.ProblemRepository;
+import com.example.repository.TechnicianRepository;
+import com.example.repository.MachineRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+@Transactional
+public class AssistanceRequestService {
+
+    private final AssistanceRequestRepository assistanceRequestRepository;
+    private final ProblemRepository problemRepository;
+    private final TechnicianRepository technicianRepository;
+    private final MachineRepository machineRepository;
+    private final MaintenanceRepository maintenanceRepository;
+    private final MaintenanceSessionRepository maintenanceSessionRepository;
+    private final MaintenanceLogRepository maintenanceLogRepository;
+    private final TechnicianStatsService technicianStatsService;
+    private final MachineMetricsService machineMetricsService;
+
+    private static final List<AssistanceRequestStatus> ACTIVE_REQUEST_STATUSES =
+            List.of(AssistanceRequestStatus.PENDING, AssistanceRequestStatus.ACCEPTED);
+
+    public AssistanceRequestDTO create(AssistanceRequestCreateDTO dto) {
+
+        Technician requestedBy = technicianRepository.findById(dto.getRequestedById())
+                .orElseThrow(() -> new RuntimeException("Technician not found"));
+
+        Problem problem;
+        Long machineId;
+
+        if (dto.getProblemId() == null) {
+
+            if (dto.getMachineId() == null) {
+                throw new RuntimeException("Machine id is required");
+            }
+            machineId = dto.getMachineId();
+
+            var machine = machineRepository.findById(machineId)
+                    .orElseThrow(() -> new RuntimeException("Machine not found"));
+
+            assertNoActiveRequestForMachine(machineId);
+
+            problem = Problem.builder()
+                    .machine(machine)
+                    .description("Assistance requested: " + dto.getReason())
+                    .priority(1.0)
+                    .resolved(false)
+                    .startProblemDate(LocalDateTime.now())
+                    .build();
+
+            problem = problemRepository.save(problem);
+
+        } else {
+            problem = problemRepository.findById(dto.getProblemId())
+                    .orElseThrow(() -> new RuntimeException("Problem not found"));
+            machineId = problem.getMachine().getId();
+            assertNoActiveRequestForMachine(machineId);
+        }
+
+        var machine = problem.getMachine();
+        assertRequesterOwnsActiveMaintenance(machine, requestedBy);
+
+        AssistanceRequest request = AssistanceRequest.builder()
+                .problem(problem)
+                .requestedBy(requestedBy)
+                .reason(dto.getReason())
+                .status(AssistanceRequestStatus.PENDING)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        AssistanceRequest saved = assistanceRequestRepository.save(request);
+        machineMetricsService.refreshMetrics(machine.getId());
+        return assistanceRequestRepository.findByIdWithDetails(saved.getId())
+                .map(this::toDTO)
+                .orElseGet(() -> toDTO(saved));
+    }
+
+    public List<AssistanceRequestDTO> getAll() {
+        return assistanceRequestRepository.findAllWithDetails()
+                .stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssistanceRequestDTO> getForRole(String role, Long userId) {
+        if (role == null) {
+            return List.of();
+        }
+        return switch (role.toUpperCase()) {
+            case "DIRECTOR", "ADMIN" -> assistanceRequestRepository.findAllWithDetails()
+                    .stream()
+                    .map(this::toDTO)
+                    .toList();
+            case "TECHNICIAN" -> {
+                if (userId == null) {
+                    yield List.of();
+                }
+                yield assistanceRequestRepository.findAllAssignedToTechnician(userId)
+                        .stream()
+                        .filter(r -> !Objects.equals(r.getRequestedBy().getId(), userId))
+                        .map(this::toDTO)
+                        .toList();
+            }
+            default -> List.of();
+        };
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssistanceRequestDTO> getForAuthenticatedUser() {
+        return List.of();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssistanceRequestDTO> getActiveForMachine(Long machineId) {
+        return assistanceRequestRepository.findActiveForMachineWithDetails(machineId, ACTIVE_REQUEST_STATUSES)
+                .stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+    public AssistanceRequestDTO assign(Long requestId, Long technicianId) {
+
+        AssistanceRequest request = assistanceRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        if (request.getStatus() == AssistanceRequestStatus.COMPLETED) {
+            throw new RuntimeException("Cannot assign a completed request");
+        }
+
+        Technician tech = technicianRepository.findById(technicianId)
+                .orElseThrow(() -> new RuntimeException("Technician not found"));
+
+        if (Objects.equals(request.getRequestedBy().getId(), technicianId)) {
+            throw new RuntimeException("Cannot assign the request to the technician who created it");
+        }
+
+        if (request.getAssignedTechnician() != null) {
+            if (Objects.equals(request.getAssignedTechnician().getId(), technicianId)) {
+                return toDTO(request);
+            }
+            throw new RuntimeException(
+                    "This request already has an assigned technician. Remove the assignment before assigning another.");
+        }
+
+        var machine = request.getProblem().getMachine();
+
+        if (machine.getAssignedTechnicians().stream().anyMatch(t -> t.getId().equals(technicianId))) {
+            throw new RuntimeException(
+                    "Cannot assign assistance to a technician already assigned to this machine. Choose an external technician.");
+        }
+
+        // When a director assigns an assistance request to a new technician,
+        // persist that technician in the machine assignment list as well.
+        machine.getAssignedTechnicians().add(tech);
+        machineRepository.saveAndFlush(machine);
+
+        request.setAssignedTechnician(tech);
+        request.setStatus(AssistanceRequestStatus.ACCEPTED);
+        request.setAcceptedAt(LocalDateTime.now());
+        assistanceRequestRepository.saveAndFlush(request);
+
+        technicianStatsService.markBusy(tech, machine);
+        technicianRepository.saveAndFlush(tech);
+
+        return toDTO(assistanceRequestRepository.findById(requestId).orElseThrow());
+    }
+
+    public AssistanceRequestDTO unassign(Long requestId) {
+
+        AssistanceRequest request = assistanceRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        if (request.getAssignedTechnician() == null) {
+            throw new RuntimeException("No technician is assigned to this request");
+        }
+
+        if (request.getStatus() == AssistanceRequestStatus.COMPLETED) {
+            throw new RuntimeException("Cannot unassign a completed request");
+        }
+
+        Technician tech = request.getAssignedTechnician();
+        technicianStatsService.releaseFromAssistanceAssignment(tech);
+        technicianRepository.save(tech);
+
+        request.setAssignedTechnician(null);
+        request.setStatus(AssistanceRequestStatus.PENDING);
+        request.setAcceptedAt(null);
+
+        return toDTO(assistanceRequestRepository.save(request));
+    }
+
+    public AssistanceRequestDTO complete(Long requestId, AssistanceRequestCompleteDTO dto) {
+
+        AssistanceRequest request = assistanceRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        if (request.getStatus() == AssistanceRequestStatus.COMPLETED) {
+            return toDTO(request);
+        }
+
+        Problem problem = request.getProblem();
+        var machine = problem.getMachine();
+        Technician assistant = request.getAssignedTechnician();
+        Technician requester = request.getRequestedBy();
+
+        double assistantHours = resolveHours(dto, request.getAcceptedAt());
+
+        if (dto != null && dto.hasLogData() && assistant != null) {
+            saveAssistanceLog(machine, assistant, dto);
+        }
+
+        var techniciansReleased = closeActiveSessionsOnMachine(machine);
+
+        maintenanceRepository.findByMachineIdAndStatus(machine.getId(), MaintenanceStatus.IN_PROGRESS)
+                .forEach(m -> {
+                    m.setStatus(MaintenanceStatus.COMPLETED);
+                    maintenanceRepository.save(m);
+                });
+
+        resolveAllOpenProblemsOnMachine(machine);
+
+        machine.setStatus(com.example.domain.enums.MachineStatus.ACTIVE);
+        machineRepository.save(machine);
+        machineMetricsService.refreshMetrics(machine.getId());
+
+        if (requester != null && !techniciansReleased.contains(requester.getId())) {
+            technicianStatsService.releaseFromMachineWork(requester, true);
+            requester.setWasAssistedCounter(requester.getWasAssistedCounter() + 1);
+            technicianRepository.save(requester);
+        } else if (requester != null) {
+            requester.setWasAssistedCounter(requester.getWasAssistedCounter() + 1);
+            technicianRepository.save(requester);
+        }
+
+        if (assistant != null) {
+            if (!techniciansReleased.contains(assistant.getId())) {
+                technicianStatsService.releaseFromMachineWork(assistant, true);
+            }
+            technicianStatsService.recordAssistanceCompletion(assistant, assistantHours);
+            technicianRepository.save(assistant);
+        }
+
+        request.setStatus(AssistanceRequestStatus.COMPLETED);
+        request.setCompletedAt(LocalDateTime.now());
+
+        return toDTO(assistanceRequestRepository.save(request));
+    }
+
+    private void assertRequesterOwnsActiveMaintenance(com.example.domain.Machine machine, Technician requestedBy) {
+        if (machine.getStatus() != com.example.domain.enums.MachineStatus.MAINTENANCE) {
+            throw new RuntimeException("Assistance can only be requested during active maintenance on this machine");
+        }
+        var activeSessions = maintenanceSessionRepository.findByMachineIdAndActiveTrue(machine.getId());
+        if (activeSessions.isEmpty()) {
+            throw new RuntimeException("No active maintenance session found for this machine");
+        }
+        Long ownerId = activeSessions.get(0).getTechnician().getId();
+        if (!ownerId.equals(requestedBy.getId())) {
+            throw new RuntimeException("Only the technician who started maintenance can request assistance");
+        }
+    }
+
+    private Set<Long> closeActiveSessionsOnMachine(com.example.domain.Machine machine) {
+        Set<Long> releasedTechnicianIds = new HashSet<>();
+        for (MaintenanceSession session : maintenanceSessionRepository.findByMachineIdAndActiveTrue(machine.getId())) {
+            session.setActive(false);
+            session.setEndTime(LocalDateTime.now());
+            if (session.getMaintenanceRecord() != null) {
+                Maintenance record = session.getMaintenanceRecord();
+                record.setStatus(MaintenanceStatus.COMPLETED);
+                maintenanceRepository.save(record);
+            }
+            maintenanceSessionRepository.save(session);
+
+            Technician tech = session.getTechnician();
+            if (tech != null && releasedTechnicianIds.add(tech.getId())) {
+                technicianStatsService.releaseFromMachineWork(tech, true);
+                technicianRepository.save(tech);
+            }
+        }
+        return releasedTechnicianIds;
+    }
+
+    private void resolveAllOpenProblemsOnMachine(com.example.domain.Machine machine) {
+        LocalDateTime now = LocalDateTime.now();
+        for (Problem open : problemRepository.findByMachineIdAndResolvedFalse(machine.getId())) {
+            open.setResolved(true);
+            open.setSolvedProblemDate(now);
+            problemRepository.save(open);
+        }
+    }
+
+    private void saveAssistanceLog(com.example.domain.Machine machine, Technician assistant, AssistanceRequestCompleteDTO dto) {
+        maintenanceRepository.findByMachineIdAndStatus(machine.getId(), MaintenanceStatus.IN_PROGRESS)
+                .stream()
+                .filter(m -> m.getType().isOriginal())
+                .findFirst()
+                .or(() -> maintenanceRepository.findByMachineIdAndStatus(machine.getId(), MaintenanceStatus.COMPLETED)
+                        .stream()
+                        .filter(m -> m.getType().isOriginal())
+                        .findFirst())
+                .ifPresent(maintenance -> {
+                    MaintenanceLog log = MaintenanceLog.builder()
+                            .maintenance(maintenance)
+                            .technician(assistant)
+                            .title(dto.getTitle())
+                            .description(dto.getDescription())
+                            .hoursSpent(dto.getHoursSpent())
+                            .partsUsed(dto.getPartsUsed())
+                            .build();
+                    maintenanceLogRepository.save(log);
+                });
+    }
+
+    private double resolveHours(AssistanceRequestCompleteDTO dto, LocalDateTime acceptedAt) {
+        if (dto != null && dto.getHoursSpent() != null && dto.getHoursSpent() > 0) {
+            return dto.getHoursSpent();
+        }
+        if (acceptedAt != null) {
+            return Math.max(0.1, ChronoUnit.MINUTES.between(acceptedAt, LocalDateTime.now()) / 60.0);
+        }
+        return 0.1;
+    }
+
+    private void assertNoActiveRequestForMachine(Long machineId) {
+        if (assistanceRequestRepository.existsByProblemMachineIdAndStatusIn(machineId, ACTIVE_REQUEST_STATUSES)) {
+            throw new RuntimeException("This machine already has an active assistance request");
+        }
+    }
+
+    private AssistanceRequestDTO toDTO(AssistanceRequest r) {
+        AssistanceRequestDTO dto = new AssistanceRequestDTO();
+        dto.setId(r.getId());
+        dto.setProblemId(r.getProblem().getId());
+        dto.setProblemDescription(r.getProblem().getDescription());
+        dto.setMachineId(r.getProblem().getMachine().getId());
+        dto.setMachineName(r.getProblem().getMachine().getName());
+        dto.setMachineLocation(r.getProblem().getMachine().getLocation());
+        dto.setMachineAssignedTechnicianIds(
+                r.getProblem().getMachine().getAssignedTechnicians().stream()
+                        .map(Technician::getId)
+                        .toList()
+        );
+        dto.setRequestedById(r.getRequestedBy().getId());
+        dto.setRequestedByName(r.getRequestedBy().getName());
+        if (r.getAssignedTechnician() != null) {
+            dto.setAssignedTechnicianId(r.getAssignedTechnician().getId());
+            dto.setAssignedTechnicianName(r.getAssignedTechnician().getName());
+        }
+        dto.setReason(r.getReason());
+        dto.setStatus(r.getStatus());
+        dto.setCreatedAt(r.getCreatedAt());
+        dto.setAcceptedAt(r.getAcceptedAt());
+        dto.setCompletedAt(r.getCompletedAt());
+        return dto;
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\service\AuthenticationService.java
+================================================================================
+
+package com.example.service;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.example.domain.User;
+import com.example.dto.LoginResponse;
+import com.example.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class AuthenticationService {
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+
+    public LoginResponse login(String email, String password) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new RuntimeException("Invalid credentials");
+        }
+
+        String token = jwtService.generateToken(user);
+
+        return new LoginResponse(
+                token,
+                user.getRole().name(),
+                user.getName(),
+                user.getId()
+        );
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\service\JwtService.java
+================================================================================
+
+package com.example.service;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
+
+import com.example.domain.User;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+
+@Service
+public class JwtService {
+
+    @Value("${jwt.secret}")
+    private String SECRET;
+
+    public String extractUsername(String token) {
+        return extractAllClaims(token).getSubject();
+    }
+
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        final String username = extractUsername(token);
+        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+    }
+
+    public UsernamePasswordAuthenticationToken getAuthenticationToken(UserDetails userDetails) {
+        return new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
+    }
+
+    private boolean isTokenExpired(String token) {
+        return extractAllClaims(token).getExpiration().before(new Date());
+    }
+
+    private Claims extractAllClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(SECRET.getBytes())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    public String generateToken(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", user.getRole().name());
+        claims.put("name", user.getName());
+        claims.put("id", user.getId());
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(user.getEmail())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
+                .signWith(SignatureAlgorithm.HS256, SECRET.getBytes())
+                .compact();
+    }
+
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\service\MachineMetricsService.java
+================================================================================
+
+package com.example.service;
+
+import com.example.domain.Machine;
+import com.example.domain.enums.AssistanceRequestStatus;
+import com.example.repository.AssistanceRequestRepository;
+import com.example.repository.MaintenanceLogRepository;
+import com.example.repository.MachineRepository;
+import com.example.repository.ProblemRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class MachineMetricsService {
+
+    private static final List<AssistanceRequestStatus> ACTIVE_ASSISTANCE_STATUSES =
+            List.of(AssistanceRequestStatus.PENDING, AssistanceRequestStatus.ACCEPTED);
+
+    private final MachineRepository machineRepository;
+    private final MaintenanceLogRepository maintenanceLogRepository;
+    private final ProblemRepository problemRepository;
+    private final AssistanceRequestRepository assistanceRequestRepository;
+
+    public void refreshMetrics(Long machineId) {
+        machineRepository.findById(machineId).ifPresent(this::refreshMetrics);
+    }
+
+    public void refreshMetrics(Machine machine) {
+        Double downtime = maintenanceLogRepository.sumHoursSpentByMachineId(machine.getId());
+        machine.setDowntimeSum(downtime != null ? downtime : 0.0);
+
+        machine.setActionRequiredCount(
+                problemRepository.findByMachineIdAndResolvedFalse(machine.getId()).size()
+        );
+
+        long activeAssistance = assistanceRequestRepository.countByProblemMachineIdAndStatusIn(
+                machine.getId(),
+                ACTIVE_ASSISTANCE_STATUSES
+        );
+        machine.setAssistanceRequestedCount((int) activeAssistance);
+
+        machineRepository.save(machine);
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\service\MachineService.java
+================================================================================
+
+package com.example.service;
+
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.domain.Machine;
+import com.example.domain.Technician;
+import com.example.domain.enums.MachineStatus;
+import com.example.dto.MachineDashboardStatsDTO;
+import com.example.dto.MachineDTO;
+import com.example.dto.MachineRankingDTO;
+import com.example.mapper.MachineMapper;
+import com.example.repository.MachineRepository;
+import com.example.repository.TechnicianRepository;
+import com.example.repository.MaintenanceRepository;
+import com.example.domain.enums.MaintenanceStatus;
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class MachineService {
+
+    private final MachineRepository machineRepository;
+    private final TechnicianRepository technicianRepository;
+    private final MaintenanceRepository maintenanceRepository;
+    private final MachineMetricsService machineMetricsService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Transactional(readOnly = true)
+    public List<MachineDTO> getAllMachinesDTO() {
+        return machineRepository.findAll()
+                .stream()
+                .map(m -> {
+                    MachineDTO dto = MachineMapper.toDTO(m);
+                    populateActiveTechnician(dto);
+                    return dto;
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public MachineDTO getMachineByIdDTO(Long id) {
+        Machine m = machineRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
+        machineMetricsService.refreshMetrics(m);
+        Machine refreshed = machineRepository.findById(id).orElse(m);
+        MachineDTO dto = MachineMapper.toDTO(refreshed);
+        populateActiveTechnician(dto);
+        return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public MachineDashboardStatsDTO getDashboardStats() {
+        return MachineDashboardStatsDTO.builder()
+                .total(machineRepository.countNonArchived())
+                .maintenance(machineRepository.countInMaintenance())
+                .suspicious(machineRepository.countSuspiciousNotInMaintenance())
+                .normal(machineRepository.countNormalNotInMaintenance())
+                .build();
+    }
+
+    private void populateActiveTechnician(MachineDTO dto) {
+        if (dto.getStatus() == MachineStatus.MAINTENANCE) {
+            maintenanceRepository.findByMachineIdAndStatus(dto.getId(), MaintenanceStatus.IN_PROGRESS)
+                    .stream()
+                    .filter(m -> m.getType() != null && m.getType().isOriginal())
+                    .filter(m -> m.getTechnician() != null)
+                    .findFirst()
+                    .ifPresent(m -> dto.setActiveMaintenanceTechnicianId(m.getTechnician().getId()));
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<MachineDTO> getArchivedMachinesDTO() {
+        return machineRepository.findByArchivedAtIsNotNull()
+                .stream()
+                .map(m -> {
+                    MachineDTO dto = MachineMapper.toDTO(m);
+                    populateActiveTechnician(dto);
+                    return dto;
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MachineDTO> getActiveMachinesDTO() {
+        return machineRepository.findByArchivedAtIsNull()
+                .stream()
+                .map(m -> {
+                    MachineDTO dto = MachineMapper.toDTO(m);
+                    populateActiveTechnician(dto);
+                    return dto;
+                })
+                .toList();
+    }
+
+    public MachineDTO createMachineDTO(MachineDTO dto) {
+        Machine machine = Machine.builder()
+                .name(dto.getName())
+                .location(dto.getLocation())
+                .importanceLevel(dto.getImportanceLevel())
+                .status(dto.getStatus() != null ? dto.getStatus() : MachineStatus.ACTIVE)
+                .downtimeSum(dto.getDowntimeSum() != null ? dto.getDowntimeSum() : 0.0)
+                .suspicionFlag(dto.isSuspicionFlag())
+                .vibrationSensor(dto.isVibrationSensor())
+                .temperatureSensor(dto.isTemperatureSensor())
+                .pressureSensor(dto.isPressureSensor())
+                .build();
+
+        return MachineMapper.toDTO(machineRepository.save(machine));
+    }
+
+    public MachineDTO updateMachineDTO(Long id, MachineDTO dto) {
+        Machine machine = machineRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
+
+        machine.setName(dto.getName());
+        machine.setLocation(dto.getLocation());
+        machine.setImportanceLevel(dto.getImportanceLevel());
+        machine.setStatus(dto.getStatus());
+        machine.setSuspicionFlag(dto.isSuspicionFlag());
+
+        if (dto.getDowntimeSum() != null) {
+            machine.setDowntimeSum(dto.getDowntimeSum());
+        }
+
+        machine.setVibrationSensor(dto.isVibrationSensor());
+        machine.setTemperatureSensor(dto.isTemperatureSensor());
+        machine.setPressureSensor(dto.isPressureSensor());
+
+        if (dto.getAssignedTechnicians() != null) {
+            List<Technician> techs = dto.getAssignedTechnicians().stream()
+                    .map(t -> technicianRepository.findById(t.getId())
+                            .orElseThrow(() -> new EntityNotFoundException("Technician not found with id: " + t.getId())))
+                    .collect(Collectors.toList());
+            machine.setAssignedTechnicians(techs);
+        }
+
+        return MachineMapper.toDTO(machineRepository.save(machine));
+    }
+
+    public MachineDTO restoreMachineDTO(Long id) {
+        Machine machine = machineRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
+        machine.setStatus(MachineStatus.ACTIVE);
+        machine.setArchivedAt(null);
+        return MachineMapper.toDTO(machineRepository.save(machine));
+    }
+
+    public void deleteMachine(Long id) {
+        Machine machine = machineRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
+
+        entityManager.createNativeQuery("UPDATE technicians SET current_machine_id = NULL WHERE current_machine_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM machine_technician WHERE machine_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM sensor_readings WHERE machine_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery(
+                "DELETE FROM maintenance_sessions WHERE maintenance_record_id IN (SELECT id FROM maintenance_records WHERE machine_id = :id)")
+            .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM maintenance_sessions WHERE machine_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM maintenance_logs WHERE maintenance_id IN (SELECT id FROM maintenance_records WHERE machine_id = :id)")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM maintenance_records WHERE machine_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM assistance_requests WHERE problem_id IN (SELECT id FROM problems WHERE machine_id = :id)")
+                .setParameter("id", id).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM problems WHERE machine_id = :id")
+                .setParameter("id", id).executeUpdate();
+
+        machineRepository.delete(machine);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MachineRankingDTO> getMachinesRanked() {
+        List<Machine> machines = machineRepository.findAll();
+
+        return machines.stream()
+                .map(m -> {
+                    double priority = calculatePriority(m);
+                    return MachineRankingDTO.from(m, priority);
+                })
+                .sorted(Comparator.comparingDouble(MachineRankingDTO::getPriority).reversed())
+                .toList();
+    }
+
+    private double calculatePriority(Machine m) {
+        double importance = m.getImportanceLevel() != null ? m.getImportanceLevel() : 0;
+        double downtime = m.getDowntimeSum() != null ? m.getDowntimeSum() : 0;
+
+        return importance * 0.5 + downtime * 0.4;
+    }
+
+    public MachineDTO archiveMachineDTO(Long id) {
+        Machine machine = machineRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found with id: " + id));
+        machine.setStatus(MachineStatus.ARCHIVED);
+        machine.setArchivedAt(LocalDateTime.now());
+        return MachineMapper.toDTO(machineRepository.save(machine));
+    }
+
+    public MachineDTO assignTechnicianDTO(Long machineId, Long technicianId) {
+        Machine machine = machineRepository.findById(machineId)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
+
+        Technician tech = technicianRepository.findById(technicianId)
+                .orElseThrow(() -> new EntityNotFoundException("Technician not found"));
+
+        // Avoid duplicates - only add if not already assigned
+        if (!machine.getAssignedTechnicians().contains(tech)) {
+            machine.getAssignedTechnicians().add(tech);
+        }
+        return MachineMapper.toDTO(machineRepository.save(machine));
+    }
+
+    public MachineDTO assignTechniciansDTO(Long machineId, List<Long> technicianIds) {
+        Machine machine = machineRepository.findById(machineId)
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
+
+        machine.getAssignedTechnicians().clear();
+        if (technicianIds != null) {
+            for (Long technicianId : technicianIds) {
+                Technician tech = technicianRepository.findById(technicianId)
+                        .orElseThrow(() -> new EntityNotFoundException("Technician not found with id: " + technicianId));
+                boolean alreadyAdded = machine.getAssignedTechnicians().stream()
+                        .anyMatch(t -> t.getId().equals(tech.getId()));
+                if (!alreadyAdded) {
+                    machine.getAssignedTechnicians().add(tech);
+                }
+            }
+        }
+        return MachineMapper.toDTO(machineRepository.save(machine));
+    }
+
+    public List<MachineDTO> getMachinesAssignedToTechnicianDTO(Long technicianId) {
+        return machineRepository.findAll().stream()
+                .filter(m -> m.getAssignedTechnicians() != null &&
+                        m.getAssignedTechnicians().stream()
+                                .anyMatch(t -> t.getId().equals(technicianId)))
+                .map(m -> {
+                    machineMetricsService.refreshMetrics(m);
+                    Machine refreshed = machineRepository.findById(m.getId()).orElse(m);
+                    MachineDTO dto = MachineMapper.toDTO(refreshed);
+                    populateActiveTechnician(dto);
+                    return dto;
+                })
+                .toList();
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\service\MaintenanceLogService.java
+================================================================================
+
+package com.example.service;
+
+import com.example.domain.Maintenance;
+import com.example.domain.MaintenanceLog;
+import com.example.domain.Technician;
+import com.example.dto.MaintenanceLogCreateDTO;
+import com.example.dto.MaintenanceLogDTO;
+import com.example.repository.MaintenanceLogRepository;
+import com.example.repository.MaintenanceRepository;
+import com.example.repository.TechnicianRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class MaintenanceLogService {
+
+    private final MaintenanceLogRepository logRepository;
+    private final MaintenanceRepository maintenanceRepository;
+    private final TechnicianRepository technicianRepository;
+    private final MachineMetricsService machineMetricsService;
+
+    public MaintenanceLogDTO createLog(String maintenanceId, MaintenanceLogCreateDTO dto) {
+
+        Maintenance maintenance = maintenanceRepository.findById(Long.valueOf(maintenanceId))
+                .orElseThrow(() -> new RuntimeException("Maintenance not found"));
+
+        Technician tech = technicianRepository.findById(Long.valueOf(dto.getTechnicianId()))
+                .orElseThrow(() -> new RuntimeException("Technician not found"));
+
+        MaintenanceLog log = MaintenanceLog.builder()
+                .maintenance(maintenance)
+                .technician(tech)
+                .title(dto.getTitle())
+                .description(dto.getDescription())
+                .hoursSpent(dto.getHoursSpent())
+                .partsUsed(dto.getPartsUsed())
+                .build();
+
+        MaintenanceLog saved = logRepository.save(log);
+        machineMetricsService.refreshMetrics(saved.getMaintenance().getMachine().getId());
+        updateTechnicianAverageRepairTime(tech);
+        return toDTO(saved);
+    }
+
+    public List<MaintenanceLogDTO> getLogsByMaintenance(String maintenanceId) {
+        return logRepository.findByMaintenanceIdOrderByCreatedAtDesc(Long.valueOf(maintenanceId))
+                .stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+    private MaintenanceLogDTO toDTO(MaintenanceLog log) {
+        MaintenanceLogDTO dto = new MaintenanceLogDTO();
+        dto.setId(log.getId());
+        dto.setTitle(log.getTitle());
+        dto.setDescription(log.getDescription());
+        dto.setHoursSpent(log.getHoursSpent());
+        dto.setPartsUsed(log.getPartsUsed());
+        dto.setTechnicianName(log.getTechnician().getName());
+        dto.setCreatedAt(log.getCreatedAt() != null ? log.getCreatedAt().toString() : null);
+        dto.setMaintenanceId(log.getMaintenance().getId());
+        dto.setMachineId(log.getMaintenance().getMachine().getId());
+        return dto;
+    }
+
+    private void updateTechnicianAverageRepairTime(Technician tech) {
+        List<MaintenanceLog> logs = logRepository.findByTechnicianId(tech.getId());
+        double average = logs.stream()
+                .mapToDouble(MaintenanceLog::getHoursSpent)
+                .average()
+                .orElse(0.0);
+        tech.setAverageRepairTime(average);
+        technicianRepository.save(tech);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MaintenanceLogDTO> getAllLogs() {
+        return logRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\service\MaintenanceService.java
+================================================================================
+
+package com.example.service;
+
+import com.example.domain.Maintenance;
+import com.example.dto.MaintenanceDTO;
+import com.example.mapper.MaintenanceMapper;
+import com.example.repository.MaintenanceRepository;
+import com.example.repository.MachineRepository;
+import com.example.repository.TechnicianRepository;
+import com.example.domain.enums.MaintenanceType;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class MaintenanceService {
+
+    private final MaintenanceRepository maintenanceRepository;
+    private final MachineRepository machineRepository;
+    private final TechnicianRepository technicianRepository;
+
+    // -------------------------
+    //  DTO METHODS
+    // -------------------------
+
+    public List<MaintenanceDTO> getAllMaintenanceDTO() {
+        return maintenanceRepository.findAll()
+                .stream()
+                .map(MaintenanceMapper::toDTO)
+                .toList();
+    }
+
+    public MaintenanceDTO getMaintenanceByIdDTO(Long id) {
+        return MaintenanceMapper.toDTO(
+                maintenanceRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("Maintenance not found"))
+        );
+    }
+
+    public List<MaintenanceDTO> getMaintenanceByMachineDTO(Long machineId) {
+        return maintenanceRepository.findByMachineIdAndTypeNot(machineId, MaintenanceType.ASSISTANCE)
+                .stream()
+                .map(MaintenanceMapper::toDTO)
+                .toList();
+    }
+
+    public List<MaintenanceDTO> getMaintenanceByTechnicianDTO(Long technicianId) {
+        return maintenanceRepository.findByTechnicianId(technicianId)
+                .stream()
+                .map(MaintenanceMapper::toDTO)
+                .toList();
+    }
+
+    public MaintenanceDTO createMaintenanceDTO(MaintenanceDTO dto) {
+        Maintenance m = MaintenanceMapper.toEntity(dto, machineRepository, technicianRepository);
+        return MaintenanceMapper.toDTO(maintenanceRepository.save(m));
+    }
+
+    public MaintenanceDTO updateMaintenanceDTO(Long id, MaintenanceDTO dto) {
+        Maintenance existing = maintenanceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Maintenance not found"));
+
+        MaintenanceMapper.updateEntity(existing, dto, machineRepository, technicianRepository);
+
+        return MaintenanceMapper.toDTO(maintenanceRepository.save(existing));
+    }
+
+    public void deleteMaintenance(Long id) {
+        maintenanceRepository.deleteById(id);
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\service\ProblemService.java
+================================================================================
+
+package com.example.service;
+
+import com.example.domain.Machine;
+import com.example.domain.Problem;
+import com.example.dto.ProblemDTO;
+import com.example.dto.ProblemHistoryDTO;
+import com.example.mapper.ProblemMapper;
+import com.example.repository.MachineRepository;
+import com.example.repository.ProblemRepository;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ProblemService {
+
+    private final ProblemRepository problemRepository;
+    private final MachineRepository machineRepository;
+
+    @Transactional(readOnly = true)
+    public List<ProblemDTO> getAllProblemsDTO() {
+        return problemRepository.findAll()
+                .stream()
+                .map(ProblemMapper::toDTO)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ProblemDTO getProblemByIdDTO(Long id) {
+        return problemRepository.findById(id)
+                .map(ProblemMapper::toDTO)
+                .orElseThrow(() -> new EntityNotFoundException("Problem not found with id: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProblemDTO> getProblemsByMachineDTO(Long machineId) {
+        return problemRepository.findByMachineId(machineId)
+                .stream()
+                .map(ProblemMapper::toDTO)
+                .toList();
+    }
+
+    public ProblemDTO createProblemDTO(ProblemDTO dto) {
+        Machine machine = machineRepository.findById(dto.getMachineId())
+                .orElseThrow(() -> new EntityNotFoundException("Machine not found"));
+
+        Problem problem = Problem.builder()
+                .machine(machine)
+                .description(dto.getDescription())
+                .resolved(dto.isResolved())
+                .startProblemDate(LocalDateTime.now())
+                .build();
+
+        return ProblemMapper.toDTO(problemRepository.save(problem));
+    }
+
+    public ProblemDTO updateProblemDTO(Long id, ProblemDTO dto) {
+        Problem problem = problemRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Problem not found"));
+
+        problem.setDescription(dto.getDescription());
+        problem.setResolved(dto.isResolved());
+
+        return ProblemMapper.toDTO(problemRepository.save(problem));
+    }
+
+    public ProblemDTO resolveProblemDTO(Long id) {
+        Problem problem = problemRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Problem not found"));
+
+        problem.setResolved(true);
+        problem.setSolvedProblemDate(LocalDateTime.now());
+
+        return ProblemMapper.toDTO(problemRepository.save(problem));
+    }
+
+    public void deleteProblem(Long id) {
+        Problem problem = problemRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Problem not found"));
+        problemRepository.delete(problem);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProblemHistoryDTO> getHistory() {
+        return problemRepository.findAll()
+                .stream()
+                .map(ProblemMapper::toHistoryDTO)
+                .toList();
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\service\SensorService.java
+================================================================================
+
+package com.example.service;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.domain.Machine;
+import com.example.domain.Problem;
+import com.example.domain.SensorReading;
+import com.example.domain.enums.SensorType;
+import com.example.dto.SensorReadingDTO;
+import com.example.repository.MachineRepository;
+import com.example.repository.ProblemRepository;
+import com.example.repository.SensorReadingRepository;
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class SensorService {
+
+    private static final long COOLDOWN_SECONDS = 15;
+
+    private final SensorReadingRepository sensorReadingRepository;
+    private final MachineRepository machineRepository;
+    private final ProblemRepository problemRepository;
+
+    @Transactional
+    public void createReading(SensorReadingDTO dto) {
+
+        Machine machine = machineRepository.findById(dto.getMachineId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Machine not found with id: " + dto.getMachineId()));
+
+        if (!isSensorEnabled(machine, dto.getSensorType())) {
+            return;
+        }
+
+        SensorReading reading = SensorReading.builder()
+                .machine(machine)
+                .sensorType(dto.getSensorType())
+                .value(dto.getValue())
+                .recordedAt(dto.getRecordedAt())
+                .build();
+
+        SensorReading saved = sensorReadingRepository.save(reading);
+
+        classifyReading(saved);
+    }
+
+    private void classifyReading(SensorReading reading) {
+
+        double value = reading.getValue();
+        SensorType type = reading.getSensorType();
+        Machine machine = reading.getMachine();
+
+        String problemDescription = null;
+
+        if (type == SensorType.TEMPERATURE && value > 80.0) {
+            problemDescription = "Critical Temperature detected: " + value + "°C";
+        } else if (type == SensorType.PRESSURE && value > 5.5) {
+            problemDescription = "High Pressure detected: " + value + " bar";
+        } else if (type == SensorType.VIBRATION && value > 0.7) {
+            problemDescription = "Excessive Vibration detected: " + value + " mm/s";
+        }
+
+        if (problemDescription == null) {
+            return;
+        }
+
+        List<Problem> existing =
+                problemRepository.findByMachineIdAndDescriptionContainingAndResolvedFalse(
+                        machine.getId(), type.toString()
+                );
+
+        if (!existing.isEmpty()) {
+            return;
+        }
+
+        if (machine.getMaintenanceFinishedAt() != null) {
+
+            boolean inCooldown = machine.getMaintenanceFinishedAt()
+                    .isAfter(LocalDateTime.now().minusSeconds(COOLDOWN_SECONDS));
+
+            if (inCooldown) {
+                // Ignora sensores durante cooldown
+                return;
+            }
+        }
+
+        Problem problem = Problem.builder()
+                .machine(machine)
+                .description(problemDescription)
+                .detectedAt(LocalDateTime.now())
+                .startProblemDate(LocalDateTime.now())
+                .faultSeverity("CRITICAL")
+                .priority(1.0)
+                .resolved(false)
+                .build();
+
+        problemRepository.save(problem);
+
+        machine.setSuspicionFlag(true);
+        machineRepository.save(machine);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SensorReading> getLatestState(Long machineId) {
+
+        Machine machine = machineRepository.findById(machineId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Machine not found with id: " + machineId));
+
+        List<SensorReading> result = new ArrayList<>();
+
+        if (machine.isTemperatureSensor()) {
+            sensorReadingRepository
+                    .findTopByMachine_IdAndSensorTypeOrderByRecordedAtDesc(
+                            machineId,
+                            SensorType.TEMPERATURE
+                    )
+                    .ifPresent(result::add);
+        }
+
+        if (machine.isPressureSensor()) {
+            sensorReadingRepository
+                    .findTopByMachine_IdAndSensorTypeOrderByRecordedAtDesc(
+                            machineId,
+                            SensorType.PRESSURE
+                    )
+                    .ifPresent(result::add);
+        }
+
+        if (machine.isVibrationSensor()) {
+            sensorReadingRepository
+                    .findTopByMachine_IdAndSensorTypeOrderByRecordedAtDesc(
+                            machineId,
+                            SensorType.VIBRATION
+                    )
+                    .ifPresent(result::add);
+        }
+
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<SensorReading> getReadingsByMachine(Long machineId) {
+        return sensorReadingRepository.findByMachine_IdOrderByRecordedAtDesc(machineId);
+    }
+
+    private boolean isSensorEnabled(Machine machine, SensorType type) {
+        return switch (type) {
+            case TEMPERATURE -> machine.isTemperatureSensor();
+            case PRESSURE -> machine.isPressureSensor();
+            case VIBRATION -> machine.isVibrationSensor();
+        };
+    }
+}
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\service\TechnicianStatsService.java
+================================================================================
+
+package com.example.service;
+
+import com.example.domain.Machine;
+import com.example.domain.Technician;
+import org.springframework.stereotype.Service;
+
+@Service
+public class TechnicianStatsService {
+
+    public void markBusy(Technician tech, Machine machine) {
+        tech.setAvailable(false);
+        tech.setCurrentAssignment(machine);
+        tech.setTasksPending(tech.getTasksPending() + 1);
+    }
+
+    public void markAvailable(Technician tech) {
+        tech.setAvailable(true);
+        tech.setCurrentAssignment(null);
+        tech.setTasksPending(Math.max(0, tech.getTasksPending() - 1));
+        tech.setTasksCompleted(tech.getTasksCompleted() + 1);
+    }
+
+    /** Releases technician from an assistance assignment without counting as completed work. */
+    public void releaseFromAssistanceAssignment(Technician tech) {
+        tech.setAvailable(true);
+        tech.setCurrentAssignment(null);
+        tech.setTasksPending(Math.max(0, tech.getTasksPending() - 1));
+    }
+
+    public void releaseFromMachineWork(Technician tech, boolean countAsCompleted) {
+        tech.setAvailable(true);
+        tech.setCurrentAssignment(null);
+        tech.setTasksPending(Math.max(0, tech.getTasksPending() - 1));
+        if (countAsCompleted) {
+            tech.setTasksCompleted(tech.getTasksCompleted() + 1);
+        }
+    }
+
+    /** Counts only completed assistance work (Team Activity "Faults Fixed"). */
+    public void recordAssistanceCompletion(Technician tech, double hours) {
+        if (hours <= 0) {
+            hours = 0.1;
+        }
+        int previous = tech.getAssistedCounter();
+        double previousAvg = tech.getAverageRepairTime();
+        tech.setAssistedCounter(previous + 1);
+        tech.setAverageRepairTime((previousAvg * previous + hours) / (previous + 1));
+    }
+
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\service\UserDetailsServiceImpl.java
+================================================================================
+
+package com.example.service;
+
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+import com.example.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class UserDetailsServiceImpl implements UserDetailsService {
+
+    private final UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+    }
+}
+
+
+================================================================================
+FICHEIRO: C:\Users\Pedro\Desktop\versao final eu espero\ies2526-group-project-g705\projX\backend\src\main\java\com\example\service\UserService.java
+================================================================================
+
+package com.example.service;
+
+import com.example.domain.User;
+import com.example.domain.Technician;
+import com.example.domain.enums.UserRole;
+import com.example.dto.UserDTO;
+import com.example.dto.TechnicianDTO;
+import com.example.mapper.TechnicianMapper;
+import com.example.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class UserService {
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+
+    @Transactional(readOnly = true)
+    public List<UserDTO> getAllUsersDTO() {
+        return userRepository.findByArchivedFalse()
+                .stream()
+                .map(UserDTO::fromEntity)
+                .toList();
+    }
+
+
+    @Transactional(readOnly = true)
+    public UserDTO getUserByIdDTO(Long id) {
+        return userRepository.findById(id)
+                .map(UserDTO::fromEntity)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<TechnicianDTO> getAllTechniciansDTO() {
+        return userRepository.findByRoleAndArchivedFalse(UserRole.TECHNICIAN)
+                .stream()
+                .filter(u -> u instanceof Technician)
+                .map(u -> TechnicianMapper.toDTO((Technician) u))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TechnicianDTO> getArchivedTechniciansDTO() {
+        return userRepository.findByRoleAndArchivedTrue(UserRole.TECHNICIAN)
+                .stream()
+                .map(u -> TechnicianMapper.toDTO((Technician) u))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserDTO> getAllDirectorsDTO() {
+        return userRepository.findByRole(UserRole.DIRECTOR)
+                .stream()
+                .map(UserDTO::fromEntity)
+                .toList();
+    }
+
+    public UserDTO createUserDTO(UserDTO dto) {
+
+        String rawPassword = (dto.getPassword() == null || dto.getPassword().isBlank())
+                ? "1234"
+                : dto.getPassword();
+
+        User user;
+
+        if (dto.getRole() == UserRole.TECHNICIAN) {
+            user = new Technician();
+        } else {
+            user = new User();
+        }
+
+        user.setName(dto.getName());
+        user.setEmail(dto.getEmail());
+        user.setRole(dto.getRole());
+        user.setPhoneNumber(dto.getPhoneNumber());
+        user.setAge(dto.getAge());
+        user.setGender(dto.getGender());
+
+        if (user instanceof Technician tech && dto.getSkillSet() != null) {
+            tech.setSkillSet(new java.util.ArrayList<>(dto.getSkillSet()));
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+
+        return UserDTO.fromEntity(userRepository.save(user));
+    }
+
+
+
+    public UserDTO updateUserDTO(Long id, UserDTO dto) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        user.setName(dto.getName());
+        user.setEmail(dto.getEmail());
+        if (dto.getRole() != null) {
+            user.setRole(dto.getRole());
+        }
+        if (dto.getPhoneNumber() != null) {
+            user.setPhoneNumber(dto.getPhoneNumber());
+        }
+        if (dto.getAge() != null) {
+            user.setAge(dto.getAge());
+        }
+        if (dto.getGender() != null) {
+            user.setGender(dto.getGender());
+        }
+        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
+            user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
+        }
+        if (user instanceof Technician tech && dto.getSkillSet() != null) {
+            tech.setSkillSet(new java.util.ArrayList<>(dto.getSkillSet()));
+        }
+
+        return UserDTO.fromEntity(userRepository.save(user));
+    }
+
+    public UserDTO archiveUserDTO(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        user.setArchived(true);
+        return UserDTO.fromEntity(userRepository.save(user));
+    }
+
+
+    public UserDTO restoreUserDTO(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        user.setArchived(false);
+        return UserDTO.fromEntity(userRepository.save(user));
+    }
+
+    public void deleteUser(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        // 1. Remove direct references to technician
+        entityManager.createNativeQuery(
+                "UPDATE problems SET assigned_technician_id = NULL WHERE assigned_technician_id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
+
+        entityManager.createNativeQuery(
+                "UPDATE maintenance_records SET technician_id = NULL WHERE technician_id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
+
+        // 2. IMPORTANT: delete sessions that depend on assistance_requests FIRST
+        entityManager.createNativeQuery(
+                "DELETE FROM maintenance_sessions ms " +
+            "WHERE ms.request_id IN (" +
+                "   SELECT ar.id FROM assistance_requests ar " +
+                "   WHERE ar.requested_by_id = :id OR ar.assigned_technician_id = :id" +
+                ")")
+                .setParameter("id", id)
+                .executeUpdate();
+
+        entityManager.createNativeQuery(
+            "DELETE FROM maintenance_sessions WHERE technician_id = :id")
+            .setParameter("id", id)
+            .executeUpdate();
+
+        // 3. Now safe to delete assistance_requests
+        entityManager.createNativeQuery(
+                "DELETE FROM assistance_requests " +
+                "WHERE requested_by_id = :id OR assigned_technician_id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
+
+        // 4. Other dependent tables
+        entityManager.createNativeQuery(
+                "DELETE FROM maintenance_logs WHERE technician_id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
+
+        entityManager.createNativeQuery(
+                "DELETE FROM machine_technician WHERE technician_id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
+
+        entityManager.createNativeQuery(
+                "DELETE FROM technician_skills WHERE technician_id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
+
+        // 5. Finally delete user
+        userRepository.delete(user);
+    }
+}
+

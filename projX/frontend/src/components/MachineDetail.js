@@ -240,7 +240,7 @@ export const MachineDetail = ({ machineId, onBack, onRequestAssistance }) => {
 
           {isAssigned && machine.status === "MAINTENANCE" && !isMaintenanceOwner && (
             <p className="text-sm text-amber-700 mt-2">
-              Only {machine.assignedTechnicians?.find((t) => Number(t.id) === Number(machine.activeMaintenanceTechnicianId))?.name || "the technician who started maintenance"} can request assistance or end this maintenance.
+              Contact Director to request help with another technician.
             </p>
           )}
         </CardContent>
