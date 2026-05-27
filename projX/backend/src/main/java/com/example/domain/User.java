@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.example.domain.enums.Gender;
@@ -70,7 +71,9 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(() -> "ROLE_" + role.name());
+        return List.of(
+            new SimpleGrantedAuthority("ROLE_" + role.name())
+        );
     }
 
 
