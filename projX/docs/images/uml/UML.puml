@@ -8,37 +8,45 @@ enum Gender {
   MALE
   FEMALE
   OTHER
-  PREFERNOTTOSAY
+  PREFER_NOT_TO_SAY
 }
 
 enum MachineStatus {
   ACTIVE
-  INACTIVE
   MAINTENANCE
-  BROKEN
+  ASSISTANCE_REQUESTED
+}
+
+enum AssistanceRequestedStatus{
+  PENDING
+  ACCEPTED
+  COMPLETED
 }
 
 enum MaintenanceStatus {
   PENDING
-  ACCEPTED
+  IN_PROGRESS
   COMPLETED
 }
 
 enum MaintenanceType {
   NORMAL
   SPECIAL
+  ASSISTANCE
+  ORIGINAL
 }
 
-enum RequestStatus {
-  PENDING
-  ACCEPTED
-  COMPLETED
-}
 
 enum SensorType {
   TEMPERATURE
   PRESSURE
   VIBRATION
+}
+
+enum UserRole {
+  ADMIN
+  DIRECTOR
+  TECHNICIAN
 }
 
 ' ============================
@@ -52,20 +60,15 @@ class User {
   - String phoneNumber
   - Integer age
   - Gender gender
-  - String role
+  - UserRole role
+  - LocalDateTime updatedAt
   - boolean isActive
   - boolean isOnline
   - boolean isPrivileged
-  - LocalDateTime createdAt
-  - LocalDateTime updatedAt
-  - LocalDateTime lastLogin
 }
 
 class Admin
-class MaintenanceDirector {
-  - List<UUID> technicianIds
-  - List<UUID> machineIds
-}
+class MaintenanceDirector
 
 class Technician {
   - int numberOfFaultsFixed
@@ -87,7 +90,7 @@ User <|-- MaintenanceDirector
 ' MACHINE
 ' ============================
 class Machine {
-  - Long id
+- Long id
   - String name
   - String location
   - Integer importanceLevel
@@ -95,9 +98,15 @@ class Machine {
   - LocalDateTime lastDownDate
   - Double downtimeSum
   - boolean suspicionFlag
+  - boolean vibrationSensor
+  - boolean temperatureSensor
+  - boolean pressureSensor
+  - Integer actionRequiredCount
+  - Integer assistanceRequestedCount
+  - List<Technician> assignedTechnicians
   - LocalDateTime createdAt
   - LocalDateTime updatedAt
-  - LocalDateTime archivedAt
+  - LocalDateTime maintenanceFinishedAt
 }
 
 Machine "1" o-- "*" Problem
@@ -130,9 +139,11 @@ class AssistanceRequest {
   - Problem problem
   - Technician requestedBy
   - String reason
-  - RequestStatus status
+  - AssistanceRequestStatus status
   - Technician assignedTechnician
   - LocalDateTime createdAt
+  - LocalDateTime acceptedAt
+  - LocalDateTime completedAt
 }
 
 AssistanceRequest --> Problem
@@ -153,6 +164,45 @@ class Maintenance {
 
 Maintenance --> Machine
 Maintenance --> Technician
+Maintenance --> Machine
+Maintenance --> Technician
+Maintenance "1" o-- "*" MaintenanceLog
+
+' ============================
+' MAINTENANCE LOGS
+' ============================
+class MaintenanceLog {
+  - Long id
+  - Maintenance maintenance
+  - Technician technician
+  - String title
+  - String description
+  - Double hoursSpent
+  - String partsUsed
+  - LocalDateTime createdAt
+}
+
+MaintenanceLog "*" --> "1" Maintenance : maintenance
+MaintenanceLog "*" --> "1" Technician : technician
+
+' ============================
+' MAINTENANCE SESSIONS
+' ============================
+class MaintenanceSession {
+  - Long id
+  - Technician technician
+  - Machine machine
+  - AssistanceRequest request
+  - Maintenance maintenanceRecord
+  - LocalDateTime startTime
+  - LocalDateTime endTime
+  - boolean active
+}
+
+MaintenanceSession "*" --> "1" Technician : technician
+MaintenanceSession "*" --> "1" Machine : machine
+MaintenanceSession "*" --> "0..1" AssistanceRequest : request
+MaintenanceSession "*" --> "0..1" Maintenance : maintenanceRecord
 
 ' ============================
 ' SENSOR READING (API MODEL)
@@ -166,5 +216,4 @@ class SensorReading {
 }
 
 SensorReading --> Machine
-
 @enduml
