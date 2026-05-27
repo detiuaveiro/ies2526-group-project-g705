@@ -43,11 +43,6 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllTechniciansDTO());
     }
 
-    @GetMapping("/technicians/archived")
-    public ResponseEntity<List<TechnicianDTO>> getArchivedTechnicians() {
-        return ResponseEntity.ok(userService.getArchivedTechniciansDTO());
-    }
-
     @GetMapping("/directors")
     public ResponseEntity<List<UserDTO>> getAllDirectors() {
         return ResponseEntity.ok(userService.getAllDirectorsDTO());
@@ -67,16 +62,5 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
-    }
-
-
-    @PutMapping("/{id}/archive")
-    public ResponseEntity<UserDTO> archiveUser(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.archiveUserDTO(id));
-    }
-
-    @PutMapping("/{id}/restore")
-    public ResponseEntity<UserDTO> restoreUser(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.restoreUserDTO(id));
     }
 }

@@ -33,7 +33,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public List<UserDTO> getAllUsersDTO() {
-        return userRepository.findByArchivedFalse()
+        return userRepository.findAll()
                 .stream()
                 .map(UserDTO::fromEntity)
                 .toList();
@@ -49,17 +49,9 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public List<TechnicianDTO> getAllTechniciansDTO() {
-        return userRepository.findByRoleAndArchivedFalse(UserRole.TECHNICIAN)
+        return userRepository.findByRole(UserRole.TECHNICIAN)
                 .stream()
                 .filter(u -> u instanceof Technician)
-                .map(u -> TechnicianMapper.toDTO((Technician) u))
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public List<TechnicianDTO> getArchivedTechniciansDTO() {
-        return userRepository.findByRoleAndArchivedTrue(UserRole.TECHNICIAN)
-                .stream()
                 .map(u -> TechnicianMapper.toDTO((Technician) u))
                 .toList();
     }
@@ -129,21 +121,6 @@ public class UserService {
             tech.setSkillSet(new java.util.ArrayList<>(dto.getSkillSet()));
         }
 
-        return UserDTO.fromEntity(userRepository.save(user));
-    }
-
-    public UserDTO archiveUserDTO(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        user.setArchived(true);
-        return UserDTO.fromEntity(userRepository.save(user));
-    }
-
-
-    public UserDTO restoreUserDTO(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        user.setArchived(false);
         return UserDTO.fromEntity(userRepository.save(user));
     }
 

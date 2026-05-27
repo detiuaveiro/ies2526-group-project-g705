@@ -90,8 +90,6 @@ public class Machine {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    private LocalDateTime archivedAt;
-
     @Builder.Default
     private LocalDateTime maintenanceFinishedAt = null;
 }

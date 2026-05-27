@@ -162,7 +162,7 @@ public class DataInitializer {
         }
 
         if (user == null) {
-            user = userRepository.findByRoleAndArchivedFalse(UserRole.TECHNICIAN).stream()
+            user = userRepository.findByRole(UserRole.TECHNICIAN).stream()
                     .filter(u -> name.equalsIgnoreCase(u.getName()))
                     .findFirst()
                     .orElse(null);

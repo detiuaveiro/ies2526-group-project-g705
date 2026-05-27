@@ -13,13 +13,10 @@
         The system shall ensure secure user authentication.
 
    ### NFR5 –
-        The system shall log user activities.
-
-   ### NFR6 –
         The system interface shall be simple and intuitive for technicians and managers.
 
-   ### NFR7 –
+   ### NFR6 –
         The system shall allow new machines and sensors to be added without significant performance degradation.
 
-   ### NFR8 –
+   ### NFR7 –
         The system shall allow future integration with new monitoring technologies.

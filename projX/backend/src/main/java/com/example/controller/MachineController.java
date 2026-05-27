@@ -31,11 +31,6 @@ public class MachineController {
         return ResponseEntity.ok(machineService.getMachineByIdDTO(id));
     }
 
-    @GetMapping("/archived")
-    public ResponseEntity<List<MachineDTO>> getArchivedMachines() {
-        return ResponseEntity.ok(machineService.getArchivedMachinesDTO());
-    }
-
     @GetMapping("/active")
     public ResponseEntity<List<MachineDTO>> getActiveMachines() {
         return ResponseEntity.ok(machineService.getActiveMachinesDTO());
@@ -54,16 +49,6 @@ public class MachineController {
     @PutMapping("/{id}")
     public ResponseEntity<MachineDTO> updateMachine(@PathVariable Long id, @Valid @RequestBody MachineDTO dto) {
         return ResponseEntity.ok(machineService.updateMachineDTO(id, dto));
-    }
-
-    @PatchMapping("/{id}/archive")
-    public ResponseEntity<MachineDTO> archiveMachine(@PathVariable Long id) {
-        return ResponseEntity.ok(machineService.archiveMachineDTO(id));
-    }
-
-    @PatchMapping("/{id}/restore")
-    public ResponseEntity<MachineDTO> restoreMachine(@PathVariable Long id) {
-        return ResponseEntity.ok(machineService.restoreMachineDTO(id));
     }
 
     @DeleteMapping("/{id}")

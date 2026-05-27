@@ -104,9 +104,6 @@ public class User implements UserDetails {
         return true;
     }
 
-    @Column(nullable = false)
-    private boolean archived = false;
-
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 
